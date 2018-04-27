@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Jobs;
 
@@ -22,13 +18,19 @@ namespace Scripts.Help
             _handles.Add(handle);
         }
 
+        public JobHandle CombineAll()
+        {
+            var arr = new NativeArray<JobHandle>(_handles.ToArray(), Allocator.TempJob);
+            var handle = JobHandle.CombineDependencies(arr);
+            _handles.Clear();
+            arr.Dispose();
+            return handle;
+        }
+
         public void CompleteAll()
         {
-            foreach (var item in _handles)
-            {
-                item.Complete();
-            }
-            _handles.Clear();
+            var handle = CombineAll();
+            handle.Complete();
         }
     }
 }

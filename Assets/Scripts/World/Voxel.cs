@@ -9,7 +9,6 @@ namespace Scripts.World
 {
     public struct Voxel
     {
-        public DirectionsHelper.BlockDirectionFlag facesVisible;
         public VoxelType type;
         public BlittableBool isVisible;
     }

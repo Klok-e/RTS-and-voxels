@@ -7,7 +7,7 @@ using Unity.Collections;
 
 namespace Scripts.Help
 {
-    public struct Array3DNative<T>
+    public struct Array3DNative<T> : IDisposable
            where T : struct
     {
         private int _xMax;
@@ -27,6 +27,13 @@ namespace Scripts.Help
         public void Dispose()
         {
             _arr.Dispose();
+        }
+
+        public void At(int i, out int x, out int y, out int z)
+        {
+            x = i % _xMax;
+            y = (i / _xMax) % _yMax;
+            z = i / (_xMax * _yMax);
         }
 
         public T this[int i]

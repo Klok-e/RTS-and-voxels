@@ -14,7 +14,7 @@ namespace Scripts.Help
         /// y=-1 - down;
         /// z=-1 - back
         /// </summary>
-        public static readonly Vector3Int[] DirectionsVec =
+        private static readonly Vector3Int[] DirectionsVec =
         {/*
             new Vector3Int(-1,-1,-1),
             new Vector3Int(-1,-1,0),

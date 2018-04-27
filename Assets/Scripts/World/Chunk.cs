@@ -7,6 +7,7 @@ using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Unity.Collections;
 
 namespace Scripts.World
 {
@@ -16,6 +17,7 @@ namespace Scripts.World
 
         public Vector3Int Pos { get; private set; }
 
+        public Array3DNative<DirectionsHelper.BlockDirectionFlag> VoxelsVisibleFaces { get; private set; }
         public Array3DNative<Voxel> Voxels { get; private set; }
 
         public bool IsInitialized { get; private set; }
@@ -30,7 +32,7 @@ namespace Scripts.World
 
             transform.position = (Vector3)Pos * VoxelWorld._chunkSize * VoxelWorld._blockSize;
             gameObject.SetActive(true);
-            name = "Chunk Active";
+            name = $"Chunk Active at {pos}";
             IsInitialized = true;
 
             mesh = new Mesh();
@@ -68,11 +70,13 @@ namespace Scripts.World
 
         private void Awake()
         {
-            Voxels = new Array3DNative<Voxel>(VoxelWorld._chunkSize, VoxelWorld._chunkSize, VoxelWorld._chunkSize, Unity.Collections.Allocator.Persistent);
+            VoxelsVisibleFaces = new Array3DNative<DirectionsHelper.BlockDirectionFlag>(VoxelWorld._chunkSize, VoxelWorld._chunkSize, VoxelWorld._chunkSize, Allocator.Persistent);
+            Voxels = new Array3DNative<Voxel>(VoxelWorld._chunkSize, VoxelWorld._chunkSize, VoxelWorld._chunkSize, Allocator.Persistent);
         }
 
         private void OnDestroy()
         {
+            VoxelsVisibleFaces.Dispose();
             Voxels.Dispose();
         }
 
@@ -101,7 +105,7 @@ namespace Scripts.World
 
         private void CreateCube(MeshData mesh, Vector3Int pos, Color32 color)
         {
-            var facesVisible = Voxels[pos.x, pos.y, pos.z].facesVisible;
+            var facesVisible = VoxelsVisibleFaces[pos.x, pos.y, pos.z];
             for (int i = 0; i < 6; i++)
             {
                 var curr = (DirectionsHelper.BlockDirectionFlag)(1 << i);

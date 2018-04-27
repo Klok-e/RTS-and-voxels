@@ -31,7 +31,7 @@ namespace Scripts.World
         public List<Color32> _colors { get; }
         public List<Vector3> _normals { get; }
 
-        public MeshData(List<Vector3> vertices, List<int> triangles, List<Color32> colors, List<Vector3> normals)
+        public MeshDataNative(List<Vector3> vertices, List<int> triangles, List<Color32> colors, List<Vector3> normals)
         {
             _triangles = new List<int>(triangles);
             _vertices = new List<Vector3>(vertices);

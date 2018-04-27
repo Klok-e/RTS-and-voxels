@@ -4,39 +4,42 @@ using UnityEngine;
 using UnityEditor.ShaderGraph;
 using System.Reflection;
 
-/*
-[Title("Noise 3D")]
-public class Noise3DNode : CodeFunctionNode
+[Title("Procedural", "Noise", "Noise 3D")]
+public class Noise3D : CodeFunctionNode
 {
-    public Noise3DNode()
+    public Noise3D()
     {
-        name = "Noise3DNode";
+        name = "Noise 3D";
     }
 
+    public override bool hasPreview => true;
+    public override PreviewMode previewMode => PreviewMode.Preview3D;
+
     private static string Noise3DNodeFunction(
-        [Slot(0, Binding.None)]Vector3 position,
-        [Slot(1, Binding.None)] out Vector1 o
+        [Slot(0, Binding.None)]Vector3 Input,
+        [Slot(3, Binding.None)] out Vector1 Out
         )
     {
         return @"
-    float3 p = floor(position);
-    float3 f = frac(position);
+{
+    float3 p = floor(Input);
+    float3 f = frac(Input);
 
     f       = f*f*(3.0-2.0*f);
     float n = p.x + p.y*57.0 + 113.0*p.z;
 
-    o = lerp(lerp(lerp( hash(n+0.0), hash(n+1.0),f.x),
+    Out = lerp(lerp(lerp( hash(n+0.0), hash(n+1.0),f.x),
                    lerp( hash(n+57.0), hash(n+58.0),f.x),f.y),
                lerp(lerp( hash(n+113.0), hash(n+114.0),f.x),
                    lerp( hash(n+170.0), hash(n+171.0),f.x),f.y),f.z);
-
+}
         ";
     }
 
     public override void GenerateNodeFunction(FunctionRegistry registry, GenerationMode generationMode)
     {
         registry.ProvideFunction("hash", s => s.Append(@"
-float hash( float n )
+inline float hash( float n )
 {
     return frac(sin(n)*43758.5453);
 }
@@ -51,4 +54,3 @@ float hash( float n )
             BindingFlags.Static | BindingFlags.NonPublic);
     }
 }
-*/

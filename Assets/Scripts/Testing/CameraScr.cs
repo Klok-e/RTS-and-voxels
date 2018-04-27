@@ -4,7 +4,8 @@ namespace MarchingCubesProject
 {
     public class CameraScr : MonoBehaviour
     {
-        public float speed = 3.5f;
+        public float rotationSpeed = 1f;
+        public float moveSpeed = 3.5f;
         private float X;
         private float Y;
 
@@ -15,13 +16,13 @@ namespace MarchingCubesProject
 
         private void LateUpdate()
         {
-            if (Input.GetMouseButton(0))
-            {
-                transform.Rotate(new Vector3(Input.GetAxis("Mouse Y") * speed, -Input.GetAxis("Mouse X") * speed, 0));
-                X = transform.rotation.eulerAngles.x;
-                Y = transform.rotation.eulerAngles.y;
-                transform.rotation = Quaternion.Euler(X, Y, 0);
-            }
+            transform.Rotate(new Vector3(-Input.GetAxis("Mouse Y") * rotationSpeed, Input.GetAxis("Mouse X") * rotationSpeed, 0));
+            X = transform.rotation.eulerAngles.x;
+            Y = transform.rotation.eulerAngles.y;
+            transform.rotation = Quaternion.Euler(X, Y, 0);
+
+            var move = new Vector3(Input.GetAxis("Horizontal"), 0, Input.GetAxis("Vertical")) * moveSpeed;
+            transform.Translate(move);
         }
     }
 }

@@ -8,7 +8,7 @@ using Unity.Collections;
 namespace Scripts.Help
 {
     public struct Array3DNative<T>
-        where T : struct
+           where T : struct
     {
         private int _xMax;
         private int _yMax;

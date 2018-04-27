@@ -101,11 +101,11 @@ namespace Scripts.World
 
         private void CreateCube(MeshData mesh, Vector3Int pos, Color32 color)
         {
-            var adjacentBl = Voxels[pos.x, pos.y, pos.z].adjacentBlocks;
+            var facesVisible = Voxels[pos.x, pos.y, pos.z].facesVisible;
             for (int i = 0; i < 6; i++)
             {
                 var curr = (DirectionsHelper.BlockDirectionFlag)(1 << i);
-                if ((curr & adjacentBl) != 0)//0b010 00 & 0b010 00 -> 0b010 00; 0b100 00 & 0b010 00 -> 0b000 00
+                if ((curr & facesVisible) != 0)//0b010 00 & 0b010 00 -> 0b010 00; 0b100 00 & 0b010 00 -> 0b000 00
                     CreateFace(mesh, (Vector3)pos * VoxelWorld._blockSize, curr, color);
             }
         }
@@ -134,8 +134,8 @@ namespace Scripts.World
                 color});
 
             mesh._vertices.AddRange(new Vector3[] {
-                (rotation * (new Vector3(-.5f, -.5f, .5f) *VoxelWorld._blockSize)) + vertOffset,
-                (rotation * (new Vector3(.5f, -.5f, .5f) *VoxelWorld._blockSize)) + vertOffset,
+                (rotation * (new Vector3(-.5f, -.5f, .5f) * VoxelWorld._blockSize)) + vertOffset,
+                (rotation * (new Vector3(.5f, -.5f, .5f) * VoxelWorld._blockSize)) + vertOffset,
                 (rotation * (new Vector3(-.5f, .5f, .5f) * VoxelWorld._blockSize)) + vertOffset,
                 (rotation * (new Vector3(.5f, .5f, .5f) * VoxelWorld._blockSize)) + vertOffset,});
 

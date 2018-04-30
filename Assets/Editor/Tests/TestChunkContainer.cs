@@ -7,12 +7,12 @@ using UnityEngine;
 public class TestChunkContainer
 {
     private ChunkContainer chunks;
-    private Chunk[,] ch;
+    private RegularChunk[,] ch;
 
     [Test]
     public void Initialization()
     {
-        ch = new Chunk[5, 5];
+        ch = new RegularChunk[5, 5];
         chunks = new ChunkContainer(5, 5);
         chunks.InitializeStartingLevel(0, ch);
         Assert.IsTrue(chunks.MaxHeight == 0);

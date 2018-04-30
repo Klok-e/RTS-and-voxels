@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -7,9 +8,9 @@ using UnityEngine;
 
 namespace Scripts.World
 {
-    public class ChunkContainer
+    public class ChunkContainer : IEnumerable<RegularChunk>
     {
-        private List<Chunk[,]> _chunks;
+        private List<RegularChunk[,]> _chunks;
         private int _mapLength;
         private int _mapWidth;
 
@@ -22,7 +23,7 @@ namespace Scripts.World
         {
             _mapLength = mapLength;
             _mapWidth = mapWidth;
-            _chunks = new List<Chunk[,]>();
+            _chunks = new List<RegularChunk[,]>();
         }
 
         public bool ContainsHeight(int height)
@@ -36,7 +37,7 @@ namespace Scripts.World
             return height - MinHeight < _chunks.Count && height - MinHeight >= 0;
         }
 
-        public Chunk[,] this[int height]
+        public RegularChunk[,] this[int height]
         {
             get
             {
@@ -50,7 +51,7 @@ namespace Scripts.World
             }
         }
 
-        public void InitializeStartingLevel(int height, Chunk[,] chunks)
+        public void InitializeStartingLevel(int height, RegularChunk[,] chunks)
         {
             _chunks.Add(chunks);
             MinHeight = height;
@@ -78,7 +79,7 @@ namespace Scripts.World
             }
         }
 
-        public void AddLevel(bool isUp, Chunk[,] chunks)
+        public void AddLevel(bool isUp, RegularChunk[,] chunks)
         {
 #if UNITY_EDITOR
             if (!IsInitialized)
@@ -100,6 +101,34 @@ namespace Scripts.World
             {
                 _chunks.Insert(0, chunks);
                 MinHeight -= 1;
+            }
+        }
+
+        public IEnumerator<RegularChunk> GetEnumerator()
+        {
+            for (int i = 0; i < _chunks.Count; i++)
+            {
+                for (int x = 0; x < _mapWidth; x++)
+                {
+                    for (int y = 0; y < _mapLength; y++)
+                    {
+                        yield return _chunks[i][x, y];
+                    }
+                }
+            }
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            for (int i = 0; i < _chunks.Count; i++)
+            {
+                for (int x = 0; x < _mapWidth; x++)
+                {
+                    for (int y = 0; y < _mapLength; y++)
+                    {
+                        yield return _chunks[i][x, y];
+                    }
+                }
             }
         }
     }

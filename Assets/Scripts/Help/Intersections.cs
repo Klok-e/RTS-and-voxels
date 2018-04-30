@@ -7,7 +7,7 @@ using UnityEngine;
 
 namespace Scripts.Help
 {
-    internal static class PointInsideCube
+    internal static class Intersections
     {
         public static bool IsInsideCube(Vector3 point, Vector3 cubePos, int cubeSize)
         {
@@ -20,6 +20,14 @@ namespace Scripts.Help
                 return true;
             }
             return false;
+        }
+
+        public static bool CubeVsCubeIntersection(Vector3 firstCenter, float firstHalfWidth, Vector3 secondCenter, float secondHalfWidth)
+        {
+            bool x = Mathf.Abs(firstCenter.x - secondCenter.x) <= (firstHalfWidth + secondHalfWidth);
+            bool y = Mathf.Abs(firstCenter.y - secondCenter.y) <= (firstHalfWidth + secondHalfWidth);
+            bool z = Mathf.Abs(firstCenter.z - secondCenter.z) <= (firstHalfWidth + secondHalfWidth);
+            return x && y && z;
         }
     }
 }

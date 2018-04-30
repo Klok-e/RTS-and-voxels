@@ -10,7 +10,6 @@ namespace Scripts.World
     public struct Voxel
     {
         public VoxelType type;
-        public BlittableBool isVisible;
     }
 
     public enum VoxelType : byte
@@ -29,11 +28,11 @@ namespace Scripts.World
     {
         public static Color32[] colors;
 
-        public static Color32 ToColor(this Voxel vox)
+        public static Color32 ToColor(this Voxel vox, BlittableBool isVisible)
         {
             try
             {
-                if (vox.isVisible == BlittableBool.False)
+                if (isVisible == BlittableBool.False)
                     return Color.black;
 
                 return colors[(byte)vox.type];

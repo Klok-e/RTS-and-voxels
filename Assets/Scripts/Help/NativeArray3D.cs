@@ -7,7 +7,7 @@ using Unity.Collections;
 
 namespace Scripts.Help
 {
-    public struct Array3DNative<T> : IDisposable
+    public struct NativeArray3D<T> : IDisposable
            where T : struct
     {
         private int _xMax;
@@ -16,12 +16,12 @@ namespace Scripts.Help
 
         private NativeArray<T> _arr;
 
-        public Array3DNative(int xMax, int yMax, int zMax, Allocator allocator)
+        public NativeArray3D(int xMax, int yMax, int zMax, Allocator allocator, NativeArrayOptions nativeArrayOptions = NativeArrayOptions.ClearMemory)
         {
             _xMax = xMax;
             _yMax = yMax;
             _zMax = zMax;
-            _arr = new NativeArray<T>(xMax * yMax * zMax, allocator);
+            _arr = new NativeArray<T>(xMax * yMax * zMax, allocator, nativeArrayOptions);
         }
 
         public void Dispose()

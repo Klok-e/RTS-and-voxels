@@ -13,7 +13,11 @@ namespace Scripts.World
 {
     public class VoxelWorld
     {
-        public const int _chunkSize = 32;
+        /// <summary>
+        /// Only uneven amount or else SetVoxel won't work correctly (at all)
+        /// </summary>
+        public const int _chunkSize = 33;
+
         public const float _blockSize = 0.5f;
 
         public static VoxelWorld Instance { get { return _instance ?? (_instance = new VoxelWorld()); } }
@@ -45,14 +49,13 @@ namespace Scripts.World
             _solidChunk = InitChunk(VoxelType.Solid);
 
             CreateStartingLevels(0, 2, 1);
-            _massJobThing.CompleteAll();
         }
 
         private RegularChunk InitChunk(VoxelType type)
         {
-            var ch = CreateChunkObj();
+            var ch = RegularChunk.CreateNew();
             ch.Deinitialize();
-            ch.IsCleanable = false;
+            ch.IsPlaceholder = false;
 
             var vx = ch.Voxels;
             for (int i = 0; i < _chunkSize * _chunkSize * _chunkSize; i++)
@@ -112,22 +115,6 @@ namespace Scripts.World
             return _chunks[chunkPos.y][chunkPos.x, chunkPos.z];
         }
 
-        public RegularChunk[] GetChunks(Vector3Int blockPos, int radius)
-        {
-            var chPos = ((Vector3)blockPos / _chunkSize).ToInt();
-            var chRadius = Mathf.CeilToInt(radius / _chunkSize);
-
-            var chs = new List<RegularChunk>();
-            foreach (var item in _chunks)
-            {
-                if ((item.Pos - chPos).sqrMagnitude <= chRadius * chRadius + 1)
-                {
-                    chs.Add(item);
-                }
-            }
-            return chs.ToArray();
-        }
-
         public Voxel GetVoxel(Vector3Int chunkPos, Vector3Int blockPos)
         {
             return GetChunk(chunkPos).Voxels[blockPos.x, blockPos.y, blockPos.z];
@@ -135,25 +122,37 @@ namespace Scripts.World
 
         private void SetDirty(RegularChunk ch)
         {
-            if (ch.IsCleanable && !Dirty.Contains(ch))
+            if (ch.IsPlaceholder && !Dirty.Contains(ch))
                 Dirty.Enqueue(ch);
         }
 
         #region Voxel editing
 
-        public void SetVoxel(Vector3Int chunkPos, Vector3Int blockPos, VoxelType newVoxelType)
+        /// <summary>
+        ///Set voxel at block coords (posOfCollision/VoxelVorld._blockSize) (not physics world coords)
+        /// </summary>
+        /// <param name="blockWorldPos">In block coordinates</param>
+        /// <param name="newVoxelType"></param>
+        public void SetVoxel(Vector3 blockWorldPos, VoxelType newVoxelType)
         {
+            var chunkPos = ((blockWorldPos - (Vector3.one * (_chunkSize / 2))) / _chunkSize).ToInt();
+            var blockPos = (blockWorldPos - chunkPos * _chunkSize).ToInt();
+
             if (chunkPos.x >= _mapMaxX && chunkPos.z >= _mapMaxZ && chunkPos.x < 0 && chunkPos.z < 0)
             {
                 Debug.LogError($"Wrong coordinate {chunkPos} not in range X:({0}; {_mapMaxX}) Z:({0}; {_mapMaxZ})");
+                return;
             }
 
             var ch = GetChunk(chunkPos);
-            var voxels = ch.Voxels;
-            voxels[blockPos.x, blockPos.y, blockPos.z] = new Voxel()
+            if (ch.IsPlaceholder)
             {
-                type = newVoxelType,
-            };
+                var voxels = ch.Voxels;
+                voxels[blockPos.x, blockPos.y, blockPos.z] = new Voxel()
+                {
+                    type = newVoxelType,
+                };
+            }
 
             if (blockPos.y == (_chunkSize - 1))
             {
@@ -191,37 +190,27 @@ namespace Scripts.World
             SetDirty(ch);
         }
 
+        /// <summary>
+        /// Insert a sphere in a block coordinate (posOfCollision/VoxelVorld._blockSize)
+        /// </summary>
+        /// <param name="sphereWorldPos"></param>
+        /// <param name="radiusInBlocks"></param>
+        /// <param name="newVoxelType"></param>
         public void InsertSphere(Vector3 sphereWorldPos, int radiusInBlocks, VoxelType newVoxelType)
         {
-            sphereWorldPos /= _blockSize;//convert to block pos
-
-            var sphereBlockWorldPos = sphereWorldPos.ToInt();
-
-            //var sphereChunkPos = sphereWorldPos / _chunkSize;
-            //var radiusInChunks = radiusInBlocks / _chunkSize;
-            var affectedChunks = GetChunks(sphereBlockWorldPos, radiusInBlocks);
-            foreach (var ch in affectedChunks)
+            for (int x = -radiusInBlocks; x < radiusInBlocks; x++)
             {
-                //Debug.Log($"sphereChunkPos: {sphereChunkPos}; sphereBlockPos: {sphereBlockWorldPos}");
-                var vox = ch.Voxels;
-                for (int x = 0; x < _chunkSize; x++)
+                for (int y = -radiusInBlocks; y < radiusInBlocks; y++)
                 {
-                    for (int y = 0; y < _chunkSize; y++)
+                    for (int z = -radiusInBlocks; z < radiusInBlocks; z++)
                     {
-                        for (int z = 0; z < _chunkSize; z++)
+                        var pos = new Vector3(x, y, z);
+                        if (pos.sqrMagnitude <= radiusInBlocks * radiusInBlocks)
                         {
-                            var offset = (new Vector3Int(x, y, z) + ch.Pos * _chunkSize) - sphereBlockWorldPos;
-                            if (offset.sqrMagnitude <= radiusInBlocks * radiusInBlocks)
-                            {
-                                vox[x, y, z] = new Voxel()
-                                {
-                                    type = newVoxelType
-                                };
-                            }
+                            SetVoxel(sphereWorldPos + pos, newVoxelType);
                         }
                     }
                 }
-                SetDirty(ch);
             }
         }
 
@@ -229,27 +218,32 @@ namespace Scripts.World
 
         #region Level generation
 
+        public void GenerateLevel(bool isUp)
+        {
+            _chunks.AddLevel(isUp, GenerateTerrainLevel(isUp, false));
+        }
+
         private void CreateStartingLevels(int startingHeight, int up, int down)
         {
-            _chunks.InitializeStartingLevel(startingHeight, GenerateLevel(true, true));
+            _chunks.InitializeStartingLevel(startingHeight, GenerateTerrainLevel(true, true));
             while (true)
             {
                 if (down > 0)
                 {
                     down -= 1;
-                    _chunks.AddLevel(false, GenerateLevel(false, false));
+                    _chunks.AddLevel(false, GenerateTerrainLevel(false, false));
                 }
                 else if (up > 0)
                 {
                     up -= 1;
-                    _chunks.AddLevel(true, GenerateLevel(true, false));
+                    _chunks.AddLevel(true, GenerateTerrainLevel(true, false));
                 }
                 else
                     break;
             }
         }
 
-        private RegularChunk[,] GenerateLevel(bool isUp, bool isFirstLevel)
+        private RegularChunk[,] GenerateTerrainLevel(bool isUp, bool isFirstLevel)
         {
             int height = isUp ? _chunks.MaxHeight + 1 : _chunks.MinHeight - 1;
             if (isFirstLevel)
@@ -259,7 +253,7 @@ namespace Scripts.World
             {
                 for (int x = 0; x < _mapMaxX; x++)
                 {
-                    var chunk = CreateChunkObj();
+                    var chunk = RegularChunk.CreateNew();
                     chunk.Initialize(new Vector3Int(x, height, z));
 
                     _massJobThing.AddHandle(new GenerateChunkTerrainJob()
@@ -271,6 +265,7 @@ namespace Scripts.World
                     level[x, z] = chunk;
                 }
             }
+            _massJobThing.CompleteAll();
             return level;
         }
 
@@ -296,21 +291,6 @@ namespace Scripts.World
                     &&
                     adjacentChunkPos.x < mapMaxX && adjacentChunkPos.z < mapMaxZ) ? false : true;
             }
-        }
-
-        private RegularChunk CreateChunkObj()
-        {
-            RegularChunk chunkObj;
-            var go = new GameObject("Chunk");
-            go.transform.parent = _chunkParent;
-
-            go.AddComponent<MeshFilter>();
-            go.AddComponent<MeshRenderer>();
-            go.AddComponent<MeshCollider>();
-
-            chunkObj = go.AddComponent<RegularChunk>();
-            chunkObj.GetComponent<Renderer>().material = RegularChunk._material;
-            return chunkObj;
         }
 
         #region Jobs

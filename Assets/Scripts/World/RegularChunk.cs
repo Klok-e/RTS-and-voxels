@@ -14,6 +14,7 @@ namespace Scripts.World
     public class RegularChunk : MonoBehaviour
     {
         public static Material _material;
+        public static Transform _chunkParent;
 
         public Vector3Int Pos { get; private set; }
 
@@ -26,7 +27,7 @@ namespace Scripts.World
         /// <summary>
         /// To mark border chunks
         /// </summary>
-        public bool IsCleanable { get; set; }
+        public bool IsPlaceholder { get; set; }
 
         public NativeMeshData MeshData { get; private set; }
 
@@ -36,7 +37,7 @@ namespace Scripts.World
 
         public void Initialize(Vector3Int pos)
         {
-            IsCleanable = true;
+            IsPlaceholder = true;
             Pos = pos;
 
             transform.position = (Vector3)Pos * VoxelWorld._chunkSize * VoxelWorld._blockSize;
@@ -91,6 +92,21 @@ namespace Scripts.World
             VoxelsVisibleFaces.Dispose();
             Voxels.Dispose();
             MeshData.Dispose();
+        }
+
+        public static RegularChunk CreateNew()
+        {
+            RegularChunk chunkObj;
+            var go = new GameObject("Chunk");
+            go.transform.parent = _chunkParent;
+
+            go.AddComponent<MeshFilter>();
+            go.AddComponent<MeshRenderer>();
+            go.AddComponent<MeshCollider>();
+
+            chunkObj = go.AddComponent<RegularChunk>();
+            chunkObj.GetComponent<Renderer>().material = RegularChunk._material;
+            return chunkObj;
         }
     }
 }

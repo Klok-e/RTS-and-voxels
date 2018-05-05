@@ -19,8 +19,6 @@ namespace Scripts.World
     {
         [SerializeField] private int _mapLength, _mapWidth;
 
-        [SerializeField] private float _blockSize;
-
         [SerializeField] private Material _material;
 
         [SerializeField] private Color32[] _colors;
@@ -37,6 +35,7 @@ namespace Scripts.World
 
             VoxelExtensions.colors = _colors;
             RegularChunk._material = _material;
+            RegularChunk._chunkParent = transform;
 
             UnityThread.InitUnityThread();
             VoxelWorld.Instance.Initialize(_mapLength, _mapWidth, transform);
@@ -72,6 +71,11 @@ namespace Scripts.World
 
         private void OnApplicationQuit()
         {
+        }
+
+        public void GenerateLevel(bool isUp)
+        {
+            VoxelWorld.Instance.GenerateLevel(isUp);
         }
     }
 }

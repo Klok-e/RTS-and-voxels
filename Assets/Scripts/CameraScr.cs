@@ -8,17 +8,42 @@ namespace MarchingCubesProject
 {
     public class CameraScr : MonoBehaviour
     {
-        public float rotationSpeed = 1f;
-        public float moveSpeed = 3.5f;
+        [SerializeField]
+        private float rotationSpeed = 1f;
+
+        [SerializeField]
+        private float moveSpeed = 3.5f;
+
         private float X;
         private float Y;
 
         [SerializeField]
         private bool _isBlockInsertion;
 
+        [SerializeField]
+        private bool _isClearing;
+
+        [SerializeField]
+        private int _sphereSize = 3;
+
         private void Start()
         {
             RenderSettings.fog = false;
+        }
+
+        public void SetClearing(bool set)
+        {
+            _isClearing = set;
+        }
+
+        public void SetBlockInsertion(bool set)
+        {
+            _isBlockInsertion = set;
+        }
+
+        public void SetSphereSize(float size)
+        {
+            _sphereSize = (int)size;
         }
 
         private void Update()
@@ -36,17 +61,11 @@ namespace MarchingCubesProject
                         var pos = hit.point + (hit.normal * -VoxelWorld._blockSize / 2);
                         if (_isBlockInsertion)
                         {
-                            //pos /= VoxelWorld._chunkSize;
-
-                            pos -= (Vector3)chunk.Pos * VoxelWorld._chunkSize * VoxelWorld._blockSize;//relative to chunk
-                            pos /= VoxelWorld._blockSize;//to block coords
-
-                            var posInt = pos.ToInt();
-                            VoxelWorld.Instance.SetVoxel(chunk.Pos, posInt, VoxelType.Air);
+                            VoxelWorld.Instance.SetVoxel(pos / VoxelWorld._blockSize, _isClearing ? VoxelType.Air : VoxelType.Solid);
                         }
                         else
                         {
-                            VoxelWorld.Instance.InsertSphere(pos, 3, VoxelType.Air);
+                            VoxelWorld.Instance.InsertSphere(pos / VoxelWorld._blockSize, _sphereSize, _isClearing ? VoxelType.Air : VoxelType.Solid);
                         }
                     }
                 }

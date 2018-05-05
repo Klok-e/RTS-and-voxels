@@ -8,9 +8,12 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Unity.Collections;
+using UnityEngine.AI;
 
 namespace Scripts.World
 {
+    [RequireComponent(typeof(MeshFilter), typeof(MeshCollider))]
+    [RequireComponent(typeof(MeshRenderer))]
     public class RegularChunk : MonoBehaviour
     {
         public static Material _material;
@@ -24,29 +27,21 @@ namespace Scripts.World
 
         public bool IsInitialized { get; private set; }
 
-        /// <summary>
-        /// To mark border chunks
-        /// </summary>
-        public bool IsPlaceholder { get; set; }
-
         public NativeMeshData MeshData { get; private set; }
 
-        private Mesh mesh;
-        private MeshFilter filter;
-        private MeshCollider coll;
+        private Mesh _mesh;
+        private MeshRenderer _renderer;
+        private MeshFilter _filter;
+        private MeshCollider _coll;
 
         public void Initialize(Vector3Int pos)
         {
-            IsPlaceholder = true;
             Pos = pos;
 
             transform.position = (Vector3)Pos * VoxelWorld._chunkSize * VoxelWorld._blockSize;
             gameObject.SetActive(true);
             name = $"Chunk Active at {pos}";
             IsInitialized = true;
-
-            mesh = new Mesh();
-            mesh.MarkDynamic();
         }
 
         public void Deinitialize()
@@ -58,29 +53,27 @@ namespace Scripts.World
 
         public void ApplyMeshData()
         {
-            if (filter == null)
-            {
-                filter = GetComponent<MeshFilter>();
-                filter.sharedMesh = mesh;
-            }
-            if (coll == null)
-            {
-                coll = GetComponent<MeshCollider>();
-                coll.sharedMesh = mesh;
-            }
+            _mesh.Clear();
+            _mesh.vertices = MeshData._vertices.ToArray();
+            _mesh.SetTriangles(MeshData._triangles.ToArray(), 0);
+            _mesh.normals = MeshData._normals.ToArray();
+            _mesh.colors32 = MeshData._colors.ToArray();
+            MeshData.Clear();
 
-            mesh.Clear();
-            mesh.vertices = MeshData._vertices.ToArray();
-            mesh.SetTriangles(MeshData._triangles.ToArray(), 0);
-            mesh.normals = MeshData._normals.ToArray();
-            mesh.colors32 = MeshData._colors.ToArray();
-
-            coll.sharedMesh = mesh;
+            _filter.sharedMesh = _mesh;
+            _coll.sharedMesh = _mesh;
         }
 
         private void Awake()
         {
-            MeshData = new NativeMeshData(10000, Allocator.Persistent);
+            _filter = GetComponent<MeshFilter>();
+            _renderer = GetComponent<MeshRenderer>();
+            _coll = GetComponent<MeshCollider>();
+            _mesh = new Mesh();
+
+            _renderer.material = _material;
+
+            MeshData = new NativeMeshData(1000, Allocator.Persistent);
             VoxelsIsVisible = new NativeArray3D<BlittableBool>(VoxelWorld._chunkSize, VoxelWorld._chunkSize, VoxelWorld._chunkSize, Allocator.Persistent);
             VoxelsVisibleFaces = new NativeArray3D<DirectionsHelper.BlockDirectionFlag>(VoxelWorld._chunkSize, VoxelWorld._chunkSize, VoxelWorld._chunkSize, Allocator.Persistent);
             Voxels = new NativeArray3D<Voxel>(VoxelWorld._chunkSize, VoxelWorld._chunkSize, VoxelWorld._chunkSize, Allocator.Persistent);
@@ -105,7 +98,7 @@ namespace Scripts.World
             go.AddComponent<MeshCollider>();
 
             chunkObj = go.AddComponent<RegularChunk>();
-            chunkObj.GetComponent<Renderer>().material = RegularChunk._material;
+
             return chunkObj;
         }
     }

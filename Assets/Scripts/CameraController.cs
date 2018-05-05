@@ -1,4 +1,5 @@
-﻿using Scripts.Help;
+﻿using Scripts;
+using Scripts.Help;
 using Scripts.World;
 using System.Collections.Generic;
 using Unity.Jobs;
@@ -6,7 +7,7 @@ using UnityEngine;
 
 namespace MarchingCubesProject
 {
-    public class CameraScr : MonoBehaviour
+    public class CameraController : MonoBehaviour
     {
         [SerializeField]
         private float rotationSpeed = 1f;
@@ -58,7 +59,7 @@ namespace MarchingCubesProject
                     var chunk = hit.collider.GetComponent<RegularChunk>();
                     if (chunk)
                     {
-                        var pos = hit.point + (hit.normal * -VoxelWorld._blockSize / 2);
+                        var pos = hit.point + (hit.normal * (VoxelWorld._blockSize * (_isClearing ? -1 : 1)) / 2);
                         if (_isBlockInsertion)
                         {
                             VoxelWorld.Instance.SetVoxel(pos / VoxelWorld._blockSize, _isClearing ? VoxelType.Air : VoxelType.Solid);

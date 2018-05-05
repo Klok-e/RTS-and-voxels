@@ -55,7 +55,6 @@ namespace Scripts.World
         {
             var ch = RegularChunk.CreateNew();
             ch.Deinitialize();
-            ch.IsPlaceholder = false;
 
             var vx = ch.Voxels;
             for (int i = 0; i < _chunkSize * _chunkSize * _chunkSize; i++)
@@ -122,7 +121,7 @@ namespace Scripts.World
 
         private void SetDirty(RegularChunk ch)
         {
-            if (ch.IsPlaceholder && !Dirty.Contains(ch))
+            if (ch.IsInitialized && !Dirty.Contains(ch))
                 Dirty.Enqueue(ch);
         }
 
@@ -138,56 +137,50 @@ namespace Scripts.World
             var chunkPos = ((blockWorldPos - (Vector3.one * (_chunkSize / 2))) / _chunkSize).ToInt();
             var blockPos = (blockWorldPos - chunkPos * _chunkSize).ToInt();
 
-            if (chunkPos.x >= _mapMaxX && chunkPos.z >= _mapMaxZ && chunkPos.x < 0 && chunkPos.z < 0)
-            {
-                Debug.LogError($"Wrong coordinate {chunkPos} not in range X:({0}; {_mapMaxX}) Z:({0}; {_mapMaxZ})");
-                return;
-            }
-
             var ch = GetChunk(chunkPos);
-            if (ch.IsPlaceholder)
+            if (ch.IsInitialized)
             {
                 var voxels = ch.Voxels;
                 voxels[blockPos.x, blockPos.y, blockPos.z] = new Voxel()
                 {
                     type = newVoxelType,
                 };
-            }
 
-            if (blockPos.y == (_chunkSize - 1))
-            {
-                var v = GetChunk(chunkPos + DirectionsHelper.BlockDirectionFlag.Up.DirectionToVec());
-                SetDirty(v);
-            }
-            else if (blockPos.y == 0)
-            {
-                var v = GetChunk(chunkPos + DirectionsHelper.BlockDirectionFlag.Down.DirectionToVec());
-                SetDirty(v);
-            }
+                if (blockPos.y == (_chunkSize - 1))
+                {
+                    var v = GetChunk(chunkPos + DirectionsHelper.BlockDirectionFlag.Up.DirectionToVec());
+                    SetDirty(v);
+                }
+                else if (blockPos.y == 0)
+                {
+                    var v = GetChunk(chunkPos + DirectionsHelper.BlockDirectionFlag.Down.DirectionToVec());
+                    SetDirty(v);
+                }
 
-            if (blockPos.x == (_chunkSize - 1))
-            {
-                var v = GetChunk(chunkPos + DirectionsHelper.BlockDirectionFlag.Right.DirectionToVec());
-                SetDirty(v);
-            }
-            else if (blockPos.x == 0)
-            {
-                var v = GetChunk(chunkPos + DirectionsHelper.BlockDirectionFlag.Left.DirectionToVec());
-                SetDirty(v);
-            }
+                if (blockPos.x == (_chunkSize - 1))
+                {
+                    var v = GetChunk(chunkPos + DirectionsHelper.BlockDirectionFlag.Right.DirectionToVec());
+                    SetDirty(v);
+                }
+                else if (blockPos.x == 0)
+                {
+                    var v = GetChunk(chunkPos + DirectionsHelper.BlockDirectionFlag.Left.DirectionToVec());
+                    SetDirty(v);
+                }
 
-            if (blockPos.z == (_chunkSize - 1))
-            {
-                var v = GetChunk(chunkPos + DirectionsHelper.BlockDirectionFlag.Front.DirectionToVec());
-                SetDirty(v);
-            }
-            else if (blockPos.z == 0)
-            {
-                var v = GetChunk(chunkPos + DirectionsHelper.BlockDirectionFlag.Back.DirectionToVec());
-                SetDirty(v);
-            }
+                if (blockPos.z == (_chunkSize - 1))
+                {
+                    var v = GetChunk(chunkPos + DirectionsHelper.BlockDirectionFlag.Front.DirectionToVec());
+                    SetDirty(v);
+                }
+                else if (blockPos.z == 0)
+                {
+                    var v = GetChunk(chunkPos + DirectionsHelper.BlockDirectionFlag.Back.DirectionToVec());
+                    SetDirty(v);
+                }
 
-            SetDirty(ch);
+                SetDirty(ch);
+            }
         }
 
         /// <summary>
@@ -471,7 +464,6 @@ namespace Scripts.World
 
             public void Execute()
             {
-                meshData.Clear();
                 for (int x = 0; x < VoxelWorld._chunkSize; x++)
                 {
                     for (int y = 0; y < VoxelWorld._chunkSize; y++)

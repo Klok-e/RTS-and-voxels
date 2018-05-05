@@ -12,6 +12,7 @@ using Plugins.Helpers;
 using Unity.Jobs;
 using ProceduralNoiseProject;
 using Unity.Collections;
+using UnityEngine.AI;
 
 namespace Scripts.World
 {

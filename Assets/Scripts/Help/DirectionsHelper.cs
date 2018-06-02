@@ -71,13 +71,23 @@ namespace Scripts.Help
         public static Vector3Int DirectionToVec(this BlockDirectionFlag en)
         {
             //return DirectionsVec[Mathf.RoundToInt((Mathf.Log10((byte)en) / Mathf.Log10(2)))];
-            if (en == BlockDirectionFlag.Up) return new Vector3Int(0, 1, 0);
-            else if (en == BlockDirectionFlag.Down) return new Vector3Int(0, -1, 0);
-            else if (en == BlockDirectionFlag.Left) return new Vector3Int(-1, 0, 0);
-            else if (en == BlockDirectionFlag.Right) return new Vector3Int(1, 0, 0);
-            else if (en == BlockDirectionFlag.Back) return new Vector3Int(0, 0, -1);
-            else if (en == BlockDirectionFlag.Front) return new Vector3Int(0, 0, 1);
+            if (en == BlockDirectionFlag.Up) return VectorDirections.Up;
+            else if (en == BlockDirectionFlag.Down) return VectorDirections.Down;
+            else if (en == BlockDirectionFlag.Left) return VectorDirections.Left;
+            else if (en == BlockDirectionFlag.Right) return VectorDirections.Right;
+            else if (en == BlockDirectionFlag.Back) return VectorDirections.Back;
+            else if (en == BlockDirectionFlag.Front) return VectorDirections.Front;
             else return new Vector3Int(0, 0, 0);
+        }
+
+        public static class VectorDirections
+        {
+            public static readonly Vector3Int Up = new Vector3Int(0, 1, 0);
+            public static readonly Vector3Int Down = new Vector3Int(0, -1, 0);
+            public static readonly Vector3Int Left = new Vector3Int(-1, 0, 0);
+            public static readonly Vector3Int Right = new Vector3Int(1, 0, 0);
+            public static readonly Vector3Int Back = new Vector3Int(0, 0, -1);
+            public static readonly Vector3Int Front = new Vector3Int(0, 0, 1);
         }
 
         public static Vector3Int ToInt(this Vector3 vec)

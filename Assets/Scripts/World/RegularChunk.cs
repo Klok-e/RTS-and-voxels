@@ -73,7 +73,7 @@ namespace Scripts.World
 
             _renderer.material = _material;
 
-            MeshData = new NativeMeshData(1000, Allocator.Persistent);
+            MeshData = new NativeMeshData(1, Allocator.Persistent);
             VoxelsIsVisible = new NativeArray3D<BlittableBool>(VoxelWorld._chunkSize, VoxelWorld._chunkSize, VoxelWorld._chunkSize, Allocator.Persistent);
             VoxelsVisibleFaces = new NativeArray3D<DirectionsHelper.BlockDirectionFlag>(VoxelWorld._chunkSize, VoxelWorld._chunkSize, VoxelWorld._chunkSize, Allocator.Persistent);
             Voxels = new NativeArray3D<Voxel>(VoxelWorld._chunkSize, VoxelWorld._chunkSize, VoxelWorld._chunkSize, Allocator.Persistent);

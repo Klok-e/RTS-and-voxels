@@ -1,5 +1,6 @@
 ﻿using ProceduralNoiseProject;
 using Scripts.Help;
+using Scripts.World.Jobs;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -69,33 +70,37 @@ namespace Scripts.World
 
         public JobHandle CleanChunk(RegularChunk chunk, JobHandle dependency = default(JobHandle))
         {
-            var hndl = new RebuildChunkBlockVisibleFacesJob()
+            var jb0 = new RebuildChunkBlockVisibleFacesJob()
             {
                 chunkPos = chunk.Pos,
                 facesVisibleArr = chunk.VoxelsVisibleFaces,
-                voxels = GetChunk(chunk.Pos).Voxels,
-                voxelsBack = GetChunk(chunk.Pos + DirectionsHelper.BlockDirectionFlag.Back.DirectionToVec()).Voxels,
-                voxelsDown = GetChunk(chunk.Pos + DirectionsHelper.BlockDirectionFlag.Down.DirectionToVec()).Voxels,
-                voxelsFront = GetChunk(chunk.Pos + DirectionsHelper.BlockDirectionFlag.Front.DirectionToVec()).Voxels,
-                voxelsLeft = GetChunk(chunk.Pos + DirectionsHelper.BlockDirectionFlag.Left.DirectionToVec()).Voxels,
-                voxelsRight = GetChunk(chunk.Pos + DirectionsHelper.BlockDirectionFlag.Right.DirectionToVec()).Voxels,
-                voxelsUp = GetChunk(chunk.Pos + DirectionsHelper.BlockDirectionFlag.Up.DirectionToVec()).Voxels,
-            }.Schedule(_chunkSize * _chunkSize * _chunkSize, 1024, dependency);
-            hndl = new RebuildVisibilityOfVoxelsJob()
+                voxels = new NativeArray3D<Voxel>(GetChunk(chunk.Pos).Voxels, Allocator.TempJob),
+                voxelsFront = new NativeArray3D<Voxel>(GetChunk(chunk.Pos + DirectionsHelper.VectorDirections.Front).Voxels, Allocator.TempJob),
+                voxelsBack = new NativeArray3D<Voxel>(GetChunk(chunk.Pos + DirectionsHelper.VectorDirections.Back).Voxels, Allocator.TempJob),
+                voxelsUp = new NativeArray3D<Voxel>(GetChunk(chunk.Pos + DirectionsHelper.VectorDirections.Up).Voxels, Allocator.TempJob),
+                voxelsDown = new NativeArray3D<Voxel>(GetChunk(chunk.Pos + DirectionsHelper.VectorDirections.Down).Voxels, Allocator.TempJob),
+                voxelsLeft = new NativeArray3D<Voxel>(GetChunk(chunk.Pos + DirectionsHelper.VectorDirections.Left).Voxels, Allocator.TempJob),
+                voxelsRight = new NativeArray3D<Voxel>(GetChunk(chunk.Pos + DirectionsHelper.VectorDirections.Right).Voxels, Allocator.TempJob),
+            };
+            var jb1 = new RebuildVisibilityOfVoxelsJob()
             {
                 chunkPos = chunk.Pos,
-                facesVisibleArr = chunk.VoxelsVisibleFaces,
+                facesVisibleArr = jb0.facesVisibleArr,
                 visibilityArrOfVoxelsToRebuild = chunk.VoxelsIsVisible,
                 mapMaxX = _mapMaxX,
                 mapMaxZ = _mapMaxZ,
-            }.Schedule(_chunkSize * _chunkSize * _chunkSize, 1024, hndl);
-            hndl = new ConstructMeshJob()
+            };
+            var jb2 = new ConstructMeshJob()
             {
                 meshData = chunk.MeshData,
                 voxels = chunk.Voxels,
                 voxelsIsVisible = chunk.VoxelsIsVisible,
                 voxelsVisibleFaces = chunk.VoxelsVisibleFaces,
-            }.Schedule(hndl);
+            };
+
+            var hndl = jb0.Schedule(_chunkSize * _chunkSize * _chunkSize, 1024, dependency);
+            hndl = jb1.Schedule(_chunkSize * _chunkSize * _chunkSize, 1024, hndl);
+            hndl = jb2.Schedule(hndl);
             JobHandle.ScheduleBatchedJobs();
             return hndl;
         }
@@ -252,291 +257,18 @@ namespace Scripts.World
                     _massJobThing.AddHandle(new GenerateChunkTerrainJob()
                     {
                         offset = new Vector3Int(x, height, z),
-                        voxels = chunk.Voxels
+                        chunkSize = _chunkSize,
+                        voxels = chunk.Voxels,
                     }.Schedule());
                     Dirty.Enqueue(chunk);
                     level[x, z] = chunk;
                 }
             }
+
             _massJobThing.CompleteAll();
             return level;
         }
 
         #endregion Level generation
-
-        private static bool DoesVoxelExceedBordersOfMapInDirection(Vector3Int chunkPos, Vector3Int voxelInd, DirectionsHelper.BlockDirectionFlag dirToLook, int mapMaxX, int mapMaxZ)
-        {
-            int x = voxelInd.x,
-                y = voxelInd.y,
-                z = voxelInd.z;
-
-            var vec = dirToLook.DirectionToVec();
-            if (x + vec.x < VoxelWorld._chunkSize && y + vec.y < VoxelWorld._chunkSize && z + vec.z < VoxelWorld._chunkSize
-                &&
-                x + vec.x >= 0 && y + vec.y >= 0 && z + vec.z >= 0)
-            {
-                return false;
-            }
-            else
-            {
-                var adjacentChunkPos = chunkPos + vec;
-                return (adjacentChunkPos.x >= 0 && adjacentChunkPos.z >= 0
-                    &&
-                    adjacentChunkPos.x < mapMaxX && adjacentChunkPos.z < mapMaxZ) ? false : true;
-            }
-        }
-
-        #region Jobs
-
-        private struct GenerateChunkTerrainJob : IJob
-        {
-            [WriteOnly]
-            public NativeArray3D<Voxel> voxels;
-
-            [ReadOnly]
-            public Vector3Int offset;
-
-            public void Execute()
-            {
-                var fractal = new FractalNoise(new PerlinNoise(1337, 2.0f, 1.3f), 2, 0.2f, 1.5f)
-                {
-                    Offset = offset
-                };
-
-                for (int x = 0; x < _chunkSize; x++)
-                {
-                    for (int y = 0; y < _chunkSize; y++)
-                    {
-                        for (int z = 0; z < _chunkSize; z++)
-                        {
-                            float fx = x / (_chunkSize - 1f);
-                            float fz = z / (_chunkSize - 1f);
-                            float fy = y / (_chunkSize - 1f);
-                            var fill = fractal.Sample3D(fx, fy, fz);
-
-                            voxels[x, y, z] = new Voxel()
-                            {
-                                type = (fill * _chunkSize > y + (offset.y * _chunkSize)) ? VoxelType.Solid : VoxelType.Air,
-                            };
-                        }
-                    }
-                }
-            }
-        }
-
-        private struct RebuildChunkBlockVisibleFacesJob : IJobParallelFor
-        {
-            [WriteOnly]
-            public NativeArray3D<DirectionsHelper.BlockDirectionFlag> facesVisibleArr;
-
-            [ReadOnly]
-            public Vector3Int chunkPos;
-
-            [ReadOnly]
-            public NativeArray3D<Voxel> voxels,
-                voxelsUp, voxelsDown, voxelsLeft, voxelsRight, voxelsBack, voxelsFront;
-
-            public void Execute(int currentIndex)
-            {
-                int x, y, z;
-                facesVisibleArr.At(currentIndex, out x, out y, out z);
-
-                DirectionsHelper.BlockDirectionFlag facesVisible = DirectionsHelper.BlockDirectionFlag.None;
-                for (byte i = 0; i < 6; i++)
-                {
-                    var dir = (DirectionsHelper.BlockDirectionFlag)(1 << i);
-                    Vector3Int vec = dir.DirectionToVec();
-
-                    if (x + vec.x < VoxelWorld._chunkSize && y + vec.y < VoxelWorld._chunkSize && z + vec.z < VoxelWorld._chunkSize
-                        &&
-                        x + vec.x >= 0 && y + vec.y >= 0 && z + vec.z >= 0)
-                    {
-                        if (voxels[x + vec.x, y + vec.y, z + vec.z].type.IsTransparent())
-                            facesVisible |= dir;
-                    }
-                    else
-                    {
-                        var blockInd = (new Vector3Int(x, y, z) + vec);
-
-                        if (blockInd.x >= VoxelWorld._chunkSize) blockInd.x = 0;
-                        else if (blockInd.x < 0) blockInd.x = VoxelWorld._chunkSize - 1;
-
-                        if (blockInd.y >= VoxelWorld._chunkSize) blockInd.y = 0;
-                        else if (blockInd.y < 0) blockInd.y = VoxelWorld._chunkSize - 1;
-
-                        if (blockInd.z >= VoxelWorld._chunkSize) blockInd.z = 0;
-                        else if (blockInd.z < 0) blockInd.z = VoxelWorld._chunkSize - 1;
-
-                        NativeArray3D<Voxel> ch;
-                        switch (dir)
-                        {
-                            case DirectionsHelper.BlockDirectionFlag.None: ch = new NativeArray3D<Voxel>(); break;
-                            case DirectionsHelper.BlockDirectionFlag.Up: ch = voxelsUp; break;
-                            case DirectionsHelper.BlockDirectionFlag.Down: ch = voxelsDown; break;
-                            case DirectionsHelper.BlockDirectionFlag.Left: ch = voxelsLeft; break;
-                            case DirectionsHelper.BlockDirectionFlag.Right: ch = voxelsRight; break;
-                            case DirectionsHelper.BlockDirectionFlag.Back: ch = voxelsBack; break;
-                            case DirectionsHelper.BlockDirectionFlag.Front: ch = voxelsFront; break;
-                            default: ch = new NativeArray3D<Voxel>(); break;
-                        }
-
-                        if ((ch[blockInd.x, blockInd.y, blockInd.z]).type.IsTransparent())
-                            facesVisible |= dir;
-                    }
-                }
-                facesVisibleArr[x, y, z] = facesVisible;
-            }
-        }
-
-        private struct RebuildVisibilityOfVoxelsJob : IJobParallelFor
-        {
-            [WriteOnly]
-            public NativeArray3D<BlittableBool> visibilityArrOfVoxelsToRebuild;
-
-            [ReadOnly]
-            public Vector3Int chunkPos;
-
-            [ReadOnly]
-            public int mapMaxX, mapMaxZ;
-
-            [ReadOnly]
-            public NativeArray3D<DirectionsHelper.BlockDirectionFlag> facesVisibleArr;
-
-            public void Execute(int index)
-            {
-                var facesVisible = facesVisibleArr[index];
-                int x, y, z;
-                visibilityArrOfVoxelsToRebuild.At(index, out x, out y, out z);
-                Vector3Int voxelIndex = new Vector3Int(x, y, z);
-
-                BlittableBool isVisible = BlittableBool.False;
-                if ((facesVisible & DirectionsHelper.BlockDirectionFlag.Up) != 0
-                    ||
-                    (facesVisible & DirectionsHelper.BlockDirectionFlag.Down) != 0)
-                {
-                    isVisible = BlittableBool.True;
-                }
-                else if ((facesVisible & (DirectionsHelper.BlockDirectionFlag.Right)) != 0
-                    ||
-                    (facesVisible & (DirectionsHelper.BlockDirectionFlag.Left)) != 0
-                    ||
-                    (facesVisible & (DirectionsHelper.BlockDirectionFlag.Front)) != 0
-                    ||
-                    (facesVisible & (DirectionsHelper.BlockDirectionFlag.Back)) != 0)//if any of these flags is set
-                {
-                    //if any of the voxel's visible faces faces voxel that is not out of borders then block must be visible
-                    if (((facesVisible & (DirectionsHelper.BlockDirectionFlag.Right)) != 0
-                        &&
-                        !DoesVoxelExceedBordersOfMapInDirection(chunkPos, voxelIndex, DirectionsHelper.BlockDirectionFlag.Right, mapMaxX, mapMaxZ))
-                        ||
-                        ((facesVisible & (DirectionsHelper.BlockDirectionFlag.Left)) != 0
-                        &&
-                        !DoesVoxelExceedBordersOfMapInDirection(chunkPos, voxelIndex, DirectionsHelper.BlockDirectionFlag.Left, mapMaxX, mapMaxZ))
-                        ||
-                        ((facesVisible & (DirectionsHelper.BlockDirectionFlag.Front)) != 0
-                        &&
-                        !DoesVoxelExceedBordersOfMapInDirection(chunkPos, voxelIndex, DirectionsHelper.BlockDirectionFlag.Front, mapMaxX, mapMaxZ))
-                        ||
-                        ((facesVisible & (DirectionsHelper.BlockDirectionFlag.Back)) != 0
-                        &&
-                        !DoesVoxelExceedBordersOfMapInDirection(chunkPos, voxelIndex, DirectionsHelper.BlockDirectionFlag.Back, mapMaxX, mapMaxZ)))
-                    {
-                        isVisible = BlittableBool.True;
-                    }
-                }
-                visibilityArrOfVoxelsToRebuild[index] = isVisible;
-            }
-        }
-
-        private struct ConstructMeshJob : IJob
-        {
-            [ReadOnly]
-            public NativeArray3D<Voxel> voxels;
-
-            [ReadOnly]
-            public NativeArray3D<BlittableBool> voxelsIsVisible;
-
-            [ReadOnly]
-            public NativeArray3D<DirectionsHelper.BlockDirectionFlag> voxelsVisibleFaces;
-
-            [WriteOnly]
-            public NativeMeshData meshData;
-
-            public void Execute()
-            {
-                for (int x = 0; x < VoxelWorld._chunkSize; x++)
-                {
-                    for (int y = 0; y < VoxelWorld._chunkSize; y++)
-                    {
-                        for (int z = 0; z < VoxelWorld._chunkSize; z++)
-                        {
-                            if (voxels[x, y, z].type != VoxelType.Air)
-                            {
-                                var col = voxels[x, y, z].ToColor(voxelsIsVisible[x, y, z]);
-                                CreateCube(ref meshData, new Vector3(x, y, z) * VoxelWorld._blockSize, voxelsVisibleFaces[x, y, z], col);
-                            }
-                        }
-                    }
-                }
-            }
-
-            #region Mesh generation
-
-            private static void CreateCube(ref NativeMeshData mesh, Vector3 pos, DirectionsHelper.BlockDirectionFlag facesVisible, Color32 color)
-            {
-                for (int i = 0; i < 6; i++)
-                {
-                    var curr = (DirectionsHelper.BlockDirectionFlag)(1 << i);
-                    if ((curr & facesVisible) != 0)//0b010 00 & 0b010 00 -> 0b010 00; 0b100 00 & 0b010 00 -> 0b000 00
-                        CreateFace(ref mesh, pos, curr, color);
-                }
-            }
-
-            private static void CreateFace(ref NativeMeshData mesh, Vector3 vertOffset, DirectionsHelper.BlockDirectionFlag dir, Color32 color)
-            {
-                var startIndex = mesh._vertices.Length;
-
-                Quaternion rotation = Quaternion.identity;
-
-                switch (dir)
-                {
-                    case DirectionsHelper.BlockDirectionFlag.Left: rotation = Quaternion.LookRotation(Vector3.left); break;
-                    case DirectionsHelper.BlockDirectionFlag.Right: rotation = Quaternion.LookRotation(Vector3.right); break;
-                    case DirectionsHelper.BlockDirectionFlag.Down: rotation = Quaternion.LookRotation(Vector3.down); break;
-                    case DirectionsHelper.BlockDirectionFlag.Up: rotation = Quaternion.LookRotation(Vector3.up); break;
-                    case DirectionsHelper.BlockDirectionFlag.Back: rotation = Quaternion.LookRotation(Vector3.back); break;
-                    case DirectionsHelper.BlockDirectionFlag.Front: rotation = Quaternion.LookRotation(Vector3.forward); break;
-                    default: throw new Exception();
-                }
-
-                mesh._colors.Add(color);
-                mesh._colors.Add(color);
-                mesh._colors.Add(color);
-                mesh._colors.Add(color);
-
-                mesh._vertices.Add((rotation * (new Vector3(-.5f, -.5f, .5f) * VoxelWorld._blockSize)) + vertOffset);
-                mesh._vertices.Add((rotation * (new Vector3(.5f, -.5f, .5f) * VoxelWorld._blockSize)) + vertOffset);
-                mesh._vertices.Add((rotation * (new Vector3(-.5f, .5f, .5f) * VoxelWorld._blockSize)) + vertOffset);
-                mesh._vertices.Add((rotation * (new Vector3(.5f, .5f, .5f) * VoxelWorld._blockSize)) + vertOffset);
-
-                Vector3Int normal = dir.DirectionToVec();
-
-                mesh._normals.Add(normal);
-                mesh._normals.Add(normal);
-                mesh._normals.Add(normal);
-                mesh._normals.Add(normal);
-
-                mesh._triangles.Add(startIndex + 0);
-                mesh._triangles.Add(startIndex + 1);
-                mesh._triangles.Add(startIndex + 2);
-                mesh._triangles.Add(startIndex + 3);
-                mesh._triangles.Add(startIndex + 2);
-                mesh._triangles.Add(startIndex + 1);
-            }
-
-            #endregion Mesh generation
-        }
-
-        #endregion Jobs
     }
 }

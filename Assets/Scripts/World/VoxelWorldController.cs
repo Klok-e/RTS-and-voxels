@@ -1,18 +1,7 @@
-﻿using Scripts.Help;
-
-using System;
-using System.Collections;
+﻿using Plugins.Helpers;
 using System.Collections.Generic;
-using System.Threading;
-using UnityEngine;
-using System.Linq;
-using System.Collections.Concurrent;
-using System.Threading.Tasks;
-using Plugins.Helpers;
 using Unity.Jobs;
-using ProceduralNoiseProject;
-using Unity.Collections;
-using UnityEngine.AI;
+using UnityEngine;
 
 namespace Scripts.World
 {

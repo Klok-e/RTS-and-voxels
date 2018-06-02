@@ -24,6 +24,14 @@ namespace Scripts.Help
             _arr = new NativeArray<T>(xMax * yMax * zMax, allocator, nativeArrayOptions);
         }
 
+        public NativeArray3D(NativeArray3D<T> toCopy, Allocator allocator)
+        {
+            _xMax = toCopy._xMax;
+            _yMax = toCopy._yMax;
+            _zMax = toCopy._zMax;
+            _arr = new NativeArray<T>(toCopy._arr, allocator);
+        }
+
         public void Dispose()
         {
             _arr.Dispose();

@@ -18,6 +18,34 @@ namespace Scripts.World
         Solid = 1,
     }
 
+    /// <summary>
+    /// 32 levels of light
+    /// </summary>
+    public struct VoxelLightingLevel
+    {
+        /// <summary>
+        /// [unused]xxx || [level]xxxxx
+        /// </summary>
+        public byte Level
+        {
+            get
+            {
+                return _level;
+            }
+            set
+            {
+                if (value > 32)
+                    _level = 32;
+                else if (value < 0)
+                    _level = 0;
+                else
+                    _level = value;
+            }
+        }
+
+        private byte _level;
+    }
+
     public enum BlittableBool : byte
     {
         False = 0,
@@ -26,15 +54,12 @@ namespace Scripts.World
 
     public static class VoxelExtensions
     {
-        public static Color32[] colors;
+        public static Color[] colors;
 
-        public static Color32 ToColor(this Voxel vox, BlittableBool isVisible)
+        public static Color ToColor(this Voxel vox)
         {
             try
             {
-                if (isVisible == BlittableBool.False)
-                    return Color.black;
-
                 return colors[(byte)vox.type];
             }
             catch (IndexOutOfRangeException)
@@ -42,6 +67,16 @@ namespace Scripts.World
                 Debug.LogError("Color not in the list!");
                 return Color.magenta;
             }
+        }
+
+        public static Vector3 ToVector3(this Color col)
+        {
+            return new Vector3(col.r, col.g, col.b);
+        }
+
+        public static Color ToColor(this Vector3 vec)
+        {
+            return new Color(vec.x, vec.y, vec.z, 1);
         }
 
         public static bool IsTransparent(this VoxelType type)

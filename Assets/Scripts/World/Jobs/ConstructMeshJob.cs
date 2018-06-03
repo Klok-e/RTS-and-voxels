@@ -16,6 +16,9 @@ namespace Scripts.World.Jobs
         public NativeArray3D<BlittableBool> voxelsIsVisible;
 
         [ReadOnly]
+        public NativeArray3D<VoxelLightingLevel> voxelLightingLevels;
+
+        [ReadOnly]
         public NativeArray3D<DirectionsHelper.BlockDirectionFlag> voxelsVisibleFaces;
 
         [WriteOnly]
@@ -31,7 +34,9 @@ namespace Scripts.World.Jobs
                     {
                         if (voxels[x, y, z].type != VoxelType.Air)
                         {
-                            var col = voxels[x, y, z].ToColor(voxelsIsVisible[x, y, z]);
+                            var col = voxels[x, y, z].ToColor();
+                            col *= ((float)voxelLightingLevels[x, y, z].Level / 32);
+
                             CreateCube(ref meshData, new Vector3(x, y, z) * VoxelWorld._blockSize, voxelsVisibleFaces[x, y, z], col);
                         }
                     }
@@ -41,7 +46,7 @@ namespace Scripts.World.Jobs
 
         #region Mesh generation
 
-        private static void CreateCube(ref NativeMeshData mesh, Vector3 pos, DirectionsHelper.BlockDirectionFlag facesVisible, Color32 color)
+        private static void CreateCube(ref NativeMeshData mesh, Vector3 pos, DirectionsHelper.BlockDirectionFlag facesVisible, Color color)
         {
             for (int i = 0; i < 6; i++)
             {
@@ -51,7 +56,7 @@ namespace Scripts.World.Jobs
             }
         }
 
-        private static void CreateFace(ref NativeMeshData mesh, Vector3 vertOffset, DirectionsHelper.BlockDirectionFlag dir, Color32 color)
+        private static void CreateFace(ref NativeMeshData mesh, Vector3 vertOffset, DirectionsHelper.BlockDirectionFlag dir, Color color)
         {
             var startIndex = mesh._vertices.Length;
 

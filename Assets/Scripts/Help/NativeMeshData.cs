@@ -12,14 +12,14 @@ namespace Scripts.Help
     {
         public readonly NativeList<int> _triangles;
         public readonly NativeList<Vector3> _vertices;
-        public readonly NativeList<Color32> _colors;
+        public readonly NativeList<Color> _colors;
         public readonly NativeList<Vector3> _normals;
 
         public NativeMeshData(int size, Allocator allocator)
         {
             _triangles = new NativeList<int>(size, allocator);
             _vertices = new NativeList<Vector3>(size, allocator);
-            _colors = new NativeList<Color32>(size, allocator);
+            _colors = new NativeList<Color>(size, allocator);
             _normals = new NativeList<Vector3>(size, allocator);
         }
 

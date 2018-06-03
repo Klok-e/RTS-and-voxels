@@ -25,6 +25,9 @@ namespace MarchingCubesProject
         private bool _isClearing;
 
         [SerializeField]
+        private bool _isLightInsertion;
+
+        [SerializeField]
         private int _sphereSize = 3;
 
         private void Start()
@@ -40,6 +43,11 @@ namespace MarchingCubesProject
         public void SetBlockInsertion(bool set)
         {
             _isBlockInsertion = set;
+        }
+
+        public void SetLightInsertion(bool set)
+        {
+            _isLightInsertion = set;
         }
 
         public void SetSphereSize(float size)
@@ -67,6 +75,10 @@ namespace MarchingCubesProject
                         else
                         {
                             VoxelWorld.Instance.InsertSphere(pos / VoxelWorld._blockSize, _sphereSize, _isClearing ? VoxelType.Air : VoxelType.Solid);
+                        }
+                        if (_isLightInsertion)
+                        {
+                            VoxelWorld.Instance.SetLight(pos / VoxelWorld._blockSize, 10);
                         }
                     }
                 }

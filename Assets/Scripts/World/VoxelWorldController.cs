@@ -1,4 +1,5 @@
 ﻿using Plugins.Helpers;
+using Scripts.World.Jobs;
 using System.Collections.Generic;
 using Unity.Jobs;
 using UnityEngine;
@@ -11,17 +12,15 @@ namespace Scripts.World
 
         [SerializeField] private Material _material;
 
-        [SerializeField] private Color32[] _colors;
+        [SerializeField] private Color[] _colors;
 
-        private JobHandle _handle;
-        private bool _isProcessing;
-
-        private byte _finishedProcessingCount;
-        private Queue<RegularChunk> _chunksToProcess;
+        private Queue<ChunkUpdateData> _updateDataToProcess;
+        private Queue<RegularChunk> _chunksToApplyChanges;
 
         private void Awake()
         {
-            _chunksToProcess = new Queue<RegularChunk>();
+            _updateDataToProcess = new Queue<ChunkUpdateData>();
+            _chunksToApplyChanges = new Queue<RegularChunk>();
 
             VoxelExtensions.colors = _colors;
             RegularChunk._material = _material;
@@ -39,23 +38,24 @@ namespace Scripts.World
         {
             if (VoxelWorld.Instance.Dirty.Count > 0)
             {
+                //int count = VoxelWorld.Instance.Dirty.Count > (System.Environment.ProcessorCount - 1) ? (System.Environment.ProcessorCount - 1) : VoxelWorld.Instance.Dirty.Count;
+
                 var ch = VoxelWorld.Instance.Dirty.Dequeue();
-                _handle = VoxelWorld.Instance.CleanChunk(ch);
-
-                _chunksToProcess.Enqueue(ch);
-                _isProcessing = true;
+                var data = VoxelWorld.Instance.CleanChunk(ch);
+                _updateDataToProcess.Enqueue(data);
             }
 
-            if (_finishedProcessingCount > 0 && _chunksToProcess.Count > 0)
+            if (_chunksToApplyChanges.Count > 0)
             {
-                _chunksToProcess.Dequeue().ApplyMeshData();
-                _finishedProcessingCount--;
+                var chunk = _chunksToApplyChanges.Dequeue();
+                chunk.ApplyMeshData();
             }
-            if (_isProcessing)
+
+            if (_updateDataToProcess.Count > 0)
             {
-                _handle.Complete();
-                _finishedProcessingCount++;
-                _isProcessing = false;
+                var data = _updateDataToProcess.Dequeue();
+                VoxelWorld.Instance.CompleteChunkUpdate(data);
+                _chunksToApplyChanges.Enqueue(data._chunk);
             }
         }
 

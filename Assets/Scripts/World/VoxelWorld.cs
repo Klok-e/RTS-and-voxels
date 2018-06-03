@@ -15,7 +15,7 @@ namespace Scripts.World
     public class VoxelWorld
     {
         /// <summary>
-        /// Only uneven amount or else SetVoxel won't work correctly (at all)
+        /// Only uneven amount or else SetVoxel won't work at all
         /// </summary>
         public const int _chunkSize = 33;
 
@@ -68,12 +68,14 @@ namespace Scripts.World
             return ch;
         }
 
-        public JobHandle CleanChunk(RegularChunk chunk, JobHandle dependency = default(JobHandle))
+        public ChunkUpdateData CleanChunk(RegularChunk chunk, JobHandle dependency = default(JobHandle))
         {
             var jb0 = new RebuildChunkBlockVisibleFacesJob()
             {
                 chunkPos = chunk.Pos,
                 facesVisibleArr = chunk.VoxelsVisibleFaces,
+                chunkSize = _chunkSize,
+
                 voxels = new NativeArray3D<Voxel>(GetChunk(chunk.Pos).Voxels, Allocator.TempJob),
                 voxelsFront = new NativeArray3D<Voxel>(GetChunk(chunk.Pos + DirectionsHelper.VectorDirections.Front).Voxels, Allocator.TempJob),
                 voxelsBack = new NativeArray3D<Voxel>(GetChunk(chunk.Pos + DirectionsHelper.VectorDirections.Back).Voxels, Allocator.TempJob),
@@ -82,27 +84,52 @@ namespace Scripts.World
                 voxelsLeft = new NativeArray3D<Voxel>(GetChunk(chunk.Pos + DirectionsHelper.VectorDirections.Left).Voxels, Allocator.TempJob),
                 voxelsRight = new NativeArray3D<Voxel>(GetChunk(chunk.Pos + DirectionsHelper.VectorDirections.Right).Voxels, Allocator.TempJob),
             };
-            var jb1 = new RebuildVisibilityOfVoxelsJob()
+            var jb1 = new PropagateLightJob()
             {
-                chunkPos = chunk.Pos,
-                facesVisibleArr = jb0.facesVisibleArr,
-                visibilityArrOfVoxelsToRebuild = chunk.VoxelsIsVisible,
-                mapMaxX = _mapMaxX,
-                mapMaxZ = _mapMaxZ,
+                lightingLevels = chunk.VoxelLightingLevels,
+                voxels = jb0.voxels,
             };
             var jb2 = new ConstructMeshJob()
             {
                 meshData = chunk.MeshData,
-                voxels = chunk.Voxels,
+                voxels = jb0.voxels,
+                voxelLightingLevels = jb1.lightingLevels,
                 voxelsIsVisible = chunk.VoxelsIsVisible,
                 voxelsVisibleFaces = chunk.VoxelsVisibleFaces,
             };
 
             var hndl = jb0.Schedule(_chunkSize * _chunkSize * _chunkSize, 1024, dependency);
-            hndl = jb1.Schedule(_chunkSize * _chunkSize * _chunkSize, 1024, hndl);
+            hndl = jb1.Schedule(hndl);
             hndl = jb2.Schedule(hndl);
             JobHandle.ScheduleBatchedJobs();
-            return hndl;
+
+            return new ChunkUpdateData()
+            {
+                _chunk = chunk,
+                _updateJob = hndl,
+                _voxels = jb0.voxels,
+                _voxelsFront = jb0.voxelsFront,
+                _voxelsBack = jb0.voxelsBack,
+                _voxelsUp = jb0.voxelsUp,
+                _voxelsDown = jb0.voxelsDown,
+                _voxelsLeft = jb0.voxelsLeft,
+                _voxelsRight = jb0.voxelsRight,
+                _lightingLevels = jb1.lightingLevels,
+            };
+        }
+
+        public void CompleteChunkUpdate(ChunkUpdateData data)
+        {
+            data._updateJob.Complete();
+
+            //data._lightingLevels.Dispose();
+            data._voxels.Dispose();
+            data._voxelsBack.Dispose();
+            data._voxelsDown.Dispose();
+            data._voxelsFront.Dispose();
+            data._voxelsLeft.Dispose();
+            data._voxelsRight.Dispose();
+            data._voxelsUp.Dispose();
         }
 
         public RegularChunk GetChunk(Vector3Int chunkPos)
@@ -184,6 +211,23 @@ namespace Scripts.World
                     SetDirty(v);
                 }
 
+                SetDirty(ch);
+            }
+        }
+
+        public void SetLight(Vector3 blockWorldPos, byte level)
+        {
+            var chunkPos = ((blockWorldPos - (Vector3.one * (_chunkSize / 2))) / _chunkSize).ToInt();
+            var blockPos = (blockWorldPos - chunkPos * _chunkSize).ToInt();
+
+            var ch = GetChunk(chunkPos);
+            if (ch.IsInitialized)
+            {
+                var t = ch.VoxelLightingLevels;
+                t[blockPos.x, blockPos.y, blockPos.z] = new VoxelLightingLevel()
+                {
+                    Level = level,
+                };
                 SetDirty(ch);
             }
         }

@@ -23,6 +23,7 @@ namespace Scripts.World
 
         public NativeArray3D<DirectionsHelper.BlockDirectionFlag> VoxelsVisibleFaces { get; private set; }
         public NativeArray3D<BlittableBool> VoxelsIsVisible { get; private set; }
+        public NativeArray3D<VoxelLightingLevel> VoxelLightingLevels { get; private set; }
         public NativeArray3D<Voxel> Voxels { get; private set; }
 
         public bool IsInitialized { get; private set; }
@@ -57,7 +58,7 @@ namespace Scripts.World
             _mesh.vertices = MeshData._vertices.ToArray();
             _mesh.SetTriangles(MeshData._triangles.ToArray(), 0);
             _mesh.normals = MeshData._normals.ToArray();
-            _mesh.colors32 = MeshData._colors.ToArray();
+            _mesh.colors = MeshData._colors.ToArray();
             MeshData.Clear();
 
             _filter.sharedMesh = _mesh;
@@ -70,10 +71,12 @@ namespace Scripts.World
             _renderer = GetComponent<MeshRenderer>();
             _coll = GetComponent<MeshCollider>();
             _mesh = new Mesh();
+            _mesh.MarkDynamic();
 
             _renderer.material = _material;
 
-            MeshData = new NativeMeshData(1, Allocator.Persistent);
+            MeshData = new NativeMeshData(0, Allocator.Persistent);
+            VoxelLightingLevels = new NativeArray3D<VoxelLightingLevel>(VoxelWorld._chunkSize, VoxelWorld._chunkSize, VoxelWorld._chunkSize, Allocator.Persistent);
             VoxelsIsVisible = new NativeArray3D<BlittableBool>(VoxelWorld._chunkSize, VoxelWorld._chunkSize, VoxelWorld._chunkSize, Allocator.Persistent);
             VoxelsVisibleFaces = new NativeArray3D<DirectionsHelper.BlockDirectionFlag>(VoxelWorld._chunkSize, VoxelWorld._chunkSize, VoxelWorld._chunkSize, Allocator.Persistent);
             Voxels = new NativeArray3D<Voxel>(VoxelWorld._chunkSize, VoxelWorld._chunkSize, VoxelWorld._chunkSize, Allocator.Persistent);
@@ -85,6 +88,7 @@ namespace Scripts.World
             VoxelsVisibleFaces.Dispose();
             Voxels.Dispose();
             MeshData.Dispose();
+            VoxelLightingLevels.Dispose();
         }
 
         public static RegularChunk CreateNew()

@@ -10,26 +10,37 @@ namespace Scripts.Help
     public struct NativeArray3D<T> : IDisposable
            where T : struct
     {
-        private int _xMax;
-        private int _yMax;
-        private int _zMax;
+        public int XMax { get; }
+        public int YMax { get; }
+        public int ZMax { get; }
 
         private NativeArray<T> _arr;
 
         public NativeArray3D(int xMax, int yMax, int zMax, Allocator allocator, NativeArrayOptions nativeArrayOptions = NativeArrayOptions.ClearMemory)
         {
-            _xMax = xMax;
-            _yMax = yMax;
-            _zMax = zMax;
+            XMax = xMax;
+            YMax = yMax;
+            ZMax = zMax;
             _arr = new NativeArray<T>(xMax * yMax * zMax, allocator, nativeArrayOptions);
         }
 
         public NativeArray3D(NativeArray3D<T> toCopy, Allocator allocator)
         {
-            _xMax = toCopy._xMax;
-            _yMax = toCopy._yMax;
-            _zMax = toCopy._zMax;
+            XMax = toCopy.XMax;
+            YMax = toCopy.YMax;
+            ZMax = toCopy.ZMax;
             _arr = new NativeArray<T>(toCopy._arr, allocator);
+        }
+
+        public void CopyFrom(NativeArray3D<T> toCopy)
+        {
+#if UNITY_EDITOR
+            if (toCopy.XMax != XMax || toCopy.YMax != YMax || toCopy.ZMax != ZMax)
+            {
+                throw new InvalidOperationException("sizes don't match");
+            }
+#endif
+            _arr.CopyFrom(toCopy._arr);
         }
 
         public void Dispose()
@@ -39,9 +50,9 @@ namespace Scripts.Help
 
         public void At(int i, out int x, out int y, out int z)
         {
-            x = i % _xMax;
-            y = (i / _xMax) % _yMax;
-            z = i / (_xMax * _yMax);
+            x = i % XMax;
+            y = (i / XMax) % YMax;
+            z = i / (XMax * YMax);
         }
 
         public T this[int i]
@@ -54,8 +65,8 @@ namespace Scripts.Help
         public T this[int x, int y, int z]
         {
             //(z * xMax * yMax) + (y * xMax) + x;
-            get { return _arr[z * _xMax * _yMax + y * _xMax + x]; }
-            set { _arr[z * _xMax * _yMax + y * _xMax + x] = value; }
+            get { return _arr[z * XMax * YMax + y * XMax + x]; }
+            set { _arr[z * XMax * YMax + y * XMax + x] = value; }
         }
     }
 }

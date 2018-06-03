@@ -1,5 +1,4 @@
 ﻿using Scripts.Help;
-using Scripts.World;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -20,13 +19,15 @@ namespace Scripts.World.Jobs
         public Vector3Int chunkPos;
 
         [ReadOnly]
+        public int chunkSize;
+
+        [ReadOnly]
         public NativeArray3D<Voxel> voxels,
             voxelsUp, voxelsDown, voxelsLeft, voxelsRight, voxelsBack, voxelsFront;
 
         public void Execute(int currentIndex)
         {
-            int x, y, z;
-            facesVisibleArr.At(currentIndex, out x, out y, out z);
+            facesVisibleArr.At(currentIndex, out int x, out int y, out int z);
 
             DirectionsHelper.BlockDirectionFlag facesVisible = DirectionsHelper.BlockDirectionFlag.None;
             for (byte i = 0; i < 6; i++)
@@ -34,7 +35,7 @@ namespace Scripts.World.Jobs
                 var dir = (DirectionsHelper.BlockDirectionFlag)(1 << i);
                 Vector3Int vec = dir.DirectionToVec();
 
-                if (x + vec.x < VoxelWorld._chunkSize && y + vec.y < VoxelWorld._chunkSize && z + vec.z < VoxelWorld._chunkSize
+                if (x + vec.x < chunkSize && y + vec.y < chunkSize && z + vec.z < chunkSize
                     &&
                     x + vec.x >= 0 && y + vec.y >= 0 && z + vec.z >= 0)
                 {
@@ -45,14 +46,14 @@ namespace Scripts.World.Jobs
                 {
                     var blockInd = (new Vector3Int(x, y, z) + vec);
 
-                    if (blockInd.x >= VoxelWorld._chunkSize) blockInd.x = 0;
-                    else if (blockInd.x < 0) blockInd.x = VoxelWorld._chunkSize - 1;
+                    if (blockInd.x >= chunkSize) blockInd.x = 0;
+                    else if (blockInd.x < 0) blockInd.x = chunkSize - 1;
 
-                    if (blockInd.y >= VoxelWorld._chunkSize) blockInd.y = 0;
-                    else if (blockInd.y < 0) blockInd.y = VoxelWorld._chunkSize - 1;
+                    if (blockInd.y >= chunkSize) blockInd.y = 0;
+                    else if (blockInd.y < 0) blockInd.y = chunkSize - 1;
 
-                    if (blockInd.z >= VoxelWorld._chunkSize) blockInd.z = 0;
-                    else if (blockInd.z < 0) blockInd.z = VoxelWorld._chunkSize - 1;
+                    if (blockInd.z >= chunkSize) blockInd.z = 0;
+                    else if (blockInd.z < 0) blockInd.z = chunkSize - 1;
 
                     NativeArray3D<Voxel> ch;
                     switch (dir)

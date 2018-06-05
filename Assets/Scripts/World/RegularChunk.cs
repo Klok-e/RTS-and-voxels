@@ -25,10 +25,9 @@ namespace Scripts.World
         public NativeArray3D<BlittableBool> VoxelsIsVisible { get; private set; }
         public NativeArray3D<VoxelLightingLevel> VoxelLightingLevels { get; private set; }
         public NativeArray3D<Voxel> Voxels { get; private set; }
+        public NativeMeshData MeshData { get; private set; }
 
         public bool IsInitialized { get; private set; }
-
-        public NativeMeshData MeshData { get; private set; }
 
         private Mesh _mesh;
         private MeshRenderer _renderer;

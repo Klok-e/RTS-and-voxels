@@ -13,9 +13,6 @@ namespace Scripts.World.Jobs
         public NativeArray3D<Voxel> voxels;
 
         [ReadOnly]
-        public NativeArray3D<BlittableBool> voxelsIsVisible;
-
-        [ReadOnly]
         public NativeArray3D<VoxelLightingLevel> voxelLightingLevels;
 
         [ReadOnly]

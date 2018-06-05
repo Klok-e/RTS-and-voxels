@@ -78,7 +78,7 @@ namespace MarchingCubesProject
                         }
                         if (_isLightInsertion)
                         {
-                            VoxelWorld.Instance.SetLight(pos / VoxelWorld._blockSize, 10);
+                            VoxelWorld.Instance.SetLight(pos / VoxelWorld._blockSize, 31);
                         }
                     }
                 }

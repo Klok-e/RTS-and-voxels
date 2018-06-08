@@ -77,7 +77,7 @@ namespace Scripts.Help
             else if (en == BlockDirectionFlag.Right) return VectorDirections.Right;
             else if (en == BlockDirectionFlag.Back) return VectorDirections.Back;
             else if (en == BlockDirectionFlag.Front) return VectorDirections.Front;
-            else return new Vector3Int(0, 0, 0);
+            else throw new Exception();
         }
 
         public static class VectorDirections

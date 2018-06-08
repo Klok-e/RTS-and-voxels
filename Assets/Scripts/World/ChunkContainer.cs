@@ -34,7 +34,7 @@ namespace Scripts.World
                 Debug.LogError("Wasn't initialized");
             }
 #endif
-            return height - MinHeight < _chunks.Count && height - MinHeight >= 0;
+            return ((height - MinHeight) < _chunks.Count) && (height - MinHeight) >= 0;
         }
 
         public RegularChunk[,] this[int height]

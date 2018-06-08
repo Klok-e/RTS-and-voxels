@@ -31,7 +31,7 @@ namespace Scripts.World.Jobs
                 z = voxelInd.z;
 
             var vec = dirToLook.DirectionToVec();
-            if (x + vec.x < VoxelWorld._chunkSize && y + vec.y < VoxelWorld._chunkSize && z + vec.z < VoxelWorld._chunkSize
+            if (x + vec.x < VoxelWorldController._chunkSize && y + vec.y < VoxelWorldController._chunkSize && z + vec.z < VoxelWorldController._chunkSize
                 &&
                 x + vec.x >= 0 && y + vec.y >= 0 && z + vec.z >= 0)
             {

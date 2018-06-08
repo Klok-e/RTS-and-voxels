@@ -23,20 +23,15 @@ namespace Scripts.World.Jobs
 
         public void Execute()
         {
-            for (int x = 0; x < VoxelWorld._chunkSize; x++)
+            for (int i = 0; i < VoxelWorldController._chunkSize * VoxelWorldController._chunkSize * VoxelWorldController._chunkSize; i++)
             {
-                for (int y = 0; y < VoxelWorld._chunkSize; y++)
+                voxels.At(i, out int x, out int y, out int z);
+                if (voxels[x, y, z].type != VoxelType.Air)
                 {
-                    for (int z = 0; z < VoxelWorld._chunkSize; z++)
-                    {
-                        if (voxels[x, y, z].type != VoxelType.Air)
-                        {
-                            var col = voxels[x, y, z].ToColor();
-                            col *= ((float)voxelLightingLevels[x, y, z].Level / 32);
+                    var col = voxels[x, y, z].ToColor();
+                    col *= ((float)voxelLightingLevels[x, y, z]._level / 32);
 
-                            CreateCube(ref meshData, new Vector3(x, y, z) * VoxelWorld._blockSize, voxelsVisibleFaces[x, y, z], col);
-                        }
-                    }
+                    CreateCube(ref meshData, new Vector3(x, y, z) * VoxelWorldController._blockSize, voxelsVisibleFaces[x, y, z], col);
                 }
             }
         }
@@ -75,10 +70,10 @@ namespace Scripts.World.Jobs
             mesh._colors.Add(color);
             mesh._colors.Add(color);
 
-            mesh._vertices.Add((rotation * (new Vector3(-.5f, -.5f, .5f) * VoxelWorld._blockSize)) + vertOffset);
-            mesh._vertices.Add((rotation * (new Vector3(.5f, -.5f, .5f) * VoxelWorld._blockSize)) + vertOffset);
-            mesh._vertices.Add((rotation * (new Vector3(-.5f, .5f, .5f) * VoxelWorld._blockSize)) + vertOffset);
-            mesh._vertices.Add((rotation * (new Vector3(.5f, .5f, .5f) * VoxelWorld._blockSize)) + vertOffset);
+            mesh._vertices.Add((rotation * (new Vector3(-.5f, -.5f, .5f) * VoxelWorldController._blockSize)) + vertOffset);
+            mesh._vertices.Add((rotation * (new Vector3(.5f, -.5f, .5f) * VoxelWorldController._blockSize)) + vertOffset);
+            mesh._vertices.Add((rotation * (new Vector3(-.5f, .5f, .5f) * VoxelWorldController._blockSize)) + vertOffset);
+            mesh._vertices.Add((rotation * (new Vector3(.5f, .5f, .5f) * VoxelWorldController._blockSize)) + vertOffset);
 
             Vector3Int normal = dir.DirectionToVec();
 

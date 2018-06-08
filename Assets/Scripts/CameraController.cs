@@ -67,18 +67,18 @@ namespace MarchingCubesProject
                     var chunk = hit.collider.GetComponent<RegularChunk>();
                     if (chunk)
                     {
-                        var pos = hit.point + (hit.normal * (VoxelWorld._blockSize * (_isClearing ? -1 : 1)) / 2);
-                        if (_isBlockInsertion)
+                        var pos = hit.point + (hit.normal * (VoxelWorldController._blockSize * (_isClearing ? -1 : 1)) / 2);
+                        if (_isLightInsertion)
                         {
-                            VoxelWorld.Instance.SetVoxel(pos / VoxelWorld._blockSize, _isClearing ? VoxelType.Air : VoxelType.Solid);
+                            VoxelWorldController.Instance.SetLight(pos / VoxelWorldController._blockSize, 31);
+                        }
+                        else if (_isBlockInsertion)
+                        {
+                            VoxelWorldController.Instance.SetVoxel(pos / VoxelWorldController._blockSize, _isClearing ? VoxelType.Air : VoxelType.Solid);
                         }
                         else
                         {
-                            VoxelWorld.Instance.InsertSphere(pos / VoxelWorld._blockSize, _sphereSize, _isClearing ? VoxelType.Air : VoxelType.Solid);
-                        }
-                        if (_isLightInsertion)
-                        {
-                            VoxelWorld.Instance.SetLight(pos / VoxelWorld._blockSize, 31);
+                            VoxelWorldController.Instance.InsertSphere(pos / VoxelWorldController._blockSize, _sphereSize, _isClearing ? VoxelType.Air : VoxelType.Solid);
                         }
                     }
                 }

@@ -16,6 +16,9 @@ namespace Scripts.World.Jobs
         public NativeArray3D<DirectionsHelper.BlockDirectionFlag> facesVisibleArr;
 
         [ReadOnly]
+        public DirectionsHelper.BlockDirectionFlag availableChunks;
+
+        [ReadOnly]
         public Vector3Int chunkPos;
 
         [ReadOnly]
@@ -42,6 +45,10 @@ namespace Scripts.World.Jobs
                     if (voxels[x + vec.x, y + vec.y, z + vec.z].type.IsTransparent())
                         facesVisible |= dir;
                 }
+                else if ((dir & availableChunks) == 0)
+                {
+                    facesVisible |= dir;
+                }
                 else
                 {
                     var blockInd = (new Vector3Int(x, y, z) + vec);
@@ -58,14 +65,13 @@ namespace Scripts.World.Jobs
                     NativeArray3D<Voxel> ch;
                     switch (dir)
                     {
-                        case DirectionsHelper.BlockDirectionFlag.None: ch = new NativeArray3D<Voxel>(); break;
                         case DirectionsHelper.BlockDirectionFlag.Up: ch = voxelsUp; break;
                         case DirectionsHelper.BlockDirectionFlag.Down: ch = voxelsDown; break;
                         case DirectionsHelper.BlockDirectionFlag.Left: ch = voxelsLeft; break;
                         case DirectionsHelper.BlockDirectionFlag.Right: ch = voxelsRight; break;
                         case DirectionsHelper.BlockDirectionFlag.Back: ch = voxelsBack; break;
                         case DirectionsHelper.BlockDirectionFlag.Front: ch = voxelsFront; break;
-                        default: ch = new NativeArray3D<Voxel>(); break;
+                        default: throw new Exception();
                     }
 
                     if ((ch[blockInd.x, blockInd.y, blockInd.z]).type.IsTransparent())

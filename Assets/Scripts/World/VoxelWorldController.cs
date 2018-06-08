@@ -1,6 +1,7 @@
 ﻿using Plugins.Helpers;
 using Scripts.Help;
 using Scripts.World.Jobs;
+using System;
 using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Jobs;
@@ -17,7 +18,7 @@ namespace Scripts.World
         [SerializeField] private Color[] _colors;
 
         private Queue<ChunkUpdateData> _updateDataToProcess;
-        private Queue<RegularChunk> _chunksToApplyChanges;
+        private Queue<VoxelLightPropagationData> _toPropagateLight;
 
         /// <summary>
         /// Only uneven amount or else SetVoxel won't work at all
@@ -36,9 +37,6 @@ namespace Scripts.World
 
         //public  Disposer _disposer;
 
-        private RegularChunk _airChunk;
-        private RegularChunk _solidChunk;
-
         private void Awake()
         {
             VoxelExtensions.colors = _colors;
@@ -47,6 +45,7 @@ namespace Scripts.World
 
             UnityThread.InitUnityThread();
             Initialize();
+            Instance = this;
         }
 
         private void Update()
@@ -60,17 +59,23 @@ namespace Scripts.World
                 _updateDataToProcess.Enqueue(data);
             }
 
-            if (_chunksToApplyChanges.Count > 0)
+            if (_toPropagateLight.Count > 0)
             {
-                var chunk = _chunksToApplyChanges.Dequeue();
-                chunk.ApplyMeshData();
+                PropagateAllLightSynchronously();
             }
 
             if (_updateDataToProcess.Count > 0)
             {
                 var data = _updateDataToProcess.Dequeue();
                 CompleteChunkUpdate(data);
-                _chunksToApplyChanges.Enqueue(data._chunk);
+            }
+        }
+
+        private void OnDestroy()
+        {
+            foreach (var item in _chunks)
+            {
+                item.Deinitialize();
             }
         }
 
@@ -86,25 +91,25 @@ namespace Scripts.World
             _massJobThing = new MassJobThing(0);
             Dirty = new Queue<RegularChunk>();
             _updateDataToProcess = new Queue<ChunkUpdateData>();
-            _chunksToApplyChanges = new Queue<RegularChunk>();
+            _toPropagateLight = new Queue<VoxelLightPropagationData>();
 
-            _airChunk = InitChunk(VoxelType.Air);
-            _solidChunk = InitChunk(VoxelType.Solid);
+            //_placeholderChunk = CreatePlaceholderChunk();
 
             CreateStartingLevels(0, 2, 1);
         }
 
-        private RegularChunk InitChunk(VoxelType type)
+        private RegularChunk CreatePlaceholderChunk()
         {
             var ch = RegularChunk.CreateNew();
-            ch.Deinitialize();
+            ch.Initialize(Vector3Int.zero);
+            ch.gameObject.SetActive(false);
 
-            var vx = ch.Voxels;
             for (int i = 0; i < _chunkSize * _chunkSize * _chunkSize; i++)
             {
-                vx[i] = new Voxel()
+                var v = ch.Voxels;
+                v[i] = new Voxel()
                 {
-                    type = type,
+                    type = VoxelType.Air,
                 };
             }
             return ch;
@@ -112,35 +117,69 @@ namespace Scripts.World
 
         public ChunkUpdateData CleanChunk(RegularChunk chunk, JobHandle dependency = default(JobHandle))
         {
+            var adjacent = GetAdjacentChunkVoxels(chunk);
+
             var jb0 = new RebuildChunkBlockVisibleFacesJob()
             {
                 chunkPos = chunk.Pos,
                 facesVisibleArr = chunk.VoxelsVisibleFaces,
                 chunkSize = _chunkSize,
+                availableChunks = adjacent.dirChunksAvailable,
 
-                voxels = new NativeArray3D<Voxel>(GetChunk(chunk.Pos).Voxels, Allocator.TempJob),
-                voxelsFront = new NativeArray3D<Voxel>(GetChunk(chunk.Pos + DirectionsHelper.VectorDirections.Front).Voxels, Allocator.TempJob),
-                voxelsBack = new NativeArray3D<Voxel>(GetChunk(chunk.Pos + DirectionsHelper.VectorDirections.Back).Voxels, Allocator.TempJob),
-                voxelsUp = new NativeArray3D<Voxel>(GetChunk(chunk.Pos + DirectionsHelper.VectorDirections.Up).Voxels, Allocator.TempJob),
-                voxelsDown = new NativeArray3D<Voxel>(GetChunk(chunk.Pos + DirectionsHelper.VectorDirections.Down).Voxels, Allocator.TempJob),
-                voxelsLeft = new NativeArray3D<Voxel>(GetChunk(chunk.Pos + DirectionsHelper.VectorDirections.Left).Voxels, Allocator.TempJob),
-                voxelsRight = new NativeArray3D<Voxel>(GetChunk(chunk.Pos + DirectionsHelper.VectorDirections.Right).Voxels, Allocator.TempJob),
+                voxels = new NativeArray3D<Voxel>(adjacent.chunk, Allocator.TempJob),
+                voxelsFront = new NativeArray3D<Voxel>(adjacent.chunkFront, Allocator.TempJob),
+                voxelsBack = new NativeArray3D<Voxel>(adjacent.chunkBack, Allocator.TempJob),
+                voxelsUp = new NativeArray3D<Voxel>(adjacent.chunkUp, Allocator.TempJob),
+                voxelsDown = new NativeArray3D<Voxel>(adjacent.chunkDown, Allocator.TempJob),
+                voxelsLeft = new NativeArray3D<Voxel>(adjacent.chunkLeft, Allocator.TempJob),
+                voxelsRight = new NativeArray3D<Voxel>(adjacent.chunkRight, Allocator.TempJob),
             };
-            var jb1 = new PropagateLightJob()
+            for (int i = 0; i < 6; i++)
             {
-                lightingLevels = chunk.VoxelLightingLevels,
-                voxels = jb0.voxels,
-            };
+                var dir = (DirectionsHelper.BlockDirectionFlag)(1 << i);
+
+                if ((dir & adjacent.dirChunksAvailable) == 0)
+                {
+                    switch (dir)
+                    {
+                        case DirectionsHelper.BlockDirectionFlag.Up:
+                            adjacent.chunkUp.Dispose();
+                            break;
+
+                        case DirectionsHelper.BlockDirectionFlag.Down:
+                            adjacent.chunkDown.Dispose();
+                            break;
+
+                        case DirectionsHelper.BlockDirectionFlag.Left:
+                            adjacent.chunkLeft.Dispose();
+                            break;
+
+                        case DirectionsHelper.BlockDirectionFlag.Right:
+                            adjacent.chunkRight.Dispose();
+                            break;
+
+                        case DirectionsHelper.BlockDirectionFlag.Back:
+                            adjacent.chunkBack.Dispose();
+                            break;
+
+                        case DirectionsHelper.BlockDirectionFlag.Front:
+                            adjacent.chunkFront.Dispose();
+                            break;
+
+                        default:
+                            throw new Exception();
+                    }
+                }
+            }
             var jb2 = new ConstructMeshJob()
             {
                 meshData = chunk.MeshData,
                 voxels = jb0.voxels,
-                voxelLightingLevels = jb1.lightingLevels,
+                voxelLightingLevels = chunk.VoxelLightingLevels,
                 voxelsVisibleFaces = chunk.VoxelsVisibleFaces,
             };
 
             var hndl = jb0.Schedule(_chunkSize * _chunkSize * _chunkSize, 1024, dependency);
-            hndl = jb1.Schedule(hndl);
             hndl = jb2.Schedule(hndl);
             JobHandle.ScheduleBatchedJobs();
 
@@ -155,13 +194,14 @@ namespace Scripts.World
                 _voxelsDown = jb0.voxelsDown,
                 _voxelsLeft = jb0.voxelsLeft,
                 _voxelsRight = jb0.voxelsRight,
-                _lightingLevels = jb1.lightingLevels,
+                //_lightingLevels = jb1.lightingLevels,
             };
         }
 
         public void CompleteChunkUpdate(ChunkUpdateData data)
         {
             data._updateJob.Complete();
+            data._chunk.ApplyMeshData();
 
             data._voxels.Dispose();
             data._voxelsBack.Dispose();
@@ -172,18 +212,226 @@ namespace Scripts.World
             data._voxelsUp.Dispose();
         }
 
+        public PropagateLightJobData PropagateLight(RegularChunk chunk, JobHandle dependency = default(JobHandle))
+        {
+            var jb = new PropagateLightJob()
+            {
+                chunkSize = _chunkSize,
+                chunksAffected = new NativeArray<DirectionsHelper.BlockDirectionFlag>(1, Allocator.TempJob),
+
+                lightingLevels = GetChunk(chunk.Pos).VoxelLightingLevels,
+                lightingLevelsFront = GetChunk(chunk.Pos + DirectionsHelper.VectorDirections.Front).VoxelLightingLevels,
+                lightingLevelsBack = GetChunk(chunk.Pos + DirectionsHelper.VectorDirections.Back).VoxelLightingLevels,
+                lightingLevelsUp = GetChunk(chunk.Pos + DirectionsHelper.VectorDirections.Up).VoxelLightingLevels,
+                lightingLevelsDown = GetChunk(chunk.Pos + DirectionsHelper.VectorDirections.Down).VoxelLightingLevels,
+                lightingLevelsLeft = GetChunk(chunk.Pos + DirectionsHelper.VectorDirections.Left).VoxelLightingLevels,
+                lightingLevelsRight = GetChunk(chunk.Pos + DirectionsHelper.VectorDirections.Right).VoxelLightingLevels,
+
+                voxels = new NativeArray3D<Voxel>(GetChunk(chunk.Pos).Voxels, Allocator.TempJob),
+                voxelsFront = new NativeArray3D<Voxel>(GetChunk(chunk.Pos + DirectionsHelper.VectorDirections.Front).Voxels, Allocator.TempJob),
+                voxelsBack = new NativeArray3D<Voxel>(GetChunk(chunk.Pos + DirectionsHelper.VectorDirections.Back).Voxels, Allocator.TempJob),
+                voxelsUp = new NativeArray3D<Voxel>(GetChunk(chunk.Pos + DirectionsHelper.VectorDirections.Up).Voxels, Allocator.TempJob),
+                voxelsDown = new NativeArray3D<Voxel>(GetChunk(chunk.Pos + DirectionsHelper.VectorDirections.Down).Voxels, Allocator.TempJob),
+                voxelsLeft = new NativeArray3D<Voxel>(GetChunk(chunk.Pos + DirectionsHelper.VectorDirections.Left).Voxels, Allocator.TempJob),
+                voxelsRight = new NativeArray3D<Voxel>(GetChunk(chunk.Pos + DirectionsHelper.VectorDirections.Right).Voxels, Allocator.TempJob),
+            };
+            var hndl = jb.Schedule(dependency);
+            JobHandle.ScheduleBatchedJobs();
+
+            return new PropagateLightJobData()
+            {
+                voxels = jb.voxels,
+                voxelsFront = jb.voxelsFront,
+                voxelsBack = jb.voxelsBack,
+                voxelsUp = jb.voxelsUp,
+                voxelsDown = jb.voxelsDown,
+                voxelsLeft = jb.voxelsLeft,
+                voxelsRight = jb.voxelsRight,
+                chunksAffected = jb.chunksAffected,
+                jobHandle = hndl,
+            };
+        }
+
+        public void PropagateAllLightSynchronously()
+        {
+            while (_toPropagateLight.Count > 0)
+            {
+                var data = _toPropagateLight.Dequeue();
+                var chunk = GetChunk(data._chunkPos);
+                SetDirty(chunk);
+
+                var voxels = chunk.Voxels;
+                var lightLevels = chunk.VoxelLightingLevels;
+
+                var lightLvl = chunk.VoxelLightingLevels[data._blockPos.x, data._blockPos.y, data._blockPos.z];
+
+                //check 6 sides of a voxel
+                for (int i = 0; i < 6; i++)
+                {
+                    var dir = (DirectionsHelper.BlockDirectionFlag)(1 << i);
+                    var vec = dir.DirectionToVec();
+
+                    var blockPos = data._blockPos + vec;
+
+                    if (blockPos.x >= _chunkSize || blockPos.x < 0
+                        ||
+                        blockPos.y >= _chunkSize || blockPos.y < 0
+                        ||
+                        blockPos.z >= _chunkSize || blockPos.z < 0)
+                    {
+                        if (blockPos.x >= _chunkSize) blockPos.x = 0;
+                        else if (blockPos.x < 0) blockPos.x = _chunkSize - 1;
+
+                        if (blockPos.y >= _chunkSize) blockPos.y = 0;
+                        else if (blockPos.y < 0) blockPos.y = _chunkSize - 1;
+
+                        if (blockPos.z >= _chunkSize) blockPos.z = 0;
+                        else if (blockPos.z < 0) blockPos.z = _chunkSize - 1;
+
+                        var nextChunkPos = data._chunkPos + vec;
+                        var nextChunk = GetChunk(nextChunkPos);
+                        SetDirty(nextChunk);
+
+                        var voxelsDir = nextChunk.Voxels;
+                        var lightLvlDir = nextChunk.VoxelLightingLevels;
+
+                        if (lightLvlDir[blockPos.x, blockPos.y, blockPos.z]._level < (lightLvl._level - 1))
+                        {
+                            lightLvlDir[blockPos.x, blockPos.y, blockPos.z] = new VoxelLightingLevel()
+                            {
+                                _level = (byte)(lightLvl._level - 1),
+                            };
+                            if (lightLvl._level - 1 > 0)
+                            {
+                                _toPropagateLight.Enqueue(new VoxelLightPropagationData()
+                                {
+                                    _blockPos = blockPos,
+                                    _chunkPos = nextChunkPos,
+                                });
+                            }
+                        }
+                    }
+                    else if (lightLevels[blockPos.x, blockPos.y, blockPos.z]._level < (lightLvl._level - 1))
+                    {
+                        lightLevels[blockPos.x, blockPos.y, blockPos.z] = new VoxelLightingLevel()
+                        {
+                            _level = (byte)(lightLvl._level - 1),
+                        };
+                        if (lightLvl._level - 1 > 0)
+                        {
+                            _toPropagateLight.Enqueue(new VoxelLightPropagationData()
+                            {
+                                _blockPos = blockPos,
+                                _chunkPos = data._chunkPos,
+                            });
+                        }
+                    }
+                }
+            }
+        }
+
         public RegularChunk GetChunk(Vector3Int chunkPos)
         {
-            if (chunkPos.x >= _mapMaxX || chunkPos.z >= _mapMaxZ || chunkPos.x < 0 || chunkPos.z < 0)
+            if (!IsPosInBordersOfTheMap(chunkPos))
             {
-                return _airChunk;
+                var up = new Exception();
+                throw up;
             }
-            if (!_chunks.ContainsHeight(chunkPos.y))
-            {
-                return _solidChunk;
-            }
+            var ch = _chunks[chunkPos.y][chunkPos.x, chunkPos.z];
+            if (!ch.IsInitialized)
+                throw new Exception();
 
-            return _chunks[chunkPos.y][chunkPos.x, chunkPos.z];
+            return ch;
+        }
+
+        public struct ChunkAndAdjacent<T>
+            where T : struct
+        {
+            public DirectionsHelper.BlockDirectionFlag dirChunksAvailable;
+
+            public NativeArray3D<T> chunk;
+            public NativeArray3D<T> chunkFront;
+            public NativeArray3D<T> chunkBack;
+            public NativeArray3D<T> chunkUp;
+            public NativeArray3D<T> chunkDown;
+            public NativeArray3D<T> chunkLeft;
+            public NativeArray3D<T> chunkRight;
+        }
+
+        public ChunkAndAdjacent<Voxel> GetAdjacentChunkVoxels(RegularChunk chunk)
+        {
+            if (!chunk.IsInitialized || !IsPosInBordersOfTheMap(chunk.Pos))
+                throw new Exception();
+
+            var dirChunksAvailable = DirectionsHelper.BlockDirectionFlag.None;
+
+            var front = chunk.Pos + DirectionsHelper.VectorDirections.Front;
+            var back = chunk.Pos + DirectionsHelper.VectorDirections.Back;
+            var up = chunk.Pos + DirectionsHelper.VectorDirections.Up;
+            var down = chunk.Pos + DirectionsHelper.VectorDirections.Down;
+            var left = chunk.Pos + DirectionsHelper.VectorDirections.Left;
+            var right = chunk.Pos + DirectionsHelper.VectorDirections.Right;
+
+            NativeArray3D<Voxel> chunkFront;
+            NativeArray3D<Voxel> chunkBack;
+            NativeArray3D<Voxel> chunkUp;
+            NativeArray3D<Voxel> chunkDown;
+            NativeArray3D<Voxel> chunkLeft;
+            NativeArray3D<Voxel> chunkRight;
+            if (IsPosInBordersOfTheMap(front))
+            {
+                chunkFront = GetChunk(front).Voxels;
+                dirChunksAvailable |= DirectionsHelper.BlockDirectionFlag.Front;
+            }
+            else chunkFront = new NativeArray3D<Voxel>(0, 0, 0, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
+
+            if (IsPosInBordersOfTheMap(back))
+            {
+                chunkBack = GetChunk(back).Voxels;
+                dirChunksAvailable |= DirectionsHelper.BlockDirectionFlag.Back;
+            }
+            else chunkBack = new NativeArray3D<Voxel>(0, 0, 0, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
+
+            if (IsPosInBordersOfTheMap(up))
+            {
+                chunkUp = GetChunk(up).Voxels;
+                dirChunksAvailable |= DirectionsHelper.BlockDirectionFlag.Up;
+            }
+            else chunkUp = new NativeArray3D<Voxel>(0, 0, 0, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
+
+            if (IsPosInBordersOfTheMap(down))
+            {
+                chunkDown = GetChunk(down).Voxels;
+                dirChunksAvailable |= DirectionsHelper.BlockDirectionFlag.Down;
+            }
+            else chunkDown = new NativeArray3D<Voxel>(0, 0, 0, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
+
+            if (IsPosInBordersOfTheMap(left))
+            {
+                chunkLeft = GetChunk(left).Voxels;
+                dirChunksAvailable |= DirectionsHelper.BlockDirectionFlag.Left;
+            }
+            else chunkLeft = new NativeArray3D<Voxel>(0, 0, 0, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
+
+            if (IsPosInBordersOfTheMap(right))
+            {
+                chunkRight = GetChunk(right).Voxels;
+                dirChunksAvailable |= DirectionsHelper.BlockDirectionFlag.Right;
+            }
+            else chunkRight = new NativeArray3D<Voxel>(0, 0, 0, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
+
+            return new ChunkAndAdjacent<Voxel>()
+            {
+                dirChunksAvailable = dirChunksAvailable,
+
+                chunk = chunk.Voxels,
+                chunkFront = chunkFront,
+                chunkBack = chunkBack,
+                chunkUp = chunkUp,
+                chunkDown = chunkDown,
+                chunkLeft = chunkLeft,
+                chunkRight = chunkRight,
+            };
         }
 
         public Voxel GetVoxel(Vector3Int chunkPos, Vector3Int blockPos)
@@ -195,6 +443,14 @@ namespace Scripts.World
         {
             if (ch.IsInitialized && !Dirty.Contains(ch))
                 Dirty.Enqueue(ch);
+        }
+
+        private void SetToPropagateLight(VoxelLightPropagationData data)
+        {
+            if (!_toPropagateLight.Contains(data))
+            {
+                _toPropagateLight.Enqueue(data);
+            }
         }
 
         #region Voxel editing
@@ -210,49 +466,47 @@ namespace Scripts.World
             var blockPos = (blockWorldPos - chunkPos * _chunkSize).ToInt();
 
             var ch = GetChunk(chunkPos);
-            if (ch.IsInitialized)
+
+            var voxels = ch.Voxels;
+            voxels[blockPos.x, blockPos.y, blockPos.z] = new Voxel()
             {
-                var voxels = ch.Voxels;
-                voxels[blockPos.x, blockPos.y, blockPos.z] = new Voxel()
-                {
-                    type = newVoxelType,
-                };
+                type = newVoxelType,
+            };
 
-                if (blockPos.y == (_chunkSize - 1))
-                {
-                    var v = GetChunk(chunkPos + DirectionsHelper.BlockDirectionFlag.Up.DirectionToVec());
-                    SetDirty(v);
-                }
-                else if (blockPos.y == 0)
-                {
-                    var v = GetChunk(chunkPos + DirectionsHelper.BlockDirectionFlag.Down.DirectionToVec());
-                    SetDirty(v);
-                }
-
-                if (blockPos.x == (_chunkSize - 1))
-                {
-                    var v = GetChunk(chunkPos + DirectionsHelper.BlockDirectionFlag.Right.DirectionToVec());
-                    SetDirty(v);
-                }
-                else if (blockPos.x == 0)
-                {
-                    var v = GetChunk(chunkPos + DirectionsHelper.BlockDirectionFlag.Left.DirectionToVec());
-                    SetDirty(v);
-                }
-
-                if (blockPos.z == (_chunkSize - 1))
-                {
-                    var v = GetChunk(chunkPos + DirectionsHelper.BlockDirectionFlag.Front.DirectionToVec());
-                    SetDirty(v);
-                }
-                else if (blockPos.z == 0)
-                {
-                    var v = GetChunk(chunkPos + DirectionsHelper.BlockDirectionFlag.Back.DirectionToVec());
-                    SetDirty(v);
-                }
-
-                SetDirty(ch);
+            if (blockPos.y == (_chunkSize - 1))
+            {
+                var v = GetChunk(chunkPos + DirectionsHelper.BlockDirectionFlag.Up.DirectionToVec());
+                SetDirty(v);
             }
+            else if (blockPos.y == 0)
+            {
+                var v = GetChunk(chunkPos + DirectionsHelper.BlockDirectionFlag.Down.DirectionToVec());
+                SetDirty(v);
+            }
+
+            if (blockPos.x == (_chunkSize - 1))
+            {
+                var v = GetChunk(chunkPos + DirectionsHelper.BlockDirectionFlag.Right.DirectionToVec());
+                SetDirty(v);
+            }
+            else if (blockPos.x == 0)
+            {
+                var v = GetChunk(chunkPos + DirectionsHelper.BlockDirectionFlag.Left.DirectionToVec());
+                SetDirty(v);
+            }
+
+            if (blockPos.z == (_chunkSize - 1))
+            {
+                var v = GetChunk(chunkPos + DirectionsHelper.BlockDirectionFlag.Front.DirectionToVec());
+                SetDirty(v);
+            }
+            else if (blockPos.z == 0)
+            {
+                var v = GetChunk(chunkPos + DirectionsHelper.BlockDirectionFlag.Back.DirectionToVec());
+                SetDirty(v);
+            }
+
+            SetDirty(ch);
         }
 
         public void SetLight(Vector3 blockWorldPos, byte level)
@@ -261,15 +515,17 @@ namespace Scripts.World
             var blockPos = (blockWorldPos - chunkPos * _chunkSize).ToInt();
 
             var ch = GetChunk(chunkPos);
-            if (ch.IsInitialized)
+
+            var t = ch.VoxelLightingLevels;
+            t[blockPos.x, blockPos.y, blockPos.z] = new VoxelLightingLevel()
             {
-                var t = ch.VoxelLightingLevels;
-                t[blockPos.x, blockPos.y, blockPos.z] = new VoxelLightingLevel()
-                {
-                    Level = level,
-                };
-                SetDirty(ch);
-            }
+                _level = level,
+            };
+            SetToPropagateLight(new VoxelLightPropagationData()
+            {
+                _blockPos = blockPos,
+                _chunkPos = chunkPos,
+            });
         }
 
         /// <summary>
@@ -349,5 +605,16 @@ namespace Scripts.World
         }
 
         #endregion Level generation
+
+        #region Helper methods
+
+        private bool IsPosInBordersOfTheMap(Vector3Int pos)
+        {
+            return pos.x < _mapMaxX && pos.z < _mapMaxZ && pos.x >= 0 && pos.z >= 0
+                    &&
+                    _chunks.ContainsHeight(pos.y);
+        }
+
+        #endregion Helper methods
     }
 }

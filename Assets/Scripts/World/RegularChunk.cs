@@ -22,7 +22,6 @@ namespace Scripts.World
         public Vector3Int Pos { get; private set; }
 
         public NativeArray3D<DirectionsHelper.BlockDirectionFlag> VoxelsVisibleFaces { get; private set; }
-        public NativeArray3D<BlittableBool> VoxelsIsVisible { get; private set; }
         public NativeArray3D<VoxelLightingLevel> VoxelLightingLevels { get; private set; }
         public NativeArray3D<Voxel> Voxels { get; private set; }
         public NativeMeshData MeshData { get; private set; }
@@ -38,10 +37,15 @@ namespace Scripts.World
         {
             Pos = pos;
 
-            transform.position = (Vector3)Pos * VoxelWorld._chunkSize * VoxelWorld._blockSize;
+            transform.position = (Vector3)Pos * VoxelWorldController._chunkSize * VoxelWorldController._blockSize;
             gameObject.SetActive(true);
             name = $"Chunk Active at {pos}";
             IsInitialized = true;
+
+            MeshData = new NativeMeshData(0, Allocator.Persistent);
+            VoxelLightingLevels = new NativeArray3D<VoxelLightingLevel>(VoxelWorldController._chunkSize, VoxelWorldController._chunkSize, VoxelWorldController._chunkSize, Allocator.Persistent);
+            VoxelsVisibleFaces = new NativeArray3D<DirectionsHelper.BlockDirectionFlag>(VoxelWorldController._chunkSize, VoxelWorldController._chunkSize, VoxelWorldController._chunkSize, Allocator.Persistent);
+            Voxels = new NativeArray3D<Voxel>(VoxelWorldController._chunkSize, VoxelWorldController._chunkSize, VoxelWorldController._chunkSize, Allocator.Persistent);
         }
 
         public void Deinitialize()
@@ -49,6 +53,11 @@ namespace Scripts.World
             name = "Chunk Inactive";
             IsInitialized = false;
             gameObject.SetActive(false);
+
+            VoxelsVisibleFaces.Dispose();
+            Voxels.Dispose();
+            MeshData.Dispose();
+            VoxelLightingLevels.Dispose();
         }
 
         public void ApplyMeshData()
@@ -73,21 +82,6 @@ namespace Scripts.World
             _mesh.MarkDynamic();
 
             _renderer.material = _material;
-
-            MeshData = new NativeMeshData(0, Allocator.Persistent);
-            VoxelLightingLevels = new NativeArray3D<VoxelLightingLevel>(VoxelWorld._chunkSize, VoxelWorld._chunkSize, VoxelWorld._chunkSize, Allocator.Persistent);
-            VoxelsIsVisible = new NativeArray3D<BlittableBool>(VoxelWorld._chunkSize, VoxelWorld._chunkSize, VoxelWorld._chunkSize, Allocator.Persistent);
-            VoxelsVisibleFaces = new NativeArray3D<DirectionsHelper.BlockDirectionFlag>(VoxelWorld._chunkSize, VoxelWorld._chunkSize, VoxelWorld._chunkSize, Allocator.Persistent);
-            Voxels = new NativeArray3D<Voxel>(VoxelWorld._chunkSize, VoxelWorld._chunkSize, VoxelWorld._chunkSize, Allocator.Persistent);
-        }
-
-        private void OnDestroy()
-        {
-            VoxelsIsVisible.Dispose();
-            VoxelsVisibleFaces.Dispose();
-            Voxels.Dispose();
-            MeshData.Dispose();
-            VoxelLightingLevels.Dispose();
         }
 
         public static RegularChunk CreateNew()

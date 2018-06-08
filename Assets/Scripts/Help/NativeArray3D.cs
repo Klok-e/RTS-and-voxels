@@ -14,6 +14,8 @@ namespace Scripts.Help
         public int YMax { get; }
         public int ZMax { get; }
 
+        public bool IsCreated { get { return _arr.IsCreated; } }
+
         private NativeArray<T> _arr;
 
         public NativeArray3D(int xMax, int yMax, int zMax, Allocator allocator, NativeArrayOptions nativeArrayOptions = NativeArrayOptions.ClearMemory)

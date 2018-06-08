@@ -18,34 +18,6 @@ namespace Scripts.World
         Solid = 1,
     }
 
-    /// <summary>
-    /// 32 levels of light
-    /// </summary>
-    public struct VoxelLightingLevel
-    {
-        /// <summary>
-        /// [unused]xxx || [level]xxxxx
-        /// </summary>
-        public byte Level
-        {
-            get
-            {
-                return _level;
-            }
-            set
-            {
-                if (value > 32)
-                    _level = 32;
-                else if (value < 0)
-                    _level = 0;
-                else
-                    _level = value;
-            }
-        }
-
-        private byte _level;
-    }
-
     public enum BlittableBool : byte
     {
         False = 0,

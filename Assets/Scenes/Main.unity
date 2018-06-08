@@ -2523,8 +2523,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 027a7dd214a14f940a538b6980d8f3a9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _mapLength: 5
-  _mapWidth: 5
+  _mapMaxX: 5
+  _mapMaxZ: 5
   _material: {fileID: 2100000, guid: bab4c8de5113003479a1e224b6c029e8, type: 2}
   _colors:
   - {r: 0.24725206, g: 0.7735849, b: 0.21529014, a: 238.4352}

@@ -13,10 +13,14 @@ namespace Scripts.World.Jobs
         public NativeArray3D<Voxel> voxels;
 
         [ReadOnly]
-        public NativeArray3D<VoxelLightingLevel> voxelLightingLevels;
+        public NativeArray3D<DirectionsHelper.BlockDirectionFlag> voxelsVisibleFaces;
 
         [ReadOnly]
-        public NativeArray3D<DirectionsHelper.BlockDirectionFlag> voxelsVisibleFaces;
+        public DirectionsHelper.BlockDirectionFlag availableChunks;
+
+        [ReadOnly]
+        public NativeArray3D<VoxelLightingLevel> lightingLevels,
+            lightingLevelsUp, lightingLevelsDown, lightingLevelsLeft, lightingLevelsRight, lightingLevelsBack, lightingLevelsFront;
 
         [WriteOnly]
         public NativeMeshData meshData;
@@ -29,41 +33,70 @@ namespace Scripts.World.Jobs
                 if (voxels[x, y, z].type != VoxelType.Air)
                 {
                     var col = voxels[x, y, z].ToColor();
-                    col *= ((float)voxelLightingLevels[x, y, z]._level / 32);
 
-                    CreateCube(ref meshData, new Vector3(x, y, z) * VoxelWorldController._blockSize, voxelsVisibleFaces[x, y, z], col);
+                    CreateCube(ref meshData, new Vector3(x, y, z) * VoxelWorldController._blockSize, voxelsVisibleFaces[x, y, z], col, new Vector3Int(x, y, z));
                 }
             }
         }
 
         #region Mesh generation
 
-        private static void CreateCube(ref NativeMeshData mesh, Vector3 pos, DirectionsHelper.BlockDirectionFlag facesVisible, Color color)
+        private void CreateCube(ref NativeMeshData mesh, Vector3 pos, DirectionsHelper.BlockDirectionFlag facesVisible, Color color, Vector3Int blockPos)
         {
             for (int i = 0; i < 6; i++)
             {
                 var curr = (DirectionsHelper.BlockDirectionFlag)(1 << i);
                 if ((curr & facesVisible) != 0)//0b010 00 & 0b010 00 -> 0b010 00; 0b100 00 & 0b010 00 -> 0b000 00
-                    CreateFace(ref mesh, pos, curr, color);
+                    CreateFace(ref mesh, pos, curr, color, blockPos);
             }
         }
 
-        private static void CreateFace(ref NativeMeshData mesh, Vector3 vertOffset, DirectionsHelper.BlockDirectionFlag dir, Color color)
+        private void CreateFace(ref NativeMeshData mesh, Vector3 vertOffset, DirectionsHelper.BlockDirectionFlag dir, Color color, Vector3Int blockPos)
         {
+            var vec = dir.DirectionToVec();
+            var nextBlockPos = blockPos + vec;
+
+            byte light;
+            if (nextBlockPos.x < VoxelWorldController._chunkSize && nextBlockPos.y < VoxelWorldController._chunkSize && nextBlockPos.z < VoxelWorldController._chunkSize
+                    &&
+                    nextBlockPos.x >= 0 && nextBlockPos.y >= 0 && nextBlockPos.z >= 0)
+            {
+                light = lightingLevels[nextBlockPos.x, nextBlockPos.y, nextBlockPos.z]._level;
+            }
+            else if ((dir & availableChunks) == 0)
+            {
+                light = 0;
+            }
+            else
+            {
+                if (nextBlockPos.x >= VoxelWorldController._chunkSize) nextBlockPos.x = 0;
+                else if (nextBlockPos.x < 0) nextBlockPos.x = VoxelWorldController._chunkSize - 1;
+
+                if (nextBlockPos.y >= VoxelWorldController._chunkSize) nextBlockPos.y = 0;
+                else if (nextBlockPos.y < 0) nextBlockPos.y = VoxelWorldController._chunkSize - 1;
+
+                if (nextBlockPos.z >= VoxelWorldController._chunkSize) nextBlockPos.z = 0;
+                else if (nextBlockPos.z < 0) nextBlockPos.z = VoxelWorldController._chunkSize - 1;
+
+                NativeArray3D<VoxelLightingLevel> ch;
+                switch (dir)
+                {
+                    case DirectionsHelper.BlockDirectionFlag.Up: ch = lightingLevelsUp; break;
+                    case DirectionsHelper.BlockDirectionFlag.Down: ch = lightingLevelsDown; break;
+                    case DirectionsHelper.BlockDirectionFlag.Left: ch = lightingLevelsLeft; break;
+                    case DirectionsHelper.BlockDirectionFlag.Right: ch = lightingLevelsRight; break;
+                    case DirectionsHelper.BlockDirectionFlag.Back: ch = lightingLevelsBack; break;
+                    case DirectionsHelper.BlockDirectionFlag.Front: ch = lightingLevelsFront; break;
+                    default: throw new Exception();
+                }
+                light = ch[nextBlockPos.x, nextBlockPos.y, nextBlockPos.z]._level;
+            }
+
+            color *= (float)light / 32;
+
             var startIndex = mesh._vertices.Length;
 
-            Quaternion rotation = Quaternion.identity;
-
-            switch (dir)
-            {
-                case DirectionsHelper.BlockDirectionFlag.Left: rotation = Quaternion.LookRotation(Vector3.left); break;
-                case DirectionsHelper.BlockDirectionFlag.Right: rotation = Quaternion.LookRotation(Vector3.right); break;
-                case DirectionsHelper.BlockDirectionFlag.Down: rotation = Quaternion.LookRotation(Vector3.down); break;
-                case DirectionsHelper.BlockDirectionFlag.Up: rotation = Quaternion.LookRotation(Vector3.up); break;
-                case DirectionsHelper.BlockDirectionFlag.Back: rotation = Quaternion.LookRotation(Vector3.back); break;
-                case DirectionsHelper.BlockDirectionFlag.Front: rotation = Quaternion.LookRotation(Vector3.forward); break;
-                default: throw new Exception();
-            }
+            Quaternion rotation = Quaternion.LookRotation(vec);
 
             mesh._colors.Add(color);
             mesh._colors.Add(color);

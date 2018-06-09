@@ -42,7 +42,7 @@ namespace Scripts.World.Jobs
                     &&
                     x + vec.x >= 0 && y + vec.y >= 0 && z + vec.z >= 0)
                 {
-                    if (voxels[x + vec.x, y + vec.y, z + vec.z].type.IsTransparent())
+                    if (voxels[x + vec.x, y + vec.y, z + vec.z].type.IsAir())
                         facesVisible |= dir;
                 }
                 else if ((dir & availableChunks) == 0)
@@ -74,7 +74,7 @@ namespace Scripts.World.Jobs
                         default: throw new Exception();
                     }
 
-                    if ((ch[blockInd.x, blockInd.y, blockInd.z]).type.IsTransparent())
+                    if ((ch[blockInd.x, blockInd.y, blockInd.z]).type.IsAir())
                         facesVisible |= dir;
                 }
             }

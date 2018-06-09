@@ -51,7 +51,7 @@ namespace Scripts.World
             return new Color(vec.x, vec.y, vec.z, 1);
         }
 
-        public static bool IsTransparent(this VoxelType type)
+        public static bool IsAir(this VoxelType type)
         {
             if (type == VoxelType.Air)
                 return true;

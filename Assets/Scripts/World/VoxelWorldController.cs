@@ -19,6 +19,7 @@ namespace Scripts.World
 
         private Queue<ChunkCleaningData> _updateDataToProcess;
         private Queue<VoxelLightPropagationData> _toPropagateLight;
+        private Queue<VoxelLightPropagationData> _toRemoveLight;
         private Queue<RegularChunk> _toRebuildVisibleFaces;
         private Queue<RegularChunk> _dirty;
 
@@ -58,24 +59,38 @@ namespace Scripts.World
                 _dirty.Enqueue(data._chunk);
             }
 
-            if (_dirty.Count > 0)
+            if (_toPropagateLight.Count > 0)
             {
-                //int count = VoxelWorld.Instance.Dirty.Count > (System.Environment.ProcessorCount - 1) ? (System.Environment.ProcessorCount - 1) : VoxelWorld.Instance.Dirty.Count;
-
-                var ch = _dirty.Dequeue();
-                var data = CleanChunk(ch);
-                _updateDataToProcess.Enqueue(data);
+                PropagateAllLightSynchronously();
             }
-
+            if (_toRemoveLight.Count > 0)
+            {
+                DepropagateAllLightSynchronously();
+            }
             if (_toPropagateLight.Count > 0)
             {
                 PropagateAllLightSynchronously();
             }
 
+            if (_dirty.Count > 0)
+            {
+                int count = _dirty.Count > (Environment.ProcessorCount - 1) ? (Environment.ProcessorCount - 1) : _dirty.Count;
+                for (int i = 0; i < count; i++)
+                {
+                    var ch = _dirty.Dequeue();
+                    var data = CleanChunk(ch);
+                    _updateDataToProcess.Enqueue(data);
+                }
+            }
+
             if (_updateDataToProcess.Count > 0)
             {
-                var data = _updateDataToProcess.Dequeue();
-                data.CompleteChunkCleaning();
+                int count = _updateDataToProcess.Count > (Environment.ProcessorCount - 1) ? (Environment.ProcessorCount - 1) : _updateDataToProcess.Count;
+                for (int i = 0; i < count; i++)
+                {
+                    var data = _updateDataToProcess.Dequeue();
+                    data.CompleteChunkCleaning();
+                }
             }
         }
 
@@ -100,6 +115,7 @@ namespace Scripts.World
             _dirty = new Queue<RegularChunk>();
             _updateDataToProcess = new Queue<ChunkCleaningData>();
             _toPropagateLight = new Queue<VoxelLightPropagationData>();
+            _toRemoveLight = new Queue<VoxelLightPropagationData>();
             _toRebuildVisibleFaces = new Queue<RegularChunk>();
 
             //_placeholderChunk = CreatePlaceholderChunk();
@@ -184,6 +200,97 @@ namespace Scripts.World
                 _lightingLevelsLeft = jb2.lightingLevelsLeft,
                 _lightingLevelsRight = jb2.lightingLevelsRight,
             };
+        }
+
+        public void DepropagateAllLightSynchronously()
+        {
+            while (_toRemoveLight.Count > 0)
+            {
+                var data = _toRemoveLight.Dequeue();
+                var chunk = GetChunk(data._chunkPos);
+                SetDirty(chunk);
+
+                var voxels = chunk.Voxels;
+                var lightLevels = chunk.VoxelLightingLevels;
+
+                var lightLvl = lightLevels[data._blockPos.x, data._blockPos.y, data._blockPos.z];
+                lightLevels[data._blockPos.x, data._blockPos.y, data._blockPos.z] = new VoxelLightingLevel()
+                {
+                    _level = 0,
+                };
+
+                //check 6 sides
+                for (int i = 0; i < 6; i++)
+                {
+                    var dir = (DirectionsHelper.BlockDirectionFlag)(1 << i);
+                    var vec = dir.DirectionToVec();
+
+                    var nextBlockPos = data._blockPos + vec;
+
+                    if (nextBlockPos.x >= _chunkSize || nextBlockPos.x < 0
+                        ||
+                        nextBlockPos.y >= _chunkSize || nextBlockPos.y < 0
+                        ||
+                        nextBlockPos.z >= _chunkSize || nextBlockPos.z < 0)
+                    {
+                        if (nextBlockPos.x >= _chunkSize) nextBlockPos.x = 0;
+                        else if (nextBlockPos.x < 0) nextBlockPos.x = _chunkSize - 1;
+
+                        if (nextBlockPos.y >= _chunkSize) nextBlockPos.y = 0;
+                        else if (nextBlockPos.y < 0) nextBlockPos.y = _chunkSize - 1;
+
+                        if (nextBlockPos.z >= _chunkSize) nextBlockPos.z = 0;
+                        else if (nextBlockPos.z < 0) nextBlockPos.z = _chunkSize - 1;
+
+                        var nextChunkPos = data._chunkPos + vec;
+                        if (IsChunkPosInBordersOfTheMap(nextChunkPos))
+                        {
+                            var nextChunk = GetChunk(nextChunkPos);
+                            SetDirty(nextChunk);
+
+                            var voxelsDir = nextChunk.Voxels;
+                            var lightLvlDir = nextChunk.VoxelLightingLevels;
+
+                            if (lightLvlDir[nextBlockPos.x, nextBlockPos.y, nextBlockPos.z]._level < lightLvl._level
+                                &&
+                                voxelsDir[nextBlockPos.x, nextBlockPos.y, nextBlockPos.z].type.IsAir())
+                            {
+                                SetToRemoveLight(new VoxelLightPropagationData()
+                                {
+                                    _blockPos = nextBlockPos,
+                                    _chunkPos = nextChunkPos,
+                                });
+                            }
+                            else if (voxelsDir[nextBlockPos.x, nextBlockPos.y, nextBlockPos.z].type.IsAir())
+                            {
+                                SetToPropagateLight(new VoxelLightPropagationData()
+                                {
+                                    _blockPos = nextBlockPos,
+                                    _chunkPos = nextChunkPos,
+                                });
+                            }
+                        }
+                    }
+                    else if (lightLevels[nextBlockPos.x, nextBlockPos.y, nextBlockPos.z]._level < lightLvl._level
+                             &&
+                             voxels[nextBlockPos.x, nextBlockPos.y, nextBlockPos.z].type.IsAir())
+                    {
+                        SetToRemoveLight(new VoxelLightPropagationData()
+                        {
+                            _blockPos = nextBlockPos,
+                            _chunkPos = data._chunkPos,
+                        });
+                    }
+                    else if (voxels[nextBlockPos.x, nextBlockPos.y, nextBlockPos.z].type.IsAir())
+                    {
+                        SetToPropagateLight(new VoxelLightPropagationData()
+                        {
+                            _blockPos = nextBlockPos,
+                            _chunkPos = data._chunkPos,
+                        });
+                    }
+                }
+            }
         }
 
         public void PropagateAllLightSynchronously()
@@ -485,10 +592,12 @@ namespace Scripts.World
 
         private void SetToPropagateLight(VoxelLightPropagationData data)
         {
-            if (!_toPropagateLight.Contains(data))
-            {
-                _toPropagateLight.Enqueue(data);
-            }
+            _toPropagateLight.Enqueue(data);
+        }
+
+        private void SetToRemoveLight(VoxelLightPropagationData data)
+        {
+            _toRemoveLight.Enqueue(data);
         }
 
         private void SetToRebuildVisibleFaces(RegularChunk chunk)
@@ -522,6 +631,9 @@ namespace Scripts.World
                 {
                     type = newVoxelType,
                 };
+
+                //if this block is solid then remove light from this block
+                SetToRemoveLight(new VoxelLightPropagationData() { _blockPos = blockPos, _chunkPos = chunkPos });
 
                 //check 6 sides of a voxel
                 for (int i = 0; i < 6; i++)
@@ -567,6 +679,9 @@ namespace Scripts.World
                                 nextVisibleSides[nextBlockPos.x, nextBlockPos.y, nextBlockPos.z] |= oppositeDir;//enable side of the next block
 
                                 visibleSides[blockPos.x, blockPos.y, blockPos.z] &= ~dir;//disable side of this block
+
+                                //if this block is air then propagate light here
+                                SetToPropagateLight(new VoxelLightPropagationData() { _blockPos = nextBlockPos, _chunkPos = nextChunkPos });
                             }
                             else
                             {
@@ -590,6 +705,9 @@ namespace Scripts.World
                             visibleSides[nextBlockPos.x, nextBlockPos.y, nextBlockPos.z] |= oppositeDir;//enable side of the next block
 
                             visibleSides[blockPos.x, blockPos.y, blockPos.z] &= ~dir;//disable side of this block
+
+                            //if this block is air then propagate light here
+                            SetToPropagateLight(new VoxelLightPropagationData() { _blockPos = nextBlockPos, _chunkPos = chunkPos });
                         }
                         else
                         {

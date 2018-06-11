@@ -59,10 +59,9 @@ namespace MarchingCubesProject
         {
             if (Input.GetMouseButton(0))
             {
-                RaycastHit hit;
                 Ray ray = GetComponent<Camera>().ScreenPointToRay(Input.mousePosition);
 
-                if (Physics.Raycast(ray, out hit))
+                if (Physics.Raycast(ray, out RaycastHit hit))
                 {
                     var chunk = hit.collider.GetComponent<RegularChunk>();
                     if (chunk)
@@ -70,7 +69,7 @@ namespace MarchingCubesProject
                         var pos = hit.point + (hit.normal * (VoxelWorldController._blockSize * (_isClearing ? -1 : 1)) / 2);
                         if (_isLightInsertion)
                         {
-                            VoxelWorldController.Instance.SetLight(pos / VoxelWorldController._blockSize, 31);
+                            VoxelWorldController.Instance.SetLight((hit.point + (hit.normal * (VoxelWorldController._blockSize / 2))) / VoxelWorldController._blockSize, 15);
                         }
                         else if (_isBlockInsertion)
                         {

@@ -26,7 +26,7 @@ namespace Scripts.World
         /// <summary>
         /// Only uneven amount or else SetVoxel won't work at all
         /// </summary>
-        public const int _chunkSize = 33;
+        public const int _chunkSize = 17;
 
         public const float _blockSize = 0.5f;
 
@@ -56,7 +56,7 @@ namespace Scripts.World
                 var ch = _toRebuildVisibleFaces.Dequeue();
                 var data = RebuildChunkVisibleFaces(ch);
                 data.CompleteChunkVisibleFacesRebuilding();
-                _dirty.Enqueue(data._chunk);
+                SetDirty(data._chunk);
             }
 
             if (_toPropagateLight.Count > 0)
@@ -164,24 +164,36 @@ namespace Scripts.World
 
         public ChunkCleaningData CleanChunk(RegularChunk chunk, JobHandle dependency = default(JobHandle))
         {
-            var adjacent = GetAdjacentChunkLightingLevels(chunk);
+            var adjacentLight = GetAdjacentChunkLightingLevels(chunk);
+
+            var adjacentVox = GetAdjacentChunkVoxels(chunk);
 
             var jb2 = new ConstructMeshJob()
             {
                 meshData = chunk.MeshData,
-                voxels = new NativeArray3D<Voxel>(chunk.Voxels, Allocator.TempJob),
 
-                availableChunks = adjacent.dirChunksAvailable,
-                lightingLevels = new NativeArray3D<VoxelLightingLevel>(chunk.VoxelLightingLevels, Allocator.TempJob),
-                lightingLevelsBack = new NativeArray3D<VoxelLightingLevel>(adjacent.chunkBack, Allocator.TempJob),
-                lightingLevelsDown = new NativeArray3D<VoxelLightingLevel>(adjacent.chunkDown, Allocator.TempJob),
-                lightingLevelsFront = new NativeArray3D<VoxelLightingLevel>(adjacent.chunkFront, Allocator.TempJob),
-                lightingLevelsLeft = new NativeArray3D<VoxelLightingLevel>(adjacent.chunkLeft, Allocator.TempJob),
-                lightingLevelsRight = new NativeArray3D<VoxelLightingLevel>(adjacent.chunkRight, Allocator.TempJob),
-                lightingLevelsUp = new NativeArray3D<VoxelLightingLevel>(adjacent.chunkUp, Allocator.TempJob),
+                availableChunksVoxels = adjacentVox.dirChunksAvailable,
+                voxels = new NativeArray3D<Voxel>(adjacentVox.chunk, Allocator.TempJob),
+                voxelsBack = new NativeArray3D<Voxel>(adjacentVox.chunkBack, Allocator.TempJob),
+                voxelsDown = new NativeArray3D<Voxel>(adjacentVox.chunkDown, Allocator.TempJob),
+                voxelsFront = new NativeArray3D<Voxel>(adjacentVox.chunkFront, Allocator.TempJob),
+                voxelsLeft = new NativeArray3D<Voxel>(adjacentVox.chunkLeft, Allocator.TempJob),
+                voxelsRight = new NativeArray3D<Voxel>(adjacentVox.chunkRight, Allocator.TempJob),
+                voxelsUp = new NativeArray3D<Voxel>(adjacentVox.chunkUp, Allocator.TempJob),
+
+                availableChunksLight = adjacentLight.dirChunksAvailable,
+                lightingLevels = new NativeArray3D<VoxelLightingLevel>(adjacentLight.chunk, Allocator.TempJob),
+                lightingLevelsBack = new NativeArray3D<VoxelLightingLevel>(adjacentLight.chunkBack, Allocator.TempJob),
+                lightingLevelsDown = new NativeArray3D<VoxelLightingLevel>(adjacentLight.chunkDown, Allocator.TempJob),
+                lightingLevelsFront = new NativeArray3D<VoxelLightingLevel>(adjacentLight.chunkFront, Allocator.TempJob),
+                lightingLevelsLeft = new NativeArray3D<VoxelLightingLevel>(adjacentLight.chunkLeft, Allocator.TempJob),
+                lightingLevelsRight = new NativeArray3D<VoxelLightingLevel>(adjacentLight.chunkRight, Allocator.TempJob),
+                lightingLevelsUp = new NativeArray3D<VoxelLightingLevel>(adjacentLight.chunkUp, Allocator.TempJob),
+
                 voxelsVisibleFaces = chunk.VoxelsVisibleFaces,
             };
-            adjacent.DisposeUnavailable();
+            adjacentLight.DisposeUnavailable();
+            adjacentVox.DisposeUnavailable();
 
             var hndl = jb2.Schedule(dependency);
             JobHandle.ScheduleBatchedJobs();
@@ -190,7 +202,14 @@ namespace Scripts.World
             {
                 _chunk = chunk,
                 _updateJob = hndl,
+
                 _voxels = jb2.voxels,
+                _voxelsBack = jb2.voxelsBack,
+                _voxelsDown = jb2.voxelsDown,
+                _voxelsFront = jb2.voxelsFront,
+                _voxelsLeft = jb2.voxelsLeft,
+                _voxelsRight = jb2.voxelsRight,
+                _voxelsUp = jb2.voxelsUp,
 
                 _lightingLevels = jb2.lightingLevels,
                 _lightingLevelsBack = jb2.lightingLevelsBack,
@@ -299,13 +318,13 @@ namespace Scripts.World
             {
                 var data = _toPropagateLight.Dequeue();
                 var chunk = GetChunk(data._chunkPos);
-                SetDirty(chunk);
 
                 var voxels = chunk.Voxels;
                 var lightLevels = chunk.VoxelLightingLevels;
 
                 var lightLvl = chunk.VoxelLightingLevels[data._blockPos.x, data._blockPos.y, data._blockPos.z];
 
+                SetDirty(chunk);
                 //check 6 sides
                 for (int i = 0; i < 6; i++)
                 {
@@ -586,8 +605,11 @@ namespace Scripts.World
 
         private void SetDirty(RegularChunk ch)
         {
-            if (ch.IsInitialized && !_dirty.Contains(ch))
+            if (ch.IsInitialized && !ch.IsBeingRebult)
+            {
+                ch.SetBeingRebuilt();
                 _dirty.Enqueue(ch);
+            }
         }
 
         private void SetToPropagateLight(VoxelLightPropagationData data)
@@ -602,7 +624,7 @@ namespace Scripts.World
 
         private void SetToRebuildVisibleFaces(RegularChunk chunk)
         {
-            if (!_toRebuildVisibleFaces.Contains(chunk))
+            if (chunk.IsInitialized)
             {
                 _toRebuildVisibleFaces.Enqueue(chunk);
             }
@@ -632,8 +654,9 @@ namespace Scripts.World
                     type = newVoxelType,
                 };
 
-                //if this block is solid then remove light from this block
-                SetToRemoveLight(new VoxelLightPropagationData() { _blockPos = blockPos, _chunkPos = chunkPos });
+                if (ch.VoxelLightingLevels[blockPos.x, blockPos.y, blockPos.z]._level > 0)
+                    //if this block is solid then remove light from this block
+                    SetToRemoveLight(new VoxelLightPropagationData() { _blockPos = blockPos, _chunkPos = chunkPos });
 
                 //check 6 sides of a voxel
                 for (int i = 0; i < 6; i++)
@@ -680,8 +703,9 @@ namespace Scripts.World
 
                                 visibleSides[blockPos.x, blockPos.y, blockPos.z] &= ~dir;//disable side of this block
 
-                                //if this block is air then propagate light here
-                                SetToPropagateLight(new VoxelLightPropagationData() { _blockPos = nextBlockPos, _chunkPos = nextChunkPos });
+                                if (nextChunk.VoxelLightingLevels[nextBlockPos.x, nextBlockPos.y, nextBlockPos.z]._level > 0)
+                                    //if this block is air then propagate light here
+                                    SetToPropagateLight(new VoxelLightPropagationData() { _blockPos = nextBlockPos, _chunkPos = nextChunkPos });
                             }
                             else
                             {
@@ -706,8 +730,9 @@ namespace Scripts.World
 
                             visibleSides[blockPos.x, blockPos.y, blockPos.z] &= ~dir;//disable side of this block
 
-                            //if this block is air then propagate light here
-                            SetToPropagateLight(new VoxelLightPropagationData() { _blockPos = nextBlockPos, _chunkPos = chunkPos });
+                            if (ch.VoxelLightingLevels[nextBlockPos.x, nextBlockPos.y, nextBlockPos.z]._level > 0)
+                                //if this block is air then propagate light here
+                                SetToPropagateLight(new VoxelLightPropagationData() { _blockPos = nextBlockPos, _chunkPos = chunkPos });
                         }
                         else
                         {

@@ -27,6 +27,7 @@ namespace Scripts.World
         public NativeMeshData MeshData { get; private set; }
 
         public bool IsInitialized { get; private set; }
+        public bool IsBeingRebult { get; private set; }
 
         private Mesh _mesh;
         private MeshRenderer _renderer;
@@ -41,6 +42,7 @@ namespace Scripts.World
             gameObject.SetActive(true);
             name = $"Chunk Active at {pos}";
             IsInitialized = true;
+            IsBeingRebult = false;
 
             MeshData = new NativeMeshData(0, Allocator.Persistent);
             VoxelLightingLevels = new NativeArray3D<VoxelLightingLevel>(VoxelWorldController._chunkSize, VoxelWorldController._chunkSize, VoxelWorldController._chunkSize, Allocator.Persistent);
@@ -60,14 +62,23 @@ namespace Scripts.World
             VoxelLightingLevels.Dispose();
         }
 
+        public void SetBeingRebuilt()
+        {
+            IsBeingRebult = true;
+        }
+
         public void ApplyMeshData()
         {
+            if (IsBeingRebult == false)
+                throw new Exception();
+
             _mesh.Clear();
             _mesh.vertices = MeshData._vertices.ToArray();
             _mesh.SetTriangles(MeshData._triangles.ToArray(), 0);
             _mesh.normals = MeshData._normals.ToArray();
             _mesh.colors = MeshData._colors.ToArray();
             MeshData.Clear();
+            IsBeingRebult = false;
 
             _filter.sharedMesh = _mesh;
             _coll.sharedMesh = _mesh;

@@ -10,13 +10,17 @@ namespace Scripts.World.Jobs
     public struct ConstructMeshJob : IJob
     {
         [ReadOnly]
-        public NativeArray3D<Voxel> voxels;
-
-        [ReadOnly]
         public NativeArray3D<DirectionsHelper.BlockDirectionFlag> voxelsVisibleFaces;
 
         [ReadOnly]
-        public DirectionsHelper.BlockDirectionFlag availableChunks;
+        public DirectionsHelper.BlockDirectionFlag availableChunksVoxels;
+
+        [ReadOnly]
+        public NativeArray3D<Voxel> voxels,
+            voxelsUp, voxelsDown, voxelsLeft, voxelsRight, voxelsBack, voxelsFront;
+
+        [ReadOnly]
+        public DirectionsHelper.BlockDirectionFlag availableChunksLight;
 
         [ReadOnly]
         public NativeArray3D<VoxelLightingLevel> lightingLevels,
@@ -33,10 +37,62 @@ namespace Scripts.World.Jobs
                 if (voxels[x, y, z].type != VoxelType.Air)
                 {
                     var col = voxels[x, y, z].ToColor();
-
-                    CreateCube(ref meshData, new Vector3(x, y, z) * VoxelWorldController._blockSize, voxelsVisibleFaces[x, y, z], col, new Vector3Int(x, y, z));
+                    //var faces = CalculateVisibleFaces(x, y, z);
+                    var faces = voxelsVisibleFaces[x, y, z];
+                    CreateCube(ref meshData, new Vector3(x, y, z) * VoxelWorldController._blockSize, faces, col, new Vector3Int(x, y, z));
                 }
             }
+        }
+
+        private DirectionsHelper.BlockDirectionFlag CalculateVisibleFaces(int x, int y, int z)
+        {
+            DirectionsHelper.BlockDirectionFlag facesVisible = DirectionsHelper.BlockDirectionFlag.None;
+            for (byte i = 0; i < 6; i++)
+            {
+                var dir = (DirectionsHelper.BlockDirectionFlag)(1 << i);
+                Vector3Int vec = dir.DirectionToVec();
+
+                if (x + vec.x < VoxelWorldController._chunkSize && y + vec.y < VoxelWorldController._chunkSize && z + vec.z < VoxelWorldController._chunkSize
+                    &&
+                    x + vec.x >= 0 && y + vec.y >= 0 && z + vec.z >= 0)
+                {
+                    if (voxels[x + vec.x, y + vec.y, z + vec.z].type.IsAir())
+                        facesVisible |= dir;
+                }
+                else if ((dir & availableChunksVoxels) == 0)
+                {
+                    facesVisible |= dir;
+                }
+                else
+                {
+                    var blockInd = (new Vector3Int(x, y, z) + vec);
+
+                    if (blockInd.x >= VoxelWorldController._chunkSize) blockInd.x = 0;
+                    else if (blockInd.x < 0) blockInd.x = VoxelWorldController._chunkSize - 1;
+
+                    if (blockInd.y >= VoxelWorldController._chunkSize) blockInd.y = 0;
+                    else if (blockInd.y < 0) blockInd.y = VoxelWorldController._chunkSize - 1;
+
+                    if (blockInd.z >= VoxelWorldController._chunkSize) blockInd.z = 0;
+                    else if (blockInd.z < 0) blockInd.z = VoxelWorldController._chunkSize - 1;
+
+                    NativeArray3D<Voxel> ch;
+                    switch (dir)
+                    {
+                        case DirectionsHelper.BlockDirectionFlag.Up: ch = voxelsUp; break;
+                        case DirectionsHelper.BlockDirectionFlag.Down: ch = voxelsDown; break;
+                        case DirectionsHelper.BlockDirectionFlag.Left: ch = voxelsLeft; break;
+                        case DirectionsHelper.BlockDirectionFlag.Right: ch = voxelsRight; break;
+                        case DirectionsHelper.BlockDirectionFlag.Back: ch = voxelsBack; break;
+                        case DirectionsHelper.BlockDirectionFlag.Front: ch = voxelsFront; break;
+                        default: throw new Exception();
+                    }
+
+                    if ((ch[blockInd.x, blockInd.y, blockInd.z]).type.IsAir())
+                        facesVisible |= dir;
+                }
+            }
+            return facesVisible;
         }
 
         #region Mesh generation
@@ -63,7 +119,7 @@ namespace Scripts.World.Jobs
             {
                 light = lightingLevels[nextBlockPos.x, nextBlockPos.y, nextBlockPos.z]._level;
             }
-            else if ((dir & availableChunks) == 0)
+            else if ((dir & availableChunksLight) == 0)
             {
                 light = 0;
             }
@@ -92,7 +148,7 @@ namespace Scripts.World.Jobs
                 light = ch[nextBlockPos.x, nextBlockPos.y, nextBlockPos.z]._level;
             }
 
-            color *= (float)light / 32;
+            color *= (float)(light + 8) / 32;
 
             var startIndex = mesh._vertices.Length;
 

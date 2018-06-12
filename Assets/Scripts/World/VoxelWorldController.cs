@@ -664,11 +664,7 @@ namespace Scripts.World
                     var dir = (DirectionsHelper.BlockDirectionFlag)(1 << i);
                     var vec = dir.DirectionToVec();
 
-                    DirectionsHelper.BlockDirectionFlag oppositeDir;
-                    if (dir == DirectionsHelper.BlockDirectionFlag.Up || dir == DirectionsHelper.BlockDirectionFlag.Left || dir == DirectionsHelper.BlockDirectionFlag.Back)
-                        oppositeDir = (DirectionsHelper.BlockDirectionFlag)(((byte)dir) << 1);
-                    else
-                        oppositeDir = (DirectionsHelper.BlockDirectionFlag)(((byte)dir) >> 1);
+                    DirectionsHelper.BlockDirectionFlag oppositeDir = dir.Opposite();
 
                     var nextBlockPos = blockPos + vec;
 

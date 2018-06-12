@@ -80,6 +80,16 @@ namespace Scripts.Help
             else throw new Exception();
         }
 
+        public static BlockDirectionFlag Opposite(this BlockDirectionFlag dir)
+        {
+            BlockDirectionFlag oppositeDir;
+            if (dir == BlockDirectionFlag.Up || dir == BlockDirectionFlag.Left || dir == BlockDirectionFlag.Back)
+                oppositeDir = (BlockDirectionFlag)(((byte)dir) << 1);
+            else
+                oppositeDir = (BlockDirectionFlag)(((byte)dir) >> 1);
+            return oppositeDir;
+        }
+
         public static class VectorDirections
         {
             public static readonly Vector3Int Up = new Vector3Int(0, 1, 0);

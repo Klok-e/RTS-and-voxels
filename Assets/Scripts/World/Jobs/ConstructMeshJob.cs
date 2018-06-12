@@ -112,10 +112,51 @@ namespace Scripts.World.Jobs
             var vec = dir.DirectionToVec();
             var nextBlockPos = blockPos + vec;
 
+            byte light = CalculateLightForAFace(nextBlockPos, dir);
+            var occlusion = (new Vector4(2, 2, 2, 2) - CalculateAmbientOcclusion(nextBlockPos, dir)) / 2;
+
+            color *= (float)(light + 8) / 32;
+
+            var startIndex = mesh._vertices.Length;
+
+            Quaternion rotation = Quaternion.LookRotation(vec);
+
+            mesh._colors.Add(color * occlusion.x);
+            mesh._colors.Add(color * occlusion.y);
+            mesh._colors.Add(color * occlusion.z);
+            mesh._colors.Add(color * occlusion.w);
+
+            mesh._uv.Add(new Vector2(0, 0));
+            mesh._uv.Add(new Vector2(1, 0));
+            mesh._uv.Add(new Vector2(0, 1));
+            mesh._uv.Add(new Vector2(1, 1));
+
+            mesh._vertices.Add((rotation * (new Vector3(-.5f, -.5f, .5f) * VoxelWorldController._blockSize)) + vertOffset);
+            mesh._vertices.Add((rotation * (new Vector3(.5f, -.5f, .5f) * VoxelWorldController._blockSize)) + vertOffset);
+            mesh._vertices.Add((rotation * (new Vector3(-.5f, .5f, .5f) * VoxelWorldController._blockSize)) + vertOffset);
+            mesh._vertices.Add((rotation * (new Vector3(.5f, .5f, .5f) * VoxelWorldController._blockSize)) + vertOffset);
+
+            Vector3Int normal = dir.DirectionToVec();
+
+            mesh._normals.Add(normal);
+            mesh._normals.Add(normal);
+            mesh._normals.Add(normal);
+            mesh._normals.Add(normal);
+
+            mesh._triangles.Add(startIndex + 0);
+            mesh._triangles.Add(startIndex + 1);
+            mesh._triangles.Add(startIndex + 2);
+            mesh._triangles.Add(startIndex + 3);
+            mesh._triangles.Add(startIndex + 2);
+            mesh._triangles.Add(startIndex + 1);
+        }
+
+        private byte CalculateLightForAFace(Vector3Int nextBlockPos, DirectionsHelper.BlockDirectionFlag dir)
+        {
             byte light;
             if (nextBlockPos.x < VoxelWorldController._chunkSize && nextBlockPos.y < VoxelWorldController._chunkSize && nextBlockPos.z < VoxelWorldController._chunkSize
-                    &&
-                    nextBlockPos.x >= 0 && nextBlockPos.y >= 0 && nextBlockPos.z >= 0)
+                &&
+                nextBlockPos.x >= 0 && nextBlockPos.y >= 0 && nextBlockPos.z >= 0)
             {
                 light = lightingLevels[nextBlockPos.x, nextBlockPos.y, nextBlockPos.z]._level;
             }
@@ -147,36 +188,200 @@ namespace Scripts.World.Jobs
                 }
                 light = ch[nextBlockPos.x, nextBlockPos.y, nextBlockPos.z]._level;
             }
+            return light;
+        }
 
-            color *= (float)(light + 8) / 32;
+        private Vector4 CalculateAmbientOcclusion(Vector3Int nextBlockPos, DirectionsHelper.BlockDirectionFlag dir)
+        {
+            DirectionsHelper.BlockDirectionFlag occluders = DirectionsHelper.BlockDirectionFlag.None;
+            for (int i = 0; i < 6; i++)
+            {
+                var dirDir = (DirectionsHelper.BlockDirectionFlag)(1 << i);
+                if ((dir & dirDir) == 0 && (dir.Opposite() & dirDir) == 0)
+                {
+                    Vector3Int vec = dirDir.DirectionToVec();
 
-            var startIndex = mesh._vertices.Length;
+                    if (nextBlockPos.x < VoxelWorldController._chunkSize && nextBlockPos.y < VoxelWorldController._chunkSize && nextBlockPos.z < VoxelWorldController._chunkSize
+                        &&
+                        nextBlockPos.x >= 0 && nextBlockPos.y >= 0 && nextBlockPos.z >= 0)
+                    {
+                        if (!voxels[nextBlockPos.x, nextBlockPos.y, nextBlockPos.z].type.IsAir())
+                        {
+                            occluders |= dirDir;
+                        }
+                    }
+                    else if ((dir & availableChunksVoxels) == 0)
+                    {
+                    }
+                    else
+                    {
+                        if (nextBlockPos.x >= VoxelWorldController._chunkSize) nextBlockPos.x = 0;
+                        else if (nextBlockPos.x < 0) nextBlockPos.x = VoxelWorldController._chunkSize - 1;
 
-            Quaternion rotation = Quaternion.LookRotation(vec);
+                        if (nextBlockPos.y >= VoxelWorldController._chunkSize) nextBlockPos.y = 0;
+                        else if (nextBlockPos.y < 0) nextBlockPos.y = VoxelWorldController._chunkSize - 1;
 
-            mesh._colors.Add(color);
-            mesh._colors.Add(color);
-            mesh._colors.Add(color);
-            mesh._colors.Add(color);
+                        if (nextBlockPos.z >= VoxelWorldController._chunkSize) nextBlockPos.z = 0;
+                        else if (nextBlockPos.z < 0) nextBlockPos.z = VoxelWorldController._chunkSize - 1;
 
-            mesh._vertices.Add((rotation * (new Vector3(-.5f, -.5f, .5f) * VoxelWorldController._blockSize)) + vertOffset);
-            mesh._vertices.Add((rotation * (new Vector3(.5f, -.5f, .5f) * VoxelWorldController._blockSize)) + vertOffset);
-            mesh._vertices.Add((rotation * (new Vector3(-.5f, .5f, .5f) * VoxelWorldController._blockSize)) + vertOffset);
-            mesh._vertices.Add((rotation * (new Vector3(.5f, .5f, .5f) * VoxelWorldController._blockSize)) + vertOffset);
+                        NativeArray3D<Voxel> ch;
+                        switch (dir)
+                        {
+                            case DirectionsHelper.BlockDirectionFlag.Up: ch = voxelsUp; break;
+                            case DirectionsHelper.BlockDirectionFlag.Down: ch = voxelsDown; break;
+                            case DirectionsHelper.BlockDirectionFlag.Left: ch = voxelsLeft; break;
+                            case DirectionsHelper.BlockDirectionFlag.Right: ch = voxelsRight; break;
+                            case DirectionsHelper.BlockDirectionFlag.Back: ch = voxelsBack; break;
+                            case DirectionsHelper.BlockDirectionFlag.Front: ch = voxelsFront; break;
+                            default: throw new Exception();
+                        }
+                        if (!ch[nextBlockPos.x, nextBlockPos.y, nextBlockPos.z].type.IsAir())
+                        {
+                            occluders |= dirDir;
+                        }
+                    }
+                }
+            }
+            float vert0 = 0;
+            float vert1 = 0;
+            float vert2 = 0;
+            float vert3 = 0;
 
-            Vector3Int normal = dir.DirectionToVec();
+            switch (dir)//kill me pls
+            {
+                case DirectionsHelper.BlockDirectionFlag.Up:
+                    if ((occluders & DirectionsHelper.BlockDirectionFlag.Left) != 0)
+                        vert0 += 1;
+                    if ((occluders & DirectionsHelper.BlockDirectionFlag.Front) != 0)
+                        vert0 += 1;
 
-            mesh._normals.Add(normal);
-            mesh._normals.Add(normal);
-            mesh._normals.Add(normal);
-            mesh._normals.Add(normal);
+                    if ((occluders & DirectionsHelper.BlockDirectionFlag.Right) != 0)
+                        vert1 += 1;
+                    if ((occluders & DirectionsHelper.BlockDirectionFlag.Front) != 0)
+                        vert1 += 1;
 
-            mesh._triangles.Add(startIndex + 0);
-            mesh._triangles.Add(startIndex + 1);
-            mesh._triangles.Add(startIndex + 2);
-            mesh._triangles.Add(startIndex + 3);
-            mesh._triangles.Add(startIndex + 2);
-            mesh._triangles.Add(startIndex + 1);
+                    if ((occluders & DirectionsHelper.BlockDirectionFlag.Left) != 0)
+                        vert2 += 1;
+                    if ((occluders & DirectionsHelper.BlockDirectionFlag.Back) != 0)
+                        vert2 += 1;
+
+                    if ((occluders & DirectionsHelper.BlockDirectionFlag.Back) != 0)
+                        vert3 += 1;
+                    if ((occluders & DirectionsHelper.BlockDirectionFlag.Right) != 0)
+                        vert3 += 1;
+                    break;
+
+                case DirectionsHelper.BlockDirectionFlag.Down:
+                    if ((occluders & DirectionsHelper.BlockDirectionFlag.Right) != 0)
+                        vert0 += 1;
+                    if ((occluders & DirectionsHelper.BlockDirectionFlag.Back) != 0)
+                        vert0 += 1;
+
+                    if ((occluders & DirectionsHelper.BlockDirectionFlag.Left) != 0)
+                        vert1 += 1;
+                    if ((occluders & DirectionsHelper.BlockDirectionFlag.Back) != 0)
+                        vert1 += 1;
+
+                    if ((occluders & DirectionsHelper.BlockDirectionFlag.Right) != 0)
+                        vert2 += 1;
+                    if ((occluders & DirectionsHelper.BlockDirectionFlag.Front) != 0)
+                        vert2 += 1;
+
+                    if ((occluders & DirectionsHelper.BlockDirectionFlag.Front) != 0)
+                        vert3 += 1;
+                    if ((occluders & DirectionsHelper.BlockDirectionFlag.Left) != 0)
+                        vert3 += 1;
+                    break;
+
+                case DirectionsHelper.BlockDirectionFlag.Left:
+                    if ((occluders & DirectionsHelper.BlockDirectionFlag.Down) != 0)
+                        vert0 += 1;
+                    if ((occluders & DirectionsHelper.BlockDirectionFlag.Front) != 0)
+                        vert0 += 1;
+
+                    if ((occluders & DirectionsHelper.BlockDirectionFlag.Front) != 0)
+                        vert1 += 1;
+                    if ((occluders & DirectionsHelper.BlockDirectionFlag.Up) != 0)
+                        vert1 += 1;
+
+                    if ((occluders & DirectionsHelper.BlockDirectionFlag.Down) != 0)
+                        vert2 += 1;
+                    if ((occluders & DirectionsHelper.BlockDirectionFlag.Back) != 0)
+                        vert2 += 1;
+
+                    if ((occluders & DirectionsHelper.BlockDirectionFlag.Up) != 0)
+                        vert3 += 1;
+                    if ((occluders & DirectionsHelper.BlockDirectionFlag.Back) != 0)
+                        vert3 += 1;
+                    break;
+
+                case DirectionsHelper.BlockDirectionFlag.Right:
+                    if ((occluders & DirectionsHelper.BlockDirectionFlag.Up) != 0)
+                        vert0 += 1;
+                    if ((occluders & DirectionsHelper.BlockDirectionFlag.Back) != 0)
+                        vert0 += 1;
+
+                    if ((occluders & DirectionsHelper.BlockDirectionFlag.Back) != 0)
+                        vert1 += 1;
+                    if ((occluders & DirectionsHelper.BlockDirectionFlag.Down) != 0)
+                        vert1 += 1;
+
+                    if ((occluders & DirectionsHelper.BlockDirectionFlag.Up) != 0)
+                        vert2 += 1;
+                    if ((occluders & DirectionsHelper.BlockDirectionFlag.Front) != 0)
+                        vert2 += 1;
+
+                    if ((occluders & DirectionsHelper.BlockDirectionFlag.Down) != 0)
+                        vert3 += 1;
+                    if ((occluders & DirectionsHelper.BlockDirectionFlag.Front) != 0)
+                        vert3 += 1;
+                    break;
+
+                case DirectionsHelper.BlockDirectionFlag.Back:
+                    if ((occluders & DirectionsHelper.BlockDirectionFlag.Right) != 0)
+                        vert0 += 1;
+                    if ((occluders & DirectionsHelper.BlockDirectionFlag.Up) != 0)
+                        vert0 += 1;
+
+                    if ((occluders & DirectionsHelper.BlockDirectionFlag.Up) != 0)
+                        vert1 += 1;
+                    if ((occluders & DirectionsHelper.BlockDirectionFlag.Left) != 0)
+                        vert1 += 1;
+
+                    if ((occluders & DirectionsHelper.BlockDirectionFlag.Right) != 0)
+                        vert2 += 1;
+                    if ((occluders & DirectionsHelper.BlockDirectionFlag.Down) != 0)
+                        vert2 += 1;
+
+                    if ((occluders & DirectionsHelper.BlockDirectionFlag.Down) != 0)
+                        vert3 += 1;
+                    if ((occluders & DirectionsHelper.BlockDirectionFlag.Left) != 0)
+                        vert3 += 1;
+                    break;
+
+                case DirectionsHelper.BlockDirectionFlag.Front:
+                    if ((occluders & DirectionsHelper.BlockDirectionFlag.Left) != 0)
+                        vert0 += 1;
+                    if ((occluders & DirectionsHelper.BlockDirectionFlag.Down) != 0)
+                        vert0 += 1;
+
+                    if ((occluders & DirectionsHelper.BlockDirectionFlag.Down) != 0)
+                        vert1 += 1;
+                    if ((occluders & DirectionsHelper.BlockDirectionFlag.Right) != 0)
+                        vert1 += 1;
+
+                    if ((occluders & DirectionsHelper.BlockDirectionFlag.Left) != 0)
+                        vert2 += 1;
+                    if ((occluders & DirectionsHelper.BlockDirectionFlag.Up) != 0)
+                        vert2 += 1;
+
+                    if ((occluders & DirectionsHelper.BlockDirectionFlag.Up) != 0)
+                        vert3 += 1;
+                    if ((occluders & DirectionsHelper.BlockDirectionFlag.Right) != 0)
+                        vert3 += 1;
+                    break;
+            }
+            return new Vector4(vert0, vert1, vert2, vert3);
         }
 
         #endregion Mesh generation

@@ -77,6 +77,9 @@ namespace Scripts.World
             _mesh.SetTriangles(MeshData._triangles.ToArray(), 0);
             _mesh.normals = MeshData._normals.ToArray();
             _mesh.colors = MeshData._colors.ToArray();
+            _mesh.uv = MeshData._uv.ToArray();
+            _mesh.uv2 = MeshData._uv2.ToArray();
+            _mesh.uv3 = MeshData._uv3.ToArray();
             MeshData.Clear();
             IsBeingRebult = false;
 

@@ -20,9 +20,9 @@ MonoBehaviour:
   m_MSAA: 8
   m_RenderScale: 1
   m_ShadowType: 0
-  m_ShadowAtlasResolution: 2048
+  m_ShadowAtlasResolution: 4096
   m_ShadowNearPlaneOffset: 2
-  m_ShadowDistance: 50
+  m_ShadowDistance: 200
   m_ShadowCascades: 2
   m_Cascade2Split: 0.25
   m_Cascade4Split: {x: 0.08982158, y: 0.20207469, z: 0.467}

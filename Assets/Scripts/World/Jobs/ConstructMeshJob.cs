@@ -113,7 +113,7 @@ namespace Scripts.World.Jobs
             var nextBlockPos = blockPos + vec;
 
             byte light = CalculateLightForAFace(nextBlockPos, dir);
-            var occlusion = (new Vector4(2, 2, 2, 2) - CalculateAmbientOcclusion(nextBlockPos, dir)) / 2;
+            //var occlusion = (new Vector4(2, 2, 2, 2) - CalculateAmbientOcclusion(nextBlockPos, dir)) / 2;
 
             color *= (float)(light + 8) / 32;
 
@@ -121,10 +121,10 @@ namespace Scripts.World.Jobs
 
             Quaternion rotation = Quaternion.LookRotation(vec);
 
-            mesh._colors.Add(color * occlusion.x);
-            mesh._colors.Add(color * occlusion.y);
-            mesh._colors.Add(color * occlusion.z);
-            mesh._colors.Add(color * occlusion.w);
+            mesh._colors.Add(color);
+            mesh._colors.Add(color);
+            mesh._colors.Add(color);
+            mesh._colors.Add(color);
 
             mesh._uv.Add(new Vector2(0, 0));
             mesh._uv.Add(new Vector2(1, 0));

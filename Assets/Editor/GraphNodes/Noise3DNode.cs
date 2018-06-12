@@ -36,7 +36,7 @@ public class Noise3D : CodeFunctionNode
         ";
     }
 
-    public override void GenerateNodeFunction(FunctionRegistry registry, GenerationMode generationMode)
+    public override void GenerateNodeFunction(FunctionRegistry registry, GraphContext graphContext, GenerationMode generationMode)
     {
         registry.ProvideFunction("hash", s => s.Append(@"
 inline float hash( float n )
@@ -45,7 +45,7 @@ inline float hash( float n )
 }
         "));
 
-        base.GenerateNodeFunction(registry, generationMode);
+        base.GenerateNodeFunction(registry, graphContext, generationMode);
     }
 
     protected override MethodInfo GetFunctionToConvert()

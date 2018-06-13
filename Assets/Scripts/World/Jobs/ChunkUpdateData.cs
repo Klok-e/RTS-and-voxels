@@ -12,7 +12,8 @@ namespace Scripts.World.Jobs
 {
     public struct ChunkCleaningData
     {
-        public NativeArray3D<Voxel> boxThatContainsChunkAndAllNeighboursBorders;
+        public NativeArray3D<Voxel> boxThatContainsChunkAndAllNeighboursBordersVox;
+        public NativeArray3D<VoxelLightingLevel> boxThatContainsChunkAndAllNeighboursBordersLight;
 
         public NativeArray3D<Voxel> _voxels,
             _voxelsUp, _voxelsDown, _voxelsLeft, _voxelsRight, _voxelsBack, _voxelsFront;
@@ -29,7 +30,8 @@ namespace Scripts.World.Jobs
             _updateJob.Complete();
             _chunk.ApplyMeshData();
 
-            boxThatContainsChunkAndAllNeighboursBorders.Dispose();
+            boxThatContainsChunkAndAllNeighboursBordersVox.Dispose();
+            boxThatContainsChunkAndAllNeighboursBordersLight.Dispose();
 
             _voxels.Dispose();
             _voxelsBack.Dispose();
@@ -51,6 +53,8 @@ namespace Scripts.World.Jobs
 
     public struct ChunkRebuildingVisibleFacesData
     {
+        public NativeArray3D<Voxel> boxThatContainsChunkAndAllNeighboursBorders;
+
         public NativeArray3D<Voxel> _voxels,
         _voxelsUp, _voxelsDown, _voxelsLeft, _voxelsRight, _voxelsBack, _voxelsFront;
 
@@ -62,6 +66,7 @@ namespace Scripts.World.Jobs
         {
             _updateJob.Complete();
 
+            boxThatContainsChunkAndAllNeighboursBorders.Dispose();
             _voxels.Dispose();
             _voxelsBack.Dispose();
             _voxelsDown.Dispose();

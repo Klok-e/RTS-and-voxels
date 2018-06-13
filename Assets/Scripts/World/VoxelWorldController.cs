@@ -3,6 +3,7 @@ using Scripts.Help;
 using Scripts.World.Jobs;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using Unity.Collections;
 using Unity.Jobs;
 using UnityEngine;
@@ -134,6 +135,8 @@ namespace Scripts.World
                 chunkSize = _chunkSize,
                 availableChunks = adjacent.dirChunksAvailable,
 
+                boxThatContainsChunkAndAllNeighboursBorders = CopyGivenAndNeighbourBordersVoxels(chunk),
+
                 voxels = new NativeArray3D<Voxel>(adjacent.chunk, Allocator.TempJob),
                 voxelsFront = new NativeArray3D<Voxel>(adjacent.chunkFront, Allocator.TempJob),
                 voxelsBack = new NativeArray3D<Voxel>(adjacent.chunkBack, Allocator.TempJob),
@@ -151,6 +154,8 @@ namespace Scripts.World
             {
                 _updateJob = hndl,
                 _chunk = chunk,
+
+                boxThatContainsChunkAndAllNeighboursBorders = jb0.boxThatContainsChunkAndAllNeighboursBorders,
 
                 _voxels = jb0.voxels,
                 _voxelsBack = jb0.voxelsBack,
@@ -171,7 +176,8 @@ namespace Scripts.World
             var jb2 = new ConstructMeshJob()
             {
                 meshData = chunk.MeshData,
-                boxThatContainsChunkAndAllNeighboursBorders = CopyAndNeighbourBorders(chunk),
+                boxThatContainsChunkAndAllNeighboursBordersVox = CopyGivenAndNeighbourBordersVoxels(chunk),
+                boxThatContainsChunkAndAllNeighboursBordersLight = CopyGivenAndNeighbourBordersLighting(chunk),
 
                 availableChunksVoxels = adjacentVox.dirChunksAvailable,
                 voxels = new NativeArray3D<Voxel>(adjacentVox.chunk, Allocator.TempJob),
@@ -204,7 +210,8 @@ namespace Scripts.World
                 _chunk = chunk,
                 _updateJob = hndl,
 
-                boxThatContainsChunkAndAllNeighboursBorders = jb2.boxThatContainsChunkAndAllNeighboursBorders,
+                boxThatContainsChunkAndAllNeighboursBordersLight = jb2.boxThatContainsChunkAndAllNeighboursBordersLight,
+                boxThatContainsChunkAndAllNeighboursBordersVox = jb2.boxThatContainsChunkAndAllNeighboursBordersVox,
 
                 _voxels = jb2.voxels,
                 _voxelsBack = jb2.voxelsBack,
@@ -245,7 +252,7 @@ namespace Scripts.World
                 for (int i = 0; i < 6; i++)
                 {
                     var dir = (DirectionsHelper.BlockDirectionFlag)(1 << i);
-                    var vec = dir.DirectionToVec();
+                    var vec = dir.ToVec();
 
                     var nextBlockPos = data._blockPos + vec;
 
@@ -332,7 +339,7 @@ namespace Scripts.World
                 for (int i = 0; i < 6; i++)
                 {
                     var dir = (DirectionsHelper.BlockDirectionFlag)(1 << i);
-                    var vec = dir.DirectionToVec();
+                    var vec = dir.ToVec();
 
                     var nextBlockPos = data._blockPos + vec;
 
@@ -601,7 +608,7 @@ namespace Scripts.World
             };
         }
 
-        private NativeArray3D<Voxel> CopyAndNeighbourBorders(RegularChunk chunk)
+        private NativeArray3D<Voxel> CopyGivenAndNeighbourBordersVoxels(RegularChunk chunk)
         {
             var chunkVox = chunk.Voxels;
 
@@ -627,251 +634,526 @@ namespace Scripts.World
                 }
             }
 
-            #region Check 6 sides of a chunk and copy
+            Check6Sides();
 
-            var dir = DirectionsHelper.BlockDirectionFlag.Up;
-            var vec = dir.DirectionToVec();
-            if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
-            {
-                var nextVox = GetChunk(chunk.Pos + vec).Voxels;
-                for (int z = 0; z < _chunkSize; z++)
-                    for (int x = 0; x < _chunkSize; x++)
-                        array[x + 1, _chunkSize + 1, z + 1] = nextVox[x, 0, z];
-            }
+            Check12Edges();
 
-            dir = DirectionsHelper.BlockDirectionFlag.Down;
-            vec = dir.DirectionToVec();
-            if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
-            {
-                var nextVox = GetChunk(chunk.Pos + vec).Voxels;
-                for (int z = 0; z < _chunkSize; z++)
-                    for (int x = 0; x < _chunkSize; x++)
-                        array[x + 1, 0, z + 1] = nextVox[x, _chunkSize - 1, z];
-            }
-
-            dir = DirectionsHelper.BlockDirectionFlag.Left;
-            vec = dir.DirectionToVec();
-            if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
-            {
-                var nextVox = GetChunk(chunk.Pos + vec).Voxels;
-                for (int z = 0; z < _chunkSize; z++)
-                    for (int y = 0; y < _chunkSize; y++)
-                        array[0, y + 1, z + 1] = nextVox[_chunkSize - 1, y, z];
-            }
-
-            dir = DirectionsHelper.BlockDirectionFlag.Right;
-            vec = dir.DirectionToVec();
-            if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
-            {
-                var nextVox = GetChunk(chunk.Pos + vec).Voxels;
-                for (int z = 0; z < _chunkSize; z++)
-                    for (int y = 0; y < _chunkSize; y++)
-                        array[_chunkSize + 1, y + 1, z + 1] = nextVox[0, y, z];
-            }
-
-            dir = DirectionsHelper.BlockDirectionFlag.Back;
-            vec = dir.DirectionToVec();
-            if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
-            {
-                var nextVox = GetChunk(chunk.Pos + vec).Voxels;
-                for (int y = 0; y < _chunkSize; y++)
-                    for (int x = 0; x < _chunkSize; x++)
-                        array[x + 1, y + 1, 0] = nextVox[x, y, _chunkSize - 1];
-            }
-
-            dir = DirectionsHelper.BlockDirectionFlag.Front;
-            vec = dir.DirectionToVec();
-            if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
-            {
-                var nextVox = GetChunk(chunk.Pos + vec).Voxels;
-                for (int y = 0; y < _chunkSize; y++)
-                    for (int x = 0; x < _chunkSize; x++)
-                        array[x + 1, y + 1, _chunkSize + 1] = nextVox[x, y, 0];
-            }
-
-            #endregion Check 6 sides of a chunk and copy
-
-            #region Check 12 edges
-
-            dir = DirectionsHelper.BlockDirectionFlag.Up | DirectionsHelper.BlockDirectionFlag.Right;
-            vec = dir.DirectionToVec();
-            if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
-            {
-                var nextVox = GetChunk(chunk.Pos + vec).Voxels;
-                for (int z = 0; z < _chunkSize; z++)
-                    array[_chunkSize + 1, _chunkSize + 1, z + 1] = nextVox[0, 0, z];
-            }
-
-            dir = DirectionsHelper.BlockDirectionFlag.Up | DirectionsHelper.BlockDirectionFlag.Left;
-            vec = dir.DirectionToVec();
-            if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
-            {
-                var nextVox = GetChunk(chunk.Pos + vec).Voxels;
-                for (int z = 0; z < _chunkSize; z++)
-                    array[0, _chunkSize + 1, z + 1] = nextVox[_chunkSize - 1, 0, z];
-            }
-
-            dir = DirectionsHelper.BlockDirectionFlag.Up | DirectionsHelper.BlockDirectionFlag.Back;
-            vec = dir.DirectionToVec();
-            if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
-            {
-                var nextVox = GetChunk(chunk.Pos + vec).Voxels;
-                for (int x = 0; x < _chunkSize; x++)
-                    array[x + 1, _chunkSize + 1, 0] = nextVox[x, 0, _chunkSize - 1];
-            }
-
-            dir = DirectionsHelper.BlockDirectionFlag.Up | DirectionsHelper.BlockDirectionFlag.Front;
-            vec = dir.DirectionToVec();
-            if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
-            {
-                var nextVox = GetChunk(chunk.Pos + vec).Voxels;
-                for (int x = 0; x < _chunkSize; x++)
-                    array[x + 1, _chunkSize + 1, _chunkSize + 1] = nextVox[x, 0, 0];
-            }
-
-            dir = DirectionsHelper.BlockDirectionFlag.Down | DirectionsHelper.BlockDirectionFlag.Right;
-            vec = dir.DirectionToVec();
-            if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
-            {
-                var nextVox = GetChunk(chunk.Pos + vec).Voxels;
-                for (int z = 0; z < _chunkSize; z++)
-                    array[_chunkSize + 1, 0, z + 1] = nextVox[0, _chunkSize - 1, z];
-            }
-
-            dir = DirectionsHelper.BlockDirectionFlag.Down | DirectionsHelper.BlockDirectionFlag.Left;
-            vec = dir.DirectionToVec();
-            if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
-            {
-                var nextVox = GetChunk(chunk.Pos + vec).Voxels;
-                for (int z = 0; z < _chunkSize; z++)
-                    array[0, 0, z + 1] = nextVox[_chunkSize - 1, _chunkSize - 1, z];
-            }
-
-            dir = DirectionsHelper.BlockDirectionFlag.Down | DirectionsHelper.BlockDirectionFlag.Back;
-            vec = dir.DirectionToVec();
-            if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
-            {
-                var nextVox = GetChunk(chunk.Pos + vec).Voxels;
-                for (int x = 0; x < _chunkSize; x++)
-                    array[x + 1, 0, 0] = nextVox[x, _chunkSize - 1, _chunkSize - 1];
-            }
-
-            dir = DirectionsHelper.BlockDirectionFlag.Down | DirectionsHelper.BlockDirectionFlag.Front;
-            vec = dir.DirectionToVec();
-            if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
-            {
-                var nextVox = GetChunk(chunk.Pos + vec).Voxels;
-                for (int x = 0; x < _chunkSize; x++)
-                    array[x + 1, 0, _chunkSize + 1] = nextVox[x, _chunkSize - 1, 0];
-            }
-
-            dir = DirectionsHelper.BlockDirectionFlag.Front | DirectionsHelper.BlockDirectionFlag.Right;
-            vec = dir.DirectionToVec();
-            if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
-            {
-                var nextVox = GetChunk(chunk.Pos + vec).Voxels;
-                for (int y = 0; y < _chunkSize; y++)
-                    array[_chunkSize + 1, y + 1, _chunkSize + 1] = nextVox[0, y, 0];
-            }
-
-            dir = DirectionsHelper.BlockDirectionFlag.Front | DirectionsHelper.BlockDirectionFlag.Left;
-            vec = dir.DirectionToVec();
-            if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
-            {
-                var nextVox = GetChunk(chunk.Pos + vec).Voxels;
-                for (int y = 0; y < _chunkSize; y++)
-                    array[0, y + 1, _chunkSize + 1] = nextVox[_chunkSize - 1, y, 0];
-            }
-
-            dir = DirectionsHelper.BlockDirectionFlag.Back | DirectionsHelper.BlockDirectionFlag.Right;
-            vec = dir.DirectionToVec();
-            if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
-            {
-                var nextVox = GetChunk(chunk.Pos + vec).Voxels;
-                for (int y = 0; y < _chunkSize; y++)
-                    array[_chunkSize + 1, y + 1, 0] = nextVox[0, y, _chunkSize - 1];
-            }
-
-            dir = DirectionsHelper.BlockDirectionFlag.Back | DirectionsHelper.BlockDirectionFlag.Left;
-            vec = dir.DirectionToVec();
-            if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
-            {
-                var nextVox = GetChunk(chunk.Pos + vec).Voxels;
-                for (int y = 0; y < _chunkSize; y++)
-                    array[0, y + 1, 0] = nextVox[_chunkSize - 1, y, _chunkSize - 1];
-            }
-
-            #endregion Check 12 edges
-
-            #region Check 8 vertices
-
-            dir = DirectionsHelper.BlockDirectionFlag.Up | DirectionsHelper.BlockDirectionFlag.Left | DirectionsHelper.BlockDirectionFlag.Front;
-            vec = dir.DirectionToVec();
-            if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
-            {
-                var nextVox = GetChunk(chunk.Pos + vec).Voxels;
-                array[0, _chunkSize + 1, _chunkSize + 1] = nextVox[_chunkSize - 1, 0, 0];
-            }
-
-            dir = DirectionsHelper.BlockDirectionFlag.Up | DirectionsHelper.BlockDirectionFlag.Left | DirectionsHelper.BlockDirectionFlag.Back;
-            vec = dir.DirectionToVec();
-            if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
-            {
-                var nextVox = GetChunk(chunk.Pos + vec).Voxels;
-                array[0, _chunkSize + 1, 0] = nextVox[_chunkSize - 1, 0, _chunkSize - 1];
-            }
-
-            dir = DirectionsHelper.BlockDirectionFlag.Up | DirectionsHelper.BlockDirectionFlag.Right | DirectionsHelper.BlockDirectionFlag.Front;
-            vec = dir.DirectionToVec();
-            if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
-            {
-                var nextVox = GetChunk(chunk.Pos + vec).Voxels;
-                array[_chunkSize + 1, _chunkSize + 1, _chunkSize + 1] = nextVox[0, 0, 0];
-            }
-
-            dir = DirectionsHelper.BlockDirectionFlag.Up | DirectionsHelper.BlockDirectionFlag.Right | DirectionsHelper.BlockDirectionFlag.Back;
-            vec = dir.DirectionToVec();
-            if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
-            {
-                var nextVox = GetChunk(chunk.Pos + vec).Voxels;
-                array[_chunkSize + 1, _chunkSize + 1, 0] = nextVox[0, 0, _chunkSize - 1];
-            }
-
-            dir = DirectionsHelper.BlockDirectionFlag.Down | DirectionsHelper.BlockDirectionFlag.Left | DirectionsHelper.BlockDirectionFlag.Front;
-            vec = dir.DirectionToVec();
-            if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
-            {
-                var nextVox = GetChunk(chunk.Pos + vec).Voxels;
-                array[0, 0, _chunkSize + 1] = nextVox[_chunkSize - 1, _chunkSize - 1, 0];
-            }
-
-            dir = DirectionsHelper.BlockDirectionFlag.Down | DirectionsHelper.BlockDirectionFlag.Left | DirectionsHelper.BlockDirectionFlag.Back;
-            vec = dir.DirectionToVec();
-            if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
-            {
-                var nextVox = GetChunk(chunk.Pos + vec).Voxels;
-                array[0, 0, 0] = nextVox[_chunkSize - 1, _chunkSize - 1, _chunkSize - 1];
-            }
-
-            dir = DirectionsHelper.BlockDirectionFlag.Down | DirectionsHelper.BlockDirectionFlag.Right | DirectionsHelper.BlockDirectionFlag.Front;
-            vec = dir.DirectionToVec();
-            if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
-            {
-                var nextVox = GetChunk(chunk.Pos + vec).Voxels;
-                array[_chunkSize + 1, 0, _chunkSize + 1] = nextVox[0, _chunkSize - 1, 0];
-            }
-
-            dir = DirectionsHelper.BlockDirectionFlag.Down | DirectionsHelper.BlockDirectionFlag.Right | DirectionsHelper.BlockDirectionFlag.Back;
-            vec = dir.DirectionToVec();
-            if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
-            {
-                var nextVox = GetChunk(chunk.Pos + vec).Voxels;
-                array[_chunkSize + 1, 0, 0] = nextVox[0, _chunkSize - 1, _chunkSize - 1];
-            }
-
-            #endregion Check 8 vertices
+            Check8Vertices();
 
             return array;
+
+            void Check6Sides()
+            {
+                var dir = DirectionsHelper.BlockDirectionFlag.Up;
+                var vec = dir.ToVec();
+                if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
+                {
+                    var nextVox = GetChunk(chunk.Pos + vec).Voxels;
+                    for (int z = 0; z < _chunkSize; z++)
+                        for (int x = 0; x < _chunkSize; x++)
+                            array[x + 1, _chunkSize + 1, z + 1] = nextVox[x, 0, z];
+                }
+
+                dir = DirectionsHelper.BlockDirectionFlag.Down;
+                vec = dir.ToVec();
+                if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
+                {
+                    var nextVox = GetChunk(chunk.Pos + vec).Voxels;
+                    for (int z = 0; z < _chunkSize; z++)
+                        for (int x = 0; x < _chunkSize; x++)
+                            array[x + 1, 0, z + 1] = nextVox[x, _chunkSize - 1, z];
+                }
+
+                dir = DirectionsHelper.BlockDirectionFlag.Left;
+                vec = dir.ToVec();
+                if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
+                {
+                    var nextVox = GetChunk(chunk.Pos + vec).Voxels;
+                    for (int z = 0; z < _chunkSize; z++)
+                        for (int y = 0; y < _chunkSize; y++)
+                            array[0, y + 1, z + 1] = nextVox[_chunkSize - 1, y, z];
+                }
+
+                dir = DirectionsHelper.BlockDirectionFlag.Right;
+                vec = dir.ToVec();
+                if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
+                {
+                    var nextVox = GetChunk(chunk.Pos + vec).Voxels;
+                    for (int z = 0; z < _chunkSize; z++)
+                        for (int y = 0; y < _chunkSize; y++)
+                            array[_chunkSize + 1, y + 1, z + 1] = nextVox[0, y, z];
+                }
+
+                dir = DirectionsHelper.BlockDirectionFlag.Back;
+                vec = dir.ToVec();
+                if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
+                {
+                    var nextVox = GetChunk(chunk.Pos + vec).Voxels;
+                    for (int y = 0; y < _chunkSize; y++)
+                        for (int x = 0; x < _chunkSize; x++)
+                            array[x + 1, y + 1, 0] = nextVox[x, y, _chunkSize - 1];
+                }
+
+                dir = DirectionsHelper.BlockDirectionFlag.Front;
+                vec = dir.ToVec();
+                if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
+                {
+                    var nextVox = GetChunk(chunk.Pos + vec).Voxels;
+                    for (int y = 0; y < _chunkSize; y++)
+                        for (int x = 0; x < _chunkSize; x++)
+                            array[x + 1, y + 1, _chunkSize + 1] = nextVox[x, y, 0];
+                }
+            }
+            void Check12Edges()
+            {
+                var dir = DirectionsHelper.BlockDirectionFlag.Up | DirectionsHelper.BlockDirectionFlag.Right;
+                var vec = dir.ToVec();
+                if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
+                {
+                    var nextVox = GetChunk(chunk.Pos + vec).Voxels;
+                    for (int z = 0; z < _chunkSize; z++)
+                        array[_chunkSize + 1, _chunkSize + 1, z + 1] = nextVox[0, 0, z];
+                }
+
+                dir = DirectionsHelper.BlockDirectionFlag.Up | DirectionsHelper.BlockDirectionFlag.Left;
+                vec = dir.ToVec();
+                if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
+                {
+                    var nextVox = GetChunk(chunk.Pos + vec).Voxels;
+                    for (int z = 0; z < _chunkSize; z++)
+                        array[0, _chunkSize + 1, z + 1] = nextVox[_chunkSize - 1, 0, z];
+                }
+
+                dir = DirectionsHelper.BlockDirectionFlag.Up | DirectionsHelper.BlockDirectionFlag.Back;
+                vec = dir.ToVec();
+                if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
+                {
+                    var nextVox = GetChunk(chunk.Pos + vec).Voxels;
+                    for (int x = 0; x < _chunkSize; x++)
+                        array[x + 1, _chunkSize + 1, 0] = nextVox[x, 0, _chunkSize - 1];
+                }
+
+                dir = DirectionsHelper.BlockDirectionFlag.Up | DirectionsHelper.BlockDirectionFlag.Front;
+                vec = dir.ToVec();
+                if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
+                {
+                    var nextVox = GetChunk(chunk.Pos + vec).Voxels;
+                    for (int x = 0; x < _chunkSize; x++)
+                        array[x + 1, _chunkSize + 1, _chunkSize + 1] = nextVox[x, 0, 0];
+                }
+
+                dir = DirectionsHelper.BlockDirectionFlag.Down | DirectionsHelper.BlockDirectionFlag.Right;
+                vec = dir.ToVec();
+                if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
+                {
+                    var nextVox = GetChunk(chunk.Pos + vec).Voxels;
+                    for (int z = 0; z < _chunkSize; z++)
+                        array[_chunkSize + 1, 0, z + 1] = nextVox[0, _chunkSize - 1, z];
+                }
+
+                dir = DirectionsHelper.BlockDirectionFlag.Down | DirectionsHelper.BlockDirectionFlag.Left;
+                vec = dir.ToVec();
+                if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
+                {
+                    var nextVox = GetChunk(chunk.Pos + vec).Voxels;
+                    for (int z = 0; z < _chunkSize; z++)
+                        array[0, 0, z + 1] = nextVox[_chunkSize - 1, _chunkSize - 1, z];
+                }
+
+                dir = DirectionsHelper.BlockDirectionFlag.Down | DirectionsHelper.BlockDirectionFlag.Back;
+                vec = dir.ToVec();
+                if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
+                {
+                    var nextVox = GetChunk(chunk.Pos + vec).Voxels;
+                    for (int x = 0; x < _chunkSize; x++)
+                        array[x + 1, 0, 0] = nextVox[x, _chunkSize - 1, _chunkSize - 1];
+                }
+
+                dir = DirectionsHelper.BlockDirectionFlag.Down | DirectionsHelper.BlockDirectionFlag.Front;
+                vec = dir.ToVec();
+                if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
+                {
+                    var nextVox = GetChunk(chunk.Pos + vec).Voxels;
+                    for (int x = 0; x < _chunkSize; x++)
+                        array[x + 1, 0, _chunkSize + 1] = nextVox[x, _chunkSize - 1, 0];
+                }
+
+                dir = DirectionsHelper.BlockDirectionFlag.Front | DirectionsHelper.BlockDirectionFlag.Right;
+                vec = dir.ToVec();
+                if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
+                {
+                    var nextVox = GetChunk(chunk.Pos + vec).Voxels;
+                    for (int y = 0; y < _chunkSize; y++)
+                        array[_chunkSize + 1, y + 1, _chunkSize + 1] = nextVox[0, y, 0];
+                }
+
+                dir = DirectionsHelper.BlockDirectionFlag.Front | DirectionsHelper.BlockDirectionFlag.Left;
+                vec = dir.ToVec();
+                if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
+                {
+                    var nextVox = GetChunk(chunk.Pos + vec).Voxels;
+                    for (int y = 0; y < _chunkSize; y++)
+                        array[0, y + 1, _chunkSize + 1] = nextVox[_chunkSize - 1, y, 0];
+                }
+
+                dir = DirectionsHelper.BlockDirectionFlag.Back | DirectionsHelper.BlockDirectionFlag.Right;
+                vec = dir.ToVec();
+                if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
+                {
+                    var nextVox = GetChunk(chunk.Pos + vec).Voxels;
+                    for (int y = 0; y < _chunkSize; y++)
+                        array[_chunkSize + 1, y + 1, 0] = nextVox[0, y, _chunkSize - 1];
+                }
+
+                dir = DirectionsHelper.BlockDirectionFlag.Back | DirectionsHelper.BlockDirectionFlag.Left;
+                vec = dir.ToVec();
+                if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
+                {
+                    var nextVox = GetChunk(chunk.Pos + vec).Voxels;
+                    for (int y = 0; y < _chunkSize; y++)
+                        array[0, y + 1, 0] = nextVox[_chunkSize - 1, y, _chunkSize - 1];
+                }
+            }
+            void Check8Vertices()
+            {
+                var dir = DirectionsHelper.BlockDirectionFlag.Up | DirectionsHelper.BlockDirectionFlag.Left | DirectionsHelper.BlockDirectionFlag.Front;
+                var vec = dir.ToVec();
+                if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
+                {
+                    var nextVox = GetChunk(chunk.Pos + vec).Voxels;
+                    array[0, _chunkSize + 1, _chunkSize + 1] = nextVox[_chunkSize - 1, 0, 0];
+                }
+
+                dir = DirectionsHelper.BlockDirectionFlag.Up | DirectionsHelper.BlockDirectionFlag.Left | DirectionsHelper.BlockDirectionFlag.Back;
+                vec = dir.ToVec();
+                if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
+                {
+                    var nextVox = GetChunk(chunk.Pos + vec).Voxels;
+                    array[0, _chunkSize + 1, 0] = nextVox[_chunkSize - 1, 0, _chunkSize - 1];
+                }
+
+                dir = DirectionsHelper.BlockDirectionFlag.Up | DirectionsHelper.BlockDirectionFlag.Right | DirectionsHelper.BlockDirectionFlag.Front;
+                vec = dir.ToVec();
+                if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
+                {
+                    var nextVox = GetChunk(chunk.Pos + vec).Voxels;
+                    array[_chunkSize + 1, _chunkSize + 1, _chunkSize + 1] = nextVox[0, 0, 0];
+                }
+
+                dir = DirectionsHelper.BlockDirectionFlag.Up | DirectionsHelper.BlockDirectionFlag.Right | DirectionsHelper.BlockDirectionFlag.Back;
+                vec = dir.ToVec();
+                if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
+                {
+                    var nextVox = GetChunk(chunk.Pos + vec).Voxels;
+                    array[_chunkSize + 1, _chunkSize + 1, 0] = nextVox[0, 0, _chunkSize - 1];
+                }
+
+                dir = DirectionsHelper.BlockDirectionFlag.Down | DirectionsHelper.BlockDirectionFlag.Left | DirectionsHelper.BlockDirectionFlag.Front;
+                vec = dir.ToVec();
+                if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
+                {
+                    var nextVox = GetChunk(chunk.Pos + vec).Voxels;
+                    array[0, 0, _chunkSize + 1] = nextVox[_chunkSize - 1, _chunkSize - 1, 0];
+                }
+
+                dir = DirectionsHelper.BlockDirectionFlag.Down | DirectionsHelper.BlockDirectionFlag.Left | DirectionsHelper.BlockDirectionFlag.Back;
+                vec = dir.ToVec();
+                if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
+                {
+                    var nextVox = GetChunk(chunk.Pos + vec).Voxels;
+                    array[0, 0, 0] = nextVox[_chunkSize - 1, _chunkSize - 1, _chunkSize - 1];
+                }
+
+                dir = DirectionsHelper.BlockDirectionFlag.Down | DirectionsHelper.BlockDirectionFlag.Right | DirectionsHelper.BlockDirectionFlag.Front;
+                vec = dir.ToVec();
+                if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
+                {
+                    var nextVox = GetChunk(chunk.Pos + vec).Voxels;
+                    array[_chunkSize + 1, 0, _chunkSize + 1] = nextVox[0, _chunkSize - 1, 0];
+                }
+
+                dir = DirectionsHelper.BlockDirectionFlag.Down | DirectionsHelper.BlockDirectionFlag.Right | DirectionsHelper.BlockDirectionFlag.Back;
+                vec = dir.ToVec();
+                if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
+                {
+                    var nextVox = GetChunk(chunk.Pos + vec).Voxels;
+                    array[_chunkSize + 1, 0, 0] = nextVox[0, _chunkSize - 1, _chunkSize - 1];
+                }
+            }
+        }
+
+        private NativeArray3D<VoxelLightingLevel> CopyGivenAndNeighbourBordersLighting(RegularChunk chunk)
+        {
+            var chunkLight = chunk.VoxelLightingLevels;
+
+            var array = new NativeArray3D<VoxelLightingLevel>(_chunkSize + 2, _chunkSize + 2, _chunkSize + 2, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
+            //fill array with air
+            for (int i = 0; i < array.XMax * array.YMax * array.ZMax; i++)
+            {
+                array[i] = new VoxelLightingLevel()
+                {
+                    _level = 0,
+                };
+            }
+
+            //copy contents of chunk to this new array
+            for (int z = 0; z < _chunkSize; z++)
+            {
+                for (int y = 0; y < _chunkSize; y++)
+                {
+                    for (int x = 0; x < _chunkSize; x++)
+                    {
+                        array[x + 1, y + 1, z + 1] = chunkLight[x, y, z];
+                    }
+                }
+            }
+
+            Check6Sides();
+
+            Check12Edges();
+
+            Check8Vertices();
+
+            return array;
+
+            void Check6Sides()
+            {
+                var dir = DirectionsHelper.BlockDirectionFlag.Up;
+                var vec = dir.ToVec();
+                if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
+                {
+                    var nextVox = GetChunk(chunk.Pos + vec).VoxelLightingLevels;
+                    for (int z = 0; z < _chunkSize; z++)
+                        for (int x = 0; x < _chunkSize; x++)
+                            array[x + 1, _chunkSize + 1, z + 1] = nextVox[x, 0, z];
+                }
+
+                dir = DirectionsHelper.BlockDirectionFlag.Down;
+                vec = dir.ToVec();
+                if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
+                {
+                    var nextVox = GetChunk(chunk.Pos + vec).VoxelLightingLevels;
+                    for (int z = 0; z < _chunkSize; z++)
+                        for (int x = 0; x < _chunkSize; x++)
+                            array[x + 1, 0, z + 1] = nextVox[x, _chunkSize - 1, z];
+                }
+
+                dir = DirectionsHelper.BlockDirectionFlag.Left;
+                vec = dir.ToVec();
+                if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
+                {
+                    var nextVox = GetChunk(chunk.Pos + vec).VoxelLightingLevels;
+                    for (int z = 0; z < _chunkSize; z++)
+                        for (int y = 0; y < _chunkSize; y++)
+                            array[0, y + 1, z + 1] = nextVox[_chunkSize - 1, y, z];
+                }
+
+                dir = DirectionsHelper.BlockDirectionFlag.Right;
+                vec = dir.ToVec();
+                if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
+                {
+                    var nextVox = GetChunk(chunk.Pos + vec).VoxelLightingLevels;
+                    for (int z = 0; z < _chunkSize; z++)
+                        for (int y = 0; y < _chunkSize; y++)
+                            array[_chunkSize + 1, y + 1, z + 1] = nextVox[0, y, z];
+                }
+
+                dir = DirectionsHelper.BlockDirectionFlag.Back;
+                vec = dir.ToVec();
+                if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
+                {
+                    var nextVox = GetChunk(chunk.Pos + vec).VoxelLightingLevels;
+                    for (int y = 0; y < _chunkSize; y++)
+                        for (int x = 0; x < _chunkSize; x++)
+                            array[x + 1, y + 1, 0] = nextVox[x, y, _chunkSize - 1];
+                }
+
+                dir = DirectionsHelper.BlockDirectionFlag.Front;
+                vec = dir.ToVec();
+                if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
+                {
+                    var nextVox = GetChunk(chunk.Pos + vec).VoxelLightingLevels;
+                    for (int y = 0; y < _chunkSize; y++)
+                        for (int x = 0; x < _chunkSize; x++)
+                            array[x + 1, y + 1, _chunkSize + 1] = nextVox[x, y, 0];
+                }
+            }
+            void Check12Edges()
+            {
+                var dir = DirectionsHelper.BlockDirectionFlag.Up | DirectionsHelper.BlockDirectionFlag.Right;
+                var vec = dir.ToVec();
+                if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
+                {
+                    var nextVox = GetChunk(chunk.Pos + vec).VoxelLightingLevels;
+                    for (int z = 0; z < _chunkSize; z++)
+                        array[_chunkSize + 1, _chunkSize + 1, z + 1] = nextVox[0, 0, z];
+                }
+
+                dir = DirectionsHelper.BlockDirectionFlag.Up | DirectionsHelper.BlockDirectionFlag.Left;
+                vec = dir.ToVec();
+                if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
+                {
+                    var nextVox = GetChunk(chunk.Pos + vec).VoxelLightingLevels;
+                    for (int z = 0; z < _chunkSize; z++)
+                        array[0, _chunkSize + 1, z + 1] = nextVox[_chunkSize - 1, 0, z];
+                }
+
+                dir = DirectionsHelper.BlockDirectionFlag.Up | DirectionsHelper.BlockDirectionFlag.Back;
+                vec = dir.ToVec();
+                if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
+                {
+                    var nextVox = GetChunk(chunk.Pos + vec).VoxelLightingLevels;
+                    for (int x = 0; x < _chunkSize; x++)
+                        array[x + 1, _chunkSize + 1, 0] = nextVox[x, 0, _chunkSize - 1];
+                }
+
+                dir = DirectionsHelper.BlockDirectionFlag.Up | DirectionsHelper.BlockDirectionFlag.Front;
+                vec = dir.ToVec();
+                if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
+                {
+                    var nextVox = GetChunk(chunk.Pos + vec).VoxelLightingLevels;
+                    for (int x = 0; x < _chunkSize; x++)
+                        array[x + 1, _chunkSize + 1, _chunkSize + 1] = nextVox[x, 0, 0];
+                }
+
+                dir = DirectionsHelper.BlockDirectionFlag.Down | DirectionsHelper.BlockDirectionFlag.Right;
+                vec = dir.ToVec();
+                if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
+                {
+                    var nextVox = GetChunk(chunk.Pos + vec).VoxelLightingLevels;
+                    for (int z = 0; z < _chunkSize; z++)
+                        array[_chunkSize + 1, 0, z + 1] = nextVox[0, _chunkSize - 1, z];
+                }
+
+                dir = DirectionsHelper.BlockDirectionFlag.Down | DirectionsHelper.BlockDirectionFlag.Left;
+                vec = dir.ToVec();
+                if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
+                {
+                    var nextVox = GetChunk(chunk.Pos + vec).VoxelLightingLevels;
+                    for (int z = 0; z < _chunkSize; z++)
+                        array[0, 0, z + 1] = nextVox[_chunkSize - 1, _chunkSize - 1, z];
+                }
+
+                dir = DirectionsHelper.BlockDirectionFlag.Down | DirectionsHelper.BlockDirectionFlag.Back;
+                vec = dir.ToVec();
+                if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
+                {
+                    var nextVox = GetChunk(chunk.Pos + vec).VoxelLightingLevels;
+                    for (int x = 0; x < _chunkSize; x++)
+                        array[x + 1, 0, 0] = nextVox[x, _chunkSize - 1, _chunkSize - 1];
+                }
+
+                dir = DirectionsHelper.BlockDirectionFlag.Down | DirectionsHelper.BlockDirectionFlag.Front;
+                vec = dir.ToVec();
+                if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
+                {
+                    var nextVox = GetChunk(chunk.Pos + vec).VoxelLightingLevels;
+                    for (int x = 0; x < _chunkSize; x++)
+                        array[x + 1, 0, _chunkSize + 1] = nextVox[x, _chunkSize - 1, 0];
+                }
+
+                dir = DirectionsHelper.BlockDirectionFlag.Front | DirectionsHelper.BlockDirectionFlag.Right;
+                vec = dir.ToVec();
+                if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
+                {
+                    var nextVox = GetChunk(chunk.Pos + vec).VoxelLightingLevels;
+                    for (int y = 0; y < _chunkSize; y++)
+                        array[_chunkSize + 1, y + 1, _chunkSize + 1] = nextVox[0, y, 0];
+                }
+
+                dir = DirectionsHelper.BlockDirectionFlag.Front | DirectionsHelper.BlockDirectionFlag.Left;
+                vec = dir.ToVec();
+                if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
+                {
+                    var nextVox = GetChunk(chunk.Pos + vec).VoxelLightingLevels;
+                    for (int y = 0; y < _chunkSize; y++)
+                        array[0, y + 1, _chunkSize + 1] = nextVox[_chunkSize - 1, y, 0];
+                }
+
+                dir = DirectionsHelper.BlockDirectionFlag.Back | DirectionsHelper.BlockDirectionFlag.Right;
+                vec = dir.ToVec();
+                if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
+                {
+                    var nextVox = GetChunk(chunk.Pos + vec).VoxelLightingLevels;
+                    for (int y = 0; y < _chunkSize; y++)
+                        array[_chunkSize + 1, y + 1, 0] = nextVox[0, y, _chunkSize - 1];
+                }
+
+                dir = DirectionsHelper.BlockDirectionFlag.Back | DirectionsHelper.BlockDirectionFlag.Left;
+                vec = dir.ToVec();
+                if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
+                {
+                    var nextVox = GetChunk(chunk.Pos + vec).VoxelLightingLevels;
+                    for (int y = 0; y < _chunkSize; y++)
+                        array[0, y + 1, 0] = nextVox[_chunkSize - 1, y, _chunkSize - 1];
+                }
+            }
+            void Check8Vertices()
+            {
+                var dir = DirectionsHelper.BlockDirectionFlag.Up | DirectionsHelper.BlockDirectionFlag.Left | DirectionsHelper.BlockDirectionFlag.Front;
+                var vec = dir.ToVec();
+                if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
+                {
+                    var nextVox = GetChunk(chunk.Pos + vec).VoxelLightingLevels;
+                    array[0, _chunkSize + 1, _chunkSize + 1] = nextVox[_chunkSize - 1, 0, 0];
+                }
+
+                dir = DirectionsHelper.BlockDirectionFlag.Up | DirectionsHelper.BlockDirectionFlag.Left | DirectionsHelper.BlockDirectionFlag.Back;
+                vec = dir.ToVec();
+                if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
+                {
+                    var nextVox = GetChunk(chunk.Pos + vec).VoxelLightingLevels;
+                    array[0, _chunkSize + 1, 0] = nextVox[_chunkSize - 1, 0, _chunkSize - 1];
+                }
+
+                dir = DirectionsHelper.BlockDirectionFlag.Up | DirectionsHelper.BlockDirectionFlag.Right | DirectionsHelper.BlockDirectionFlag.Front;
+                vec = dir.ToVec();
+                if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
+                {
+                    var nextVox = GetChunk(chunk.Pos + vec).VoxelLightingLevels;
+                    array[_chunkSize + 1, _chunkSize + 1, _chunkSize + 1] = nextVox[0, 0, 0];
+                }
+
+                dir = DirectionsHelper.BlockDirectionFlag.Up | DirectionsHelper.BlockDirectionFlag.Right | DirectionsHelper.BlockDirectionFlag.Back;
+                vec = dir.ToVec();
+                if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
+                {
+                    var nextVox = GetChunk(chunk.Pos + vec).VoxelLightingLevels;
+                    array[_chunkSize + 1, _chunkSize + 1, 0] = nextVox[0, 0, _chunkSize - 1];
+                }
+
+                dir = DirectionsHelper.BlockDirectionFlag.Down | DirectionsHelper.BlockDirectionFlag.Left | DirectionsHelper.BlockDirectionFlag.Front;
+                vec = dir.ToVec();
+                if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
+                {
+                    var nextVox = GetChunk(chunk.Pos + vec).VoxelLightingLevels;
+                    array[0, 0, _chunkSize + 1] = nextVox[_chunkSize - 1, _chunkSize - 1, 0];
+                }
+
+                dir = DirectionsHelper.BlockDirectionFlag.Down | DirectionsHelper.BlockDirectionFlag.Left | DirectionsHelper.BlockDirectionFlag.Back;
+                vec = dir.ToVec();
+                if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
+                {
+                    var nextVox = GetChunk(chunk.Pos + vec).VoxelLightingLevels;
+                    array[0, 0, 0] = nextVox[_chunkSize - 1, _chunkSize - 1, _chunkSize - 1];
+                }
+
+                dir = DirectionsHelper.BlockDirectionFlag.Down | DirectionsHelper.BlockDirectionFlag.Right | DirectionsHelper.BlockDirectionFlag.Front;
+                vec = dir.ToVec();
+                if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
+                {
+                    var nextVox = GetChunk(chunk.Pos + vec).VoxelLightingLevels;
+                    array[_chunkSize + 1, 0, _chunkSize + 1] = nextVox[0, _chunkSize - 1, 0];
+                }
+
+                dir = DirectionsHelper.BlockDirectionFlag.Down | DirectionsHelper.BlockDirectionFlag.Right | DirectionsHelper.BlockDirectionFlag.Back;
+                vec = dir.ToVec();
+                if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
+                {
+                    var nextVox = GetChunk(chunk.Pos + vec).VoxelLightingLevels;
+                    array[_chunkSize + 1, 0, 0] = nextVox[0, _chunkSize - 1, _chunkSize - 1];
+                }
+            }
         }
 
         public Voxel GetVoxel(Vector3Int chunkPos, Vector3Int blockPos)
@@ -938,7 +1220,7 @@ namespace Scripts.World
                 for (int i = 0; i < 6; i++)
                 {
                     var dir = (DirectionsHelper.BlockDirectionFlag)(1 << i);
-                    var vec = dir.DirectionToVec();
+                    var vec = dir.ToVec();
 
                     DirectionsHelper.BlockDirectionFlag oppositeDir = dir.Opposite();
 

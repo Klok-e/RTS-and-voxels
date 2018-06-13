@@ -68,7 +68,7 @@ namespace Scripts.Help
             throw new Exception();
         }
 
-        public static Vector3Int DirectionToVec(this BlockDirectionFlag en)
+        public static Vector3Int ToVec(this BlockDirectionFlag en)
         {
             var vec = new Vector3Int();
             if ((en & BlockDirectionFlag.Up) != 0) vec += new Vector3Int(0, 1, 0);

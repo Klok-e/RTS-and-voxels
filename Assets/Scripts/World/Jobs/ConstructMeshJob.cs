@@ -27,7 +27,10 @@ namespace Scripts.World.Jobs
             lightingLevelsUp, lightingLevelsDown, lightingLevelsLeft, lightingLevelsRight, lightingLevelsBack, lightingLevelsFront;
 
         [ReadOnly]
-        public NativeArray3D<Voxel> boxThatContainsChunkAndAllNeighboursBorders;
+        public NativeArray3D<Voxel> boxThatContainsChunkAndAllNeighboursBordersVox;
+
+        [ReadOnly]
+        public NativeArray3D<VoxelLightingLevel> boxThatContainsChunkAndAllNeighboursBordersLight;
 
         [WriteOnly]
         public NativeMeshData meshData;
@@ -40,8 +43,8 @@ namespace Scripts.World.Jobs
                 if (voxels[x, y, z].type != VoxelType.Air)
                 {
                     var col = voxels[x, y, z].ToColor();
-                    var faces = CalculateVisibleFaces(x, y, z);
-                    //var faces = voxelsVisibleFaces[x, y, z];
+                    //var faces = CalculateVisibleFaces(x, y, z);
+                    var faces = voxelsVisibleFaces[x, y, z];
                     CreateCube(ref meshData, new Vector3(x, y, z) * VoxelWorldController._blockSize, faces, col, new Vector3Int(x, y, z));
                 }
             }
@@ -53,9 +56,9 @@ namespace Scripts.World.Jobs
             for (byte i = 0; i < 6; i++)
             {
                 var dir = (DirectionsHelper.BlockDirectionFlag)(1 << i);
-                Vector3Int vec = dir.DirectionToVec();
+                Vector3Int vec = dir.ToVec();
 
-                if (boxThatContainsChunkAndAllNeighboursBorders[x + vec.x + 1, y + vec.y + 1, z + vec.z + 1].type.IsAir())
+                if (boxThatContainsChunkAndAllNeighboursBordersVox[x + vec.x + 1, y + vec.y + 1, z + vec.z + 1].type.IsAir())
                     facesVisible |= dir;
             }
             return facesVisible;
@@ -75,7 +78,7 @@ namespace Scripts.World.Jobs
 
         private void CreateFace(ref NativeMeshData mesh, Vector3 vertOffset, DirectionsHelper.BlockDirectionFlag dir, Color color, Vector3Int blockPos)
         {
-            var vec = dir.DirectionToVec();
+            var vec = dir.ToVec();
             var nextBlockPos = blockPos + vec;
 
             byte light = CalculateLightForAFace(nextBlockPos, dir);
@@ -102,7 +105,7 @@ namespace Scripts.World.Jobs
             mesh._vertices.Add((rotation * (new Vector3(-.5f, .5f, .5f) * VoxelWorldController._blockSize)) + vertOffset);
             mesh._vertices.Add((rotation * (new Vector3(.5f, .5f, .5f) * VoxelWorldController._blockSize)) + vertOffset);
 
-            Vector3Int normal = dir.DirectionToVec();
+            Vector3Int normal = dir.ToVec();
 
             mesh._normals.Add(normal);
             mesh._normals.Add(normal);
@@ -119,42 +122,7 @@ namespace Scripts.World.Jobs
 
         private byte CalculateLightForAFace(Vector3Int nextBlockPos, DirectionsHelper.BlockDirectionFlag dir)
         {
-            byte light;
-            if (nextBlockPos.x < VoxelWorldController._chunkSize && nextBlockPos.y < VoxelWorldController._chunkSize && nextBlockPos.z < VoxelWorldController._chunkSize
-                &&
-                nextBlockPos.x >= 0 && nextBlockPos.y >= 0 && nextBlockPos.z >= 0)
-            {
-                light = lightingLevels[nextBlockPos.x, nextBlockPos.y, nextBlockPos.z]._level;
-            }
-            else if ((dir & availableChunksLight) == 0)
-            {
-                light = 0;
-            }
-            else
-            {
-                if (nextBlockPos.x >= VoxelWorldController._chunkSize) nextBlockPos.x = 0;
-                else if (nextBlockPos.x < 0) nextBlockPos.x = VoxelWorldController._chunkSize - 1;
-
-                if (nextBlockPos.y >= VoxelWorldController._chunkSize) nextBlockPos.y = 0;
-                else if (nextBlockPos.y < 0) nextBlockPos.y = VoxelWorldController._chunkSize - 1;
-
-                if (nextBlockPos.z >= VoxelWorldController._chunkSize) nextBlockPos.z = 0;
-                else if (nextBlockPos.z < 0) nextBlockPos.z = VoxelWorldController._chunkSize - 1;
-
-                NativeArray3D<VoxelLightingLevel> ch;
-                switch (dir)
-                {
-                    case DirectionsHelper.BlockDirectionFlag.Up: ch = lightingLevelsUp; break;
-                    case DirectionsHelper.BlockDirectionFlag.Down: ch = lightingLevelsDown; break;
-                    case DirectionsHelper.BlockDirectionFlag.Left: ch = lightingLevelsLeft; break;
-                    case DirectionsHelper.BlockDirectionFlag.Right: ch = lightingLevelsRight; break;
-                    case DirectionsHelper.BlockDirectionFlag.Back: ch = lightingLevelsBack; break;
-                    case DirectionsHelper.BlockDirectionFlag.Front: ch = lightingLevelsFront; break;
-                    default: throw new Exception();
-                }
-                light = ch[nextBlockPos.x, nextBlockPos.y, nextBlockPos.z]._level;
-            }
-            return light;
+            return boxThatContainsChunkAndAllNeighboursBordersLight[nextBlockPos.x + 1, nextBlockPos.y + 1, nextBlockPos.z + 1]._level;
         }
 
         private Vector4 CalculateAmbientOcclusion(Vector3Int nextBlockPos, DirectionsHelper.BlockDirectionFlag dir)
@@ -165,7 +133,7 @@ namespace Scripts.World.Jobs
                 var dirDir = (DirectionsHelper.BlockDirectionFlag)(1 << i);
                 if ((dir & dirDir) == 0 && (dir.Opposite() & dirDir) == 0)
                 {
-                    Vector3Int vec = dirDir.DirectionToVec();
+                    Vector3Int vec = dirDir.ToVec();
 
                     if (nextBlockPos.x < VoxelWorldController._chunkSize && nextBlockPos.y < VoxelWorldController._chunkSize && nextBlockPos.z < VoxelWorldController._chunkSize
                         &&

@@ -77,14 +77,15 @@ namespace Scripts.World.Jobs
 
             color *= (float)(light + 8) / 32;
 
+            var ao = CalculateAO(nextBlockPos, dir);
             var startIndex = mesh._vertices.Length;
 
             Quaternion rotation = Quaternion.LookRotation(vec);
 
-            mesh._colors.Add(color);
-            mesh._colors.Add(color);
-            mesh._colors.Add(color);
-            mesh._colors.Add(color);
+            mesh._colors.Add(color * ao.x);
+            mesh._colors.Add(color * ao.y);
+            mesh._colors.Add(color * ao.z);
+            mesh._colors.Add(color * ao.w);
 
             mesh._uv.Add(new Vector2(0, 0));
             mesh._uv.Add(new Vector2(1, 0));
@@ -116,153 +117,178 @@ namespace Scripts.World.Jobs
             return chunkAndNeighboursLighting[nextBlockPos.x + 1, nextBlockPos.y + 1, nextBlockPos.z + 1]._level;
         }
 
-        private Vector4 CalculateAmbientOcclusion(Vector3Int nextBlockPos, DirectionsHelper.BlockDirectionFlag dir)
+        private Vector4 CalculateAO(Vector3Int nextBlockPos, DirectionsHelper.BlockDirectionFlag dir)
         {
-            var occluders = DirectionsHelper.BlockDirectionFlag.None;
-            for (int i = 0; i < 6; i++)
-            {
-                var dirDir = (DirectionsHelper.BlockDirectionFlag)(1 << i);
-            }
-            float vert0 = 0;
-            float vert1 = 0;
-            float vert2 = 0;
-            float vert3 = 0;
+            const int side1Mask = 0b100;
+            const int side2Mask = 0b010;
+            const int cornerMask = 0b001;
 
-            switch (dir)//kill me pls
+            int occl = 0;
+            /*
+             *  occl[0]   occl[1]    occl[2]
+             *  -1,1       0,1        1,1
+             *
+             *          3--------4
+             *  occl[7] |        |   occl[3]
+             *  -1,0    |   0,0  |    1,0
+             *          |        |
+             *          |        |
+             *          1--------2
+             *  occl[6]   occl[5]    occl[4]
+             *  -1,-1      0,-1       1,-1
+             */
+
+            int x = nextBlockPos.x + 1,
+                y = nextBlockPos.y + 1,
+                z = nextBlockPos.z + 1;
+            //set occluders
+            switch (dir)
             {
                 case DirectionsHelper.BlockDirectionFlag.Up:
-                    if ((occluders & DirectionsHelper.BlockDirectionFlag.Left) != 0)
-                        vert0 += 1;
-                    if ((occluders & DirectionsHelper.BlockDirectionFlag.Front) != 0)
-                        vert0 += 1;
-
-                    if ((occluders & DirectionsHelper.BlockDirectionFlag.Right) != 0)
-                        vert1 += 1;
-                    if ((occluders & DirectionsHelper.BlockDirectionFlag.Front) != 0)
-                        vert1 += 1;
-
-                    if ((occluders & DirectionsHelper.BlockDirectionFlag.Left) != 0)
-                        vert2 += 1;
-                    if ((occluders & DirectionsHelper.BlockDirectionFlag.Back) != 0)
-                        vert2 += 1;
-
-                    if ((occluders & DirectionsHelper.BlockDirectionFlag.Back) != 0)
-                        vert3 += 1;
-                    if ((occluders & DirectionsHelper.BlockDirectionFlag.Right) != 0)
-                        vert3 += 1;
+                    //sides
+                    if (!chunkAndNeighboursVoxels[x - 1, y, z].type.IsAir())
+                        occl |= 0b10000000;
+                    if (!chunkAndNeighboursVoxels[x + 1, y, z].type.IsAir())
+                        occl |= 0b00001000;
+                    if (!chunkAndNeighboursVoxels[x, y, z - 1].type.IsAir())
+                        occl |= 0b00100000;
+                    if (!chunkAndNeighboursVoxels[x, y, z + 1].type.IsAir())
+                        occl |= 0b00000010;
+                    //corners
+                    if (!chunkAndNeighboursVoxels[x - 1, y, z - 1].type.IsAir())
+                        occl |= 0b01000000;
+                    if (!chunkAndNeighboursVoxels[x - 1, y, z + 1].type.IsAir())
+                        occl |= 0b00000001;
+                    if (!chunkAndNeighboursVoxels[x + 1, y, z - 1].type.IsAir())
+                        occl |= 0b00010000;
+                    if (!chunkAndNeighboursVoxels[x + 1, y, z + 1].type.IsAir())
+                        occl |= 0b00000100;
                     break;
 
                 case DirectionsHelper.BlockDirectionFlag.Down:
-                    if ((occluders & DirectionsHelper.BlockDirectionFlag.Right) != 0)
-                        vert0 += 1;
-                    if ((occluders & DirectionsHelper.BlockDirectionFlag.Back) != 0)
-                        vert0 += 1;
-
-                    if ((occluders & DirectionsHelper.BlockDirectionFlag.Left) != 0)
-                        vert1 += 1;
-                    if ((occluders & DirectionsHelper.BlockDirectionFlag.Back) != 0)
-                        vert1 += 1;
-
-                    if ((occluders & DirectionsHelper.BlockDirectionFlag.Right) != 0)
-                        vert2 += 1;
-                    if ((occluders & DirectionsHelper.BlockDirectionFlag.Front) != 0)
-                        vert2 += 1;
-
-                    if ((occluders & DirectionsHelper.BlockDirectionFlag.Front) != 0)
-                        vert3 += 1;
-                    if ((occluders & DirectionsHelper.BlockDirectionFlag.Left) != 0)
-                        vert3 += 1;
+                    //sides
+                    if (!chunkAndNeighboursVoxels[x - 1, y, z].type.IsAir())
+                        occl |= 0b10000000;
+                    if (!chunkAndNeighboursVoxels[x + 1, y, z].type.IsAir())
+                        occl |= 0b00001000;
+                    if (!chunkAndNeighboursVoxels[x, y, z - 1].type.IsAir())
+                        occl |= 0b00100000;
+                    if (!chunkAndNeighboursVoxels[x, y, z + 1].type.IsAir())
+                        occl |= 0b00000010;
+                    //corners
+                    if (!chunkAndNeighboursVoxels[x - 1, y, z - 1].type.IsAir())
+                        occl |= 0b01000000;
+                    if (!chunkAndNeighboursVoxels[x - 1, y, z + 1].type.IsAir())
+                        occl |= 0b00000001;
+                    if (!chunkAndNeighboursVoxels[x + 1, y, z - 1].type.IsAir())
+                        occl |= 0b00010000;
+                    if (!chunkAndNeighboursVoxels[x + 1, y, z + 1].type.IsAir())
+                        occl |= 0b00000100;
                     break;
 
                 case DirectionsHelper.BlockDirectionFlag.Left:
-                    if ((occluders & DirectionsHelper.BlockDirectionFlag.Down) != 0)
-                        vert0 += 1;
-                    if ((occluders & DirectionsHelper.BlockDirectionFlag.Front) != 0)
-                        vert0 += 1;
-
-                    if ((occluders & DirectionsHelper.BlockDirectionFlag.Front) != 0)
-                        vert1 += 1;
-                    if ((occluders & DirectionsHelper.BlockDirectionFlag.Up) != 0)
-                        vert1 += 1;
-
-                    if ((occluders & DirectionsHelper.BlockDirectionFlag.Down) != 0)
-                        vert2 += 1;
-                    if ((occluders & DirectionsHelper.BlockDirectionFlag.Back) != 0)
-                        vert2 += 1;
-
-                    if ((occluders & DirectionsHelper.BlockDirectionFlag.Up) != 0)
-                        vert3 += 1;
-                    if ((occluders & DirectionsHelper.BlockDirectionFlag.Back) != 0)
-                        vert3 += 1;
+                    //sides
+                    if (!chunkAndNeighboursVoxels[x, y - 1, z].type.IsAir())
+                        occl |= 0b10000000;
+                    if (!chunkAndNeighboursVoxels[x, y + 1, z].type.IsAir())
+                        occl |= 0b00001000;
+                    if (!chunkAndNeighboursVoxels[x, y, z - 1].type.IsAir())
+                        occl |= 0b00100000;
+                    if (!chunkAndNeighboursVoxels[x, y, z + 1].type.IsAir())
+                        occl |= 0b00000010;
+                    //corners
+                    if (!chunkAndNeighboursVoxels[x, y - 1, z - 1].type.IsAir())
+                        occl |= 0b01000000;
+                    if (!chunkAndNeighboursVoxels[x, y - 1, z + 1].type.IsAir())
+                        occl |= 0b00000001;
+                    if (!chunkAndNeighboursVoxels[x, y + 1, z - 1].type.IsAir())
+                        occl |= 0b00010000;
+                    if (!chunkAndNeighboursVoxels[x, y + 1, z + 1].type.IsAir())
+                        occl |= 0b00000100;
                     break;
 
                 case DirectionsHelper.BlockDirectionFlag.Right:
-                    if ((occluders & DirectionsHelper.BlockDirectionFlag.Up) != 0)
-                        vert0 += 1;
-                    if ((occluders & DirectionsHelper.BlockDirectionFlag.Back) != 0)
-                        vert0 += 1;
-
-                    if ((occluders & DirectionsHelper.BlockDirectionFlag.Back) != 0)
-                        vert1 += 1;
-                    if ((occluders & DirectionsHelper.BlockDirectionFlag.Down) != 0)
-                        vert1 += 1;
-
-                    if ((occluders & DirectionsHelper.BlockDirectionFlag.Up) != 0)
-                        vert2 += 1;
-                    if ((occluders & DirectionsHelper.BlockDirectionFlag.Front) != 0)
-                        vert2 += 1;
-
-                    if ((occluders & DirectionsHelper.BlockDirectionFlag.Down) != 0)
-                        vert3 += 1;
-                    if ((occluders & DirectionsHelper.BlockDirectionFlag.Front) != 0)
-                        vert3 += 1;
+                    //sides
+                    if (!chunkAndNeighboursVoxels[x, y - 1, z].type.IsAir())
+                        occl |= 0b10000000;
+                    if (!chunkAndNeighboursVoxels[x, y + 1, z].type.IsAir())
+                        occl |= 0b00001000;
+                    if (!chunkAndNeighboursVoxels[x, y, z - 1].type.IsAir())
+                        occl |= 0b00100000;
+                    if (!chunkAndNeighboursVoxels[x, y, z + 1].type.IsAir())
+                        occl |= 0b00000010;
+                    //corners
+                    if (!chunkAndNeighboursVoxels[x, y - 1, z - 1].type.IsAir())
+                        occl |= 0b01000000;
+                    if (!chunkAndNeighboursVoxels[x, y - 1, z + 1].type.IsAir())
+                        occl |= 0b00000001;
+                    if (!chunkAndNeighboursVoxels[x, y + 1, z - 1].type.IsAir())
+                        occl |= 0b00010000;
+                    if (!chunkAndNeighboursVoxels[x, y + 1, z + 1].type.IsAir())
+                        occl |= 0b00000100;
                     break;
 
                 case DirectionsHelper.BlockDirectionFlag.Back:
-                    if ((occluders & DirectionsHelper.BlockDirectionFlag.Right) != 0)
-                        vert0 += 1;
-                    if ((occluders & DirectionsHelper.BlockDirectionFlag.Up) != 0)
-                        vert0 += 1;
-
-                    if ((occluders & DirectionsHelper.BlockDirectionFlag.Up) != 0)
-                        vert1 += 1;
-                    if ((occluders & DirectionsHelper.BlockDirectionFlag.Left) != 0)
-                        vert1 += 1;
-
-                    if ((occluders & DirectionsHelper.BlockDirectionFlag.Right) != 0)
-                        vert2 += 1;
-                    if ((occluders & DirectionsHelper.BlockDirectionFlag.Down) != 0)
-                        vert2 += 1;
-
-                    if ((occluders & DirectionsHelper.BlockDirectionFlag.Down) != 0)
-                        vert3 += 1;
-                    if ((occluders & DirectionsHelper.BlockDirectionFlag.Left) != 0)
-                        vert3 += 1;
+                    //sides
+                    if (!chunkAndNeighboursVoxels[x - 1, y, z].type.IsAir())
+                        occl |= 0b10000000;
+                    if (!chunkAndNeighboursVoxels[x + 1, y, z].type.IsAir())
+                        occl |= 0b00001000;
+                    if (!chunkAndNeighboursVoxels[x, y - 1, z].type.IsAir())
+                        occl |= 0b00100000;
+                    if (!chunkAndNeighboursVoxels[x, y + 1, z].type.IsAir())
+                        occl |= 0b00000010;
+                    //corners
+                    if (!chunkAndNeighboursVoxels[x - 1, y - 1, z].type.IsAir())
+                        occl |= 0b01000000;
+                    if (!chunkAndNeighboursVoxels[x - 1, y + 1, z].type.IsAir())
+                        occl |= 0b00000001;
+                    if (!chunkAndNeighboursVoxels[x + 1, y - 1, z].type.IsAir())
+                        occl |= 0b00010000;
+                    if (!chunkAndNeighboursVoxels[x + 1, y + 1, z].type.IsAir())
+                        occl |= 0b00000100;
                     break;
 
                 case DirectionsHelper.BlockDirectionFlag.Front:
-                    if ((occluders & DirectionsHelper.BlockDirectionFlag.Left) != 0)
-                        vert0 += 1;
-                    if ((occluders & DirectionsHelper.BlockDirectionFlag.Down) != 0)
-                        vert0 += 1;
-
-                    if ((occluders & DirectionsHelper.BlockDirectionFlag.Down) != 0)
-                        vert1 += 1;
-                    if ((occluders & DirectionsHelper.BlockDirectionFlag.Right) != 0)
-                        vert1 += 1;
-
-                    if ((occluders & DirectionsHelper.BlockDirectionFlag.Left) != 0)
-                        vert2 += 1;
-                    if ((occluders & DirectionsHelper.BlockDirectionFlag.Up) != 0)
-                        vert2 += 1;
-
-                    if ((occluders & DirectionsHelper.BlockDirectionFlag.Up) != 0)
-                        vert3 += 1;
-                    if ((occluders & DirectionsHelper.BlockDirectionFlag.Right) != 0)
-                        vert3 += 1;
+                    //sides
+                    if (!chunkAndNeighboursVoxels[x - 1, y, z].type.IsAir())
+                        occl |= 0b10000000;
+                    if (!chunkAndNeighboursVoxels[x + 1, y, z].type.IsAir())
+                        occl |= 0b00001000;
+                    if (!chunkAndNeighboursVoxels[x, y - 1, z].type.IsAir())
+                        occl |= 0b00100000;
+                    if (!chunkAndNeighboursVoxels[x, y + 1, z].type.IsAir())
+                        occl |= 0b00000010;
+                    //corners
+                    if (!chunkAndNeighboursVoxels[x - 1, y - 1, z].type.IsAir())
+                        occl |= 0b01000000;
+                    if (!chunkAndNeighboursVoxels[x - 1, y + 1, z].type.IsAir())
+                        occl |= 0b00000001;
+                    if (!chunkAndNeighboursVoxels[x + 1, y - 1, z].type.IsAir())
+                        occl |= 0b00010000;
+                    if (!chunkAndNeighboursVoxels[x + 1, y + 1, z].type.IsAir())
+                        occl |= 0b00000100;
                     break;
             }
-            return new Vector4(vert0, vert1, vert2, vert3);
+
+            float vert1 = VertexAO(((occl & 0b10000000) >> 5) | ((occl & 0b00100000) >> 4) | ((occl & 0b01000000) >> 6));
+            float vert2 = VertexAO(((occl & 0b00100000) >> 3) | ((occl & 0b00001000) >> 2) | ((occl & 0b00010000) >> 4));
+            float vert3 = VertexAO(((occl & 0b10000000) >> 5) | ((occl & 0b00000010) >> 0) | ((occl & 0b00000001) >> 0));
+            float vert4 = VertexAO(((occl & 0b00000010) << 1) | ((occl & 0b00001000) >> 2) | ((occl & 0b00000100) >> 2));
+
+            return new Vector4(vert1, vert2, vert3, vert4);
+
+            float VertexAO(int side12Corner)
+            {
+                int side1 = (side12Corner & side1Mask) >> 2;
+                int side2 = (side12Corner & side2Mask) >> 1;
+                int corner = side12Corner & cornerMask;
+                if (side1 != 0 && side2 != 0)
+                {
+                    return 0;
+                }
+                return (3 - (side1 + side2 + corner)) / 3;
+            }
         }
 
         #endregion Mesh generation

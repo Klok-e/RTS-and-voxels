@@ -18,19 +18,6 @@ namespace Scripts.World.Jobs
         [ReadOnly]
         public NativeArray3D<Voxel> boxThatContainsChunkAndAllNeighboursBorders;
 
-        [ReadOnly]
-        public DirectionsHelper.BlockDirectionFlag availableChunks;
-
-        [ReadOnly]
-        public Vector3Int chunkPos;
-
-        [ReadOnly]
-        public int chunkSize;
-
-        [ReadOnly]
-        public NativeArray3D<Voxel> voxels,
-            voxelsUp, voxelsDown, voxelsLeft, voxelsRight, voxelsBack, voxelsFront;
-
         public void Execute(int index)
         {
             facesVisibleArr.At(index, out int x, out int y, out int z);

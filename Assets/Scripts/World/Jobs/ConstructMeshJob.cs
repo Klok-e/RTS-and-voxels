@@ -13,39 +13,30 @@ namespace Scripts.World.Jobs
         public NativeArray3D<DirectionsHelper.BlockDirectionFlag> voxelsVisibleFaces;
 
         [ReadOnly]
-        public DirectionsHelper.BlockDirectionFlag availableChunksVoxels;
+        public NativeArray3D<Voxel> chunkAndNeighboursVoxels;
 
         [ReadOnly]
-        public NativeArray3D<Voxel> voxels,
-            voxelsUp, voxelsDown, voxelsLeft, voxelsRight, voxelsBack, voxelsFront;
-
-        [ReadOnly]
-        public DirectionsHelper.BlockDirectionFlag availableChunksLight;
-
-        [ReadOnly]
-        public NativeArray3D<VoxelLightingLevel> lightingLevels,
-            lightingLevelsUp, lightingLevelsDown, lightingLevelsLeft, lightingLevelsRight, lightingLevelsBack, lightingLevelsFront;
-
-        [ReadOnly]
-        public NativeArray3D<Voxel> boxThatContainsChunkAndAllNeighboursBordersVox;
-
-        [ReadOnly]
-        public NativeArray3D<VoxelLightingLevel> boxThatContainsChunkAndAllNeighboursBordersLight;
+        public NativeArray3D<VoxelLightingLevel> chunkAndNeighboursLighting;
 
         [WriteOnly]
         public NativeMeshData meshData;
 
         public void Execute()
         {
-            for (int i = 0; i < VoxelWorldController._chunkSize * VoxelWorldController._chunkSize * VoxelWorldController._chunkSize; i++)
+            for (int z = 0; z < VoxelWorldController._chunkSize; z++)
             {
-                voxels.At(i, out int x, out int y, out int z);
-                if (voxels[x, y, z].type != VoxelType.Air)
+                for (int y = 0; y < VoxelWorldController._chunkSize; y++)
                 {
-                    var col = voxels[x, y, z].ToColor();
-                    //var faces = CalculateVisibleFaces(x, y, z);
-                    var faces = voxelsVisibleFaces[x, y, z];
-                    CreateCube(ref meshData, new Vector3(x, y, z) * VoxelWorldController._blockSize, faces, col, new Vector3Int(x, y, z));
+                    for (int x = 0; x < VoxelWorldController._chunkSize; x++)
+                    {
+                        if (chunkAndNeighboursVoxels[x + 1, y + 1, z + 1].type != VoxelType.Air)
+                        {
+                            var col = chunkAndNeighboursVoxels[x + 1, y + 1, z + 1].ToColor();
+                            //var faces = CalculateVisibleFaces(x, y, z);
+                            var faces = voxelsVisibleFaces[x, y, z];
+                            CreateCube(meshData, new Vector3(x, y, z) * VoxelWorldController._blockSize, faces, col, new Vector3Int(x, y, z));
+                        }
+                    }
                 }
             }
         }
@@ -58,7 +49,7 @@ namespace Scripts.World.Jobs
                 var dir = (DirectionsHelper.BlockDirectionFlag)(1 << i);
                 Vector3Int vec = dir.ToVec();
 
-                if (boxThatContainsChunkAndAllNeighboursBordersVox[x + vec.x + 1, y + vec.y + 1, z + vec.z + 1].type.IsAir())
+                if (chunkAndNeighboursVoxels[x + vec.x + 1, y + vec.y + 1, z + vec.z + 1].type.IsAir())
                     facesVisible |= dir;
             }
             return facesVisible;
@@ -66,17 +57,17 @@ namespace Scripts.World.Jobs
 
         #region Mesh generation
 
-        private void CreateCube(ref NativeMeshData mesh, Vector3 pos, DirectionsHelper.BlockDirectionFlag facesVisible, Color color, Vector3Int blockPos)
+        private void CreateCube(NativeMeshData mesh, Vector3 pos, DirectionsHelper.BlockDirectionFlag facesVisible, Color color, Vector3Int blockPos)
         {
             for (int i = 0; i < 6; i++)
             {
                 var curr = (DirectionsHelper.BlockDirectionFlag)(1 << i);
                 if ((curr & facesVisible) != 0)//0b010 00 & 0b010 00 -> 0b010 00; 0b100 00 & 0b010 00 -> 0b000 00
-                    CreateFace(ref mesh, pos, curr, color, blockPos);
+                    CreateFace(mesh, pos, curr, color, blockPos);
             }
         }
 
-        private void CreateFace(ref NativeMeshData mesh, Vector3 vertOffset, DirectionsHelper.BlockDirectionFlag dir, Color color, Vector3Int blockPos)
+        private void CreateFace(NativeMeshData mesh, Vector3 vertOffset, DirectionsHelper.BlockDirectionFlag dir, Color color, Vector3Int blockPos)
         {
             var vec = dir.ToVec();
             var nextBlockPos = blockPos + vec;
@@ -122,59 +113,15 @@ namespace Scripts.World.Jobs
 
         private byte CalculateLightForAFace(Vector3Int nextBlockPos, DirectionsHelper.BlockDirectionFlag dir)
         {
-            return boxThatContainsChunkAndAllNeighboursBordersLight[nextBlockPos.x + 1, nextBlockPos.y + 1, nextBlockPos.z + 1]._level;
+            return chunkAndNeighboursLighting[nextBlockPos.x + 1, nextBlockPos.y + 1, nextBlockPos.z + 1]._level;
         }
 
         private Vector4 CalculateAmbientOcclusion(Vector3Int nextBlockPos, DirectionsHelper.BlockDirectionFlag dir)
         {
-            DirectionsHelper.BlockDirectionFlag occluders = DirectionsHelper.BlockDirectionFlag.None;
+            var occluders = DirectionsHelper.BlockDirectionFlag.None;
             for (int i = 0; i < 6; i++)
             {
                 var dirDir = (DirectionsHelper.BlockDirectionFlag)(1 << i);
-                if ((dir & dirDir) == 0 && (dir.Opposite() & dirDir) == 0)
-                {
-                    Vector3Int vec = dirDir.ToVec();
-
-                    if (nextBlockPos.x < VoxelWorldController._chunkSize && nextBlockPos.y < VoxelWorldController._chunkSize && nextBlockPos.z < VoxelWorldController._chunkSize
-                        &&
-                        nextBlockPos.x >= 0 && nextBlockPos.y >= 0 && nextBlockPos.z >= 0)
-                    {
-                        if (!voxels[nextBlockPos.x, nextBlockPos.y, nextBlockPos.z].type.IsAir())
-                        {
-                            occluders |= dirDir;
-                        }
-                    }
-                    else if ((dir & availableChunksVoxels) == 0)
-                    {
-                    }
-                    else
-                    {
-                        if (nextBlockPos.x >= VoxelWorldController._chunkSize) nextBlockPos.x = 0;
-                        else if (nextBlockPos.x < 0) nextBlockPos.x = VoxelWorldController._chunkSize - 1;
-
-                        if (nextBlockPos.y >= VoxelWorldController._chunkSize) nextBlockPos.y = 0;
-                        else if (nextBlockPos.y < 0) nextBlockPos.y = VoxelWorldController._chunkSize - 1;
-
-                        if (nextBlockPos.z >= VoxelWorldController._chunkSize) nextBlockPos.z = 0;
-                        else if (nextBlockPos.z < 0) nextBlockPos.z = VoxelWorldController._chunkSize - 1;
-
-                        NativeArray3D<Voxel> ch;
-                        switch (dir)
-                        {
-                            case DirectionsHelper.BlockDirectionFlag.Up: ch = voxelsUp; break;
-                            case DirectionsHelper.BlockDirectionFlag.Down: ch = voxelsDown; break;
-                            case DirectionsHelper.BlockDirectionFlag.Left: ch = voxelsLeft; break;
-                            case DirectionsHelper.BlockDirectionFlag.Right: ch = voxelsRight; break;
-                            case DirectionsHelper.BlockDirectionFlag.Back: ch = voxelsBack; break;
-                            case DirectionsHelper.BlockDirectionFlag.Front: ch = voxelsFront; break;
-                            default: throw new Exception();
-                        }
-                        if (!ch[nextBlockPos.x, nextBlockPos.y, nextBlockPos.z].type.IsAir())
-                        {
-                            occluders |= dirDir;
-                        }
-                    }
-                }
             }
             float vert0 = 0;
             float vert1 = 0;

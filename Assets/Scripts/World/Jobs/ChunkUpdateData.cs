@@ -12,6 +12,8 @@ namespace Scripts.World.Jobs
 {
     public struct ChunkCleaningData
     {
+        public NativeArray3D<Voxel> boxThatContainsChunkAndAllNeighboursBorders;
+
         public NativeArray3D<Voxel> _voxels,
             _voxelsUp, _voxelsDown, _voxelsLeft, _voxelsRight, _voxelsBack, _voxelsFront;
 
@@ -26,6 +28,8 @@ namespace Scripts.World.Jobs
         {
             _updateJob.Complete();
             _chunk.ApplyMeshData();
+
+            boxThatContainsChunkAndAllNeighboursBorders.Dispose();
 
             _voxels.Dispose();
             _voxelsBack.Dispose();

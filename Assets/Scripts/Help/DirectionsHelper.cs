@@ -70,14 +70,14 @@ namespace Scripts.Help
 
         public static Vector3Int DirectionToVec(this BlockDirectionFlag en)
         {
-            //return DirectionsVec[Mathf.RoundToInt((Mathf.Log10((byte)en) / Mathf.Log10(2)))];
-            if (en == BlockDirectionFlag.Up) return VectorDirections.Up;
-            else if (en == BlockDirectionFlag.Down) return VectorDirections.Down;
-            else if (en == BlockDirectionFlag.Left) return VectorDirections.Left;
-            else if (en == BlockDirectionFlag.Right) return VectorDirections.Right;
-            else if (en == BlockDirectionFlag.Back) return VectorDirections.Back;
-            else if (en == BlockDirectionFlag.Front) return VectorDirections.Front;
-            else throw new Exception();
+            var vec = new Vector3Int();
+            if ((en & BlockDirectionFlag.Up) != 0) vec += new Vector3Int(0, 1, 0);
+            if ((en & BlockDirectionFlag.Down) != 0) vec += new Vector3Int(0, -1, 0);
+            if ((en & BlockDirectionFlag.Left) != 0) vec += new Vector3Int(-1, 0, 0);
+            if ((en & BlockDirectionFlag.Right) != 0) vec += new Vector3Int(1, 0, 0);
+            if ((en & BlockDirectionFlag.Back) != 0) vec += new Vector3Int(0, 0, -1);
+            if ((en & BlockDirectionFlag.Front) != 0) vec += new Vector3Int(0, 0, 1);
+            return vec;
         }
 
         public static BlockDirectionFlag Opposite(this BlockDirectionFlag dir)

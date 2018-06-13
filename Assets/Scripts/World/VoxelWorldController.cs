@@ -120,7 +120,7 @@ namespace Scripts.World
 
             //_placeholderChunk = CreatePlaceholderChunk();
 
-            CreateStartingLevels(0, 2, 1);
+            CreateStartingLevels(0, 2, 2);
         }
 
         public ChunkRebuildingVisibleFacesData RebuildChunkVisibleFaces(RegularChunk chunk, JobHandle dependency = default(JobHandle))
@@ -171,6 +171,7 @@ namespace Scripts.World
             var jb2 = new ConstructMeshJob()
             {
                 meshData = chunk.MeshData,
+                boxThatContainsChunkAndAllNeighboursBorders = CopyAndNeighbourBorders(chunk),
 
                 availableChunksVoxels = adjacentVox.dirChunksAvailable,
                 voxels = new NativeArray3D<Voxel>(adjacentVox.chunk, Allocator.TempJob),
@@ -202,6 +203,8 @@ namespace Scripts.World
             {
                 _chunk = chunk,
                 _updateJob = hndl,
+
+                boxThatContainsChunkAndAllNeighboursBorders = jb2.boxThatContainsChunkAndAllNeighboursBorders,
 
                 _voxels = jb2.voxels,
                 _voxelsBack = jb2.voxelsBack,
@@ -596,6 +599,136 @@ namespace Scripts.World
                 chunkLeft = chunkLeft,
                 chunkRight = chunkRight,
             };
+        }
+
+        private NativeArray3D<Voxel> CopyAndNeighbourBorders(RegularChunk chunk)
+        {
+            var chunkVox = chunk.Voxels;
+
+            var array = new NativeArray3D<Voxel>(_chunkSize + 2, _chunkSize + 2, _chunkSize + 2, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
+            //fill array with air
+            for (int i = 0; i < array.XMax * array.YMax * array.ZMax; i++)
+            {
+                array[i] = new Voxel()
+                {
+                    type = VoxelType.Air,
+                };
+            }
+
+            //copy contents of chunk to this new array
+            for (int z = 0; z < _chunkSize; z++)
+            {
+                for (int y = 0; y < _chunkSize; y++)
+                {
+                    for (int x = 0; x < _chunkSize; x++)
+                    {
+                        array[x + 1, y + 1, z + 1] = chunkVox[x, y, z];
+                    }
+                }
+            }
+
+            #region Check 6 sides of a chunk and copy
+
+            var dir = DirectionsHelper.BlockDirectionFlag.Up;
+            var vec = dir.DirectionToVec();
+            if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
+            {
+                var nextChunk = GetChunk(chunk.Pos + vec);
+                var nextVox = nextChunk.Voxels;
+                for (int z = 0; z < _chunkSize; z++)
+                {
+                    for (int x = 0; x < _chunkSize; x++)
+                    {
+                        array[x + 1, _chunkSize + 1, z + 1] = nextVox[x, 0, z];
+                    }
+                }
+            }
+
+            dir = DirectionsHelper.BlockDirectionFlag.Down;
+            vec = dir.DirectionToVec();
+            if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
+            {
+                var nextChunk = GetChunk(chunk.Pos + vec);
+                var nextVox = nextChunk.Voxels;
+                for (int z = 0; z < _chunkSize; z++)
+                {
+                    for (int x = 0; x < _chunkSize; x++)
+                    {
+                        array[x + 1, 0, z + 1] = nextVox[x, _chunkSize - 1, z];
+                    }
+                }
+            }
+
+            dir = DirectionsHelper.BlockDirectionFlag.Left;
+            vec = dir.DirectionToVec();
+            if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
+            {
+                var nextChunk = GetChunk(chunk.Pos + vec);
+                var nextVox = nextChunk.Voxels;
+                for (int z = 0; z < _chunkSize; z++)
+                {
+                    for (int y = 0; y < _chunkSize; y++)
+                    {
+                        array[0, y + 1, z + 1] = nextVox[_chunkSize - 1, y, z];
+                    }
+                }
+            }
+
+            dir = DirectionsHelper.BlockDirectionFlag.Right;
+            vec = dir.DirectionToVec();
+            if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
+            {
+                var nextChunk = GetChunk(chunk.Pos + vec);
+                var nextVox = nextChunk.Voxels;
+                for (int z = 0; z < _chunkSize; z++)
+                {
+                    for (int y = 0; y < _chunkSize; y++)
+                    {
+                        array[_chunkSize + 1, y + 1, z + 1] = nextVox[0, y, z];
+                    }
+                }
+            }
+
+            dir = DirectionsHelper.BlockDirectionFlag.Front;
+            vec = dir.DirectionToVec();
+            if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
+            {
+                var nextChunk = GetChunk(chunk.Pos + vec);
+                var nextVox = nextChunk.Voxels;
+                for (int y = 0; y < _chunkSize; y++)
+                {
+                    for (int x = 0; x < _chunkSize; x++)
+                    {
+                        array[x + 1, y + 1, _chunkSize + 1] = nextVox[x, y, 0];
+                    }
+                }
+            }
+
+            dir = DirectionsHelper.BlockDirectionFlag.Back;
+            vec = dir.DirectionToVec();
+            if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
+            {
+                var nextChunk = GetChunk(chunk.Pos + vec);
+                var nextVox = nextChunk.Voxels;
+                for (int y = 0; y < _chunkSize; y++)
+                {
+                    for (int x = 0; x < _chunkSize; x++)
+                    {
+                        array[x + 1, y + 1, 0] = nextVox[x, y, _chunkSize - 1];
+                    }
+                }
+            }
+
+            #endregion Check 6 sides of a chunk and copy
+
+            #region Check edges
+
+            dir = DirectionsHelper.BlockDirectionFlag.Up | DirectionsHelper.BlockDirectionFlag.Right;
+            vec = dir.DirectionToVec();
+
+            #endregion Check edges
+
+            return array;
         }
 
         public Voxel GetVoxel(Vector3Int chunkPos, Vector3Int blockPos)

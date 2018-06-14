@@ -26,7 +26,7 @@ namespace Scripts.World.Jobs
             for (byte i = 0; i < 6; i++)
             {
                 var dir = (DirectionsHelper.BlockDirectionFlag)(1 << i);
-                Vector3Int vec = dir.ToVec();
+                Vector3Int vec = dir.ToVecInt();
 
                 if (boxThatContainsChunkAndAllNeighboursBorders[x + vec.x + 1, y + vec.y + 1, z + vec.z + 1].type.IsAir())
                     facesVisible |= dir;

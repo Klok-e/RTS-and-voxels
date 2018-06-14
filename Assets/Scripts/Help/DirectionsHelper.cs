@@ -68,7 +68,7 @@ namespace Scripts.Help
             throw new Exception();
         }
 
-        public static Vector3Int ToVec(this BlockDirectionFlag en)
+        public static Vector3Int ToVecInt(this BlockDirectionFlag en)
         {
             var vec = new Vector3Int();
             if ((en & BlockDirectionFlag.Up) != 0) vec += new Vector3Int(0, 1, 0);
@@ -77,6 +77,18 @@ namespace Scripts.Help
             if ((en & BlockDirectionFlag.Right) != 0) vec += new Vector3Int(1, 0, 0);
             if ((en & BlockDirectionFlag.Back) != 0) vec += new Vector3Int(0, 0, -1);
             if ((en & BlockDirectionFlag.Front) != 0) vec += new Vector3Int(0, 0, 1);
+            return vec;
+        }
+
+        public static Vector3 ToVecFloat(this BlockDirectionFlag en)
+        {
+            var vec = new Vector3();
+            if ((en & BlockDirectionFlag.Up) != 0) vec += new Vector3(0, 1, 0);
+            if ((en & BlockDirectionFlag.Down) != 0) vec += new Vector3(0, -1, 0);
+            if ((en & BlockDirectionFlag.Left) != 0) vec += new Vector3(-1, 0, 0);
+            if ((en & BlockDirectionFlag.Right) != 0) vec += new Vector3(1, 0, 0);
+            if ((en & BlockDirectionFlag.Back) != 0) vec += new Vector3(0, 0, -1);
+            if ((en & BlockDirectionFlag.Front) != 0) vec += new Vector3(0, 0, 1);
             return vec;
         }
 

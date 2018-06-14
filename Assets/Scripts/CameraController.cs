@@ -101,8 +101,8 @@ namespace MarchingCubesProject
             ChangeObjectType();
             ChangeSphereSize();
 
-            var leftClick = Input.GetMouseButton(0);
-            var rightClick = Input.GetMouseButton(1);
+            var leftClick = Input.GetMouseButtonDown(0);
+            var rightClick = Input.GetMouseButtonDown(1);
 
             if (leftClick || rightClick)
             {

@@ -190,7 +190,7 @@ namespace Scripts.World
                 for (int i = 0; i < 6; i++)
                 {
                     var dir = (DirectionsHelper.BlockDirectionFlag)(1 << i);
-                    var vec = dir.ToVec();
+                    var vec = dir.ToVecInt();
 
                     var nextBlockPos = data._blockPos + vec;
 
@@ -277,7 +277,7 @@ namespace Scripts.World
                 for (int i = 0; i < 6; i++)
                 {
                     var dir = (DirectionsHelper.BlockDirectionFlag)(1 << i);
-                    var vec = dir.ToVec();
+                    var vec = dir.ToVecInt();
 
                     var nextBlockPos = data._blockPos + vec;
 
@@ -431,7 +431,7 @@ namespace Scripts.World
             void Check6Sides()
             {
                 var dir = DirectionsHelper.BlockDirectionFlag.Up;
-                var vec = dir.ToVec();
+                var vec = dir.ToVecInt();
                 if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
                 {
                     var nextVox = GetChunk(chunk.Pos + vec).Voxels;
@@ -441,7 +441,7 @@ namespace Scripts.World
                 }
 
                 dir = DirectionsHelper.BlockDirectionFlag.Down;
-                vec = dir.ToVec();
+                vec = dir.ToVecInt();
                 if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
                 {
                     var nextVox = GetChunk(chunk.Pos + vec).Voxels;
@@ -451,7 +451,7 @@ namespace Scripts.World
                 }
 
                 dir = DirectionsHelper.BlockDirectionFlag.Left;
-                vec = dir.ToVec();
+                vec = dir.ToVecInt();
                 if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
                 {
                     var nextVox = GetChunk(chunk.Pos + vec).Voxels;
@@ -461,7 +461,7 @@ namespace Scripts.World
                 }
 
                 dir = DirectionsHelper.BlockDirectionFlag.Right;
-                vec = dir.ToVec();
+                vec = dir.ToVecInt();
                 if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
                 {
                     var nextVox = GetChunk(chunk.Pos + vec).Voxels;
@@ -471,7 +471,7 @@ namespace Scripts.World
                 }
 
                 dir = DirectionsHelper.BlockDirectionFlag.Back;
-                vec = dir.ToVec();
+                vec = dir.ToVecInt();
                 if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
                 {
                     var nextVox = GetChunk(chunk.Pos + vec).Voxels;
@@ -481,7 +481,7 @@ namespace Scripts.World
                 }
 
                 dir = DirectionsHelper.BlockDirectionFlag.Front;
-                vec = dir.ToVec();
+                vec = dir.ToVecInt();
                 if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
                 {
                     var nextVox = GetChunk(chunk.Pos + vec).Voxels;
@@ -493,7 +493,7 @@ namespace Scripts.World
             void Check12Edges()
             {
                 var dir = DirectionsHelper.BlockDirectionFlag.Up | DirectionsHelper.BlockDirectionFlag.Right;
-                var vec = dir.ToVec();
+                var vec = dir.ToVecInt();
                 if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
                 {
                     var nextVox = GetChunk(chunk.Pos + vec).Voxels;
@@ -502,7 +502,7 @@ namespace Scripts.World
                 }
 
                 dir = DirectionsHelper.BlockDirectionFlag.Up | DirectionsHelper.BlockDirectionFlag.Left;
-                vec = dir.ToVec();
+                vec = dir.ToVecInt();
                 if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
                 {
                     var nextVox = GetChunk(chunk.Pos + vec).Voxels;
@@ -511,7 +511,7 @@ namespace Scripts.World
                 }
 
                 dir = DirectionsHelper.BlockDirectionFlag.Up | DirectionsHelper.BlockDirectionFlag.Back;
-                vec = dir.ToVec();
+                vec = dir.ToVecInt();
                 if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
                 {
                     var nextVox = GetChunk(chunk.Pos + vec).Voxels;
@@ -520,7 +520,7 @@ namespace Scripts.World
                 }
 
                 dir = DirectionsHelper.BlockDirectionFlag.Up | DirectionsHelper.BlockDirectionFlag.Front;
-                vec = dir.ToVec();
+                vec = dir.ToVecInt();
                 if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
                 {
                     var nextVox = GetChunk(chunk.Pos + vec).Voxels;
@@ -529,7 +529,7 @@ namespace Scripts.World
                 }
 
                 dir = DirectionsHelper.BlockDirectionFlag.Down | DirectionsHelper.BlockDirectionFlag.Right;
-                vec = dir.ToVec();
+                vec = dir.ToVecInt();
                 if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
                 {
                     var nextVox = GetChunk(chunk.Pos + vec).Voxels;
@@ -538,7 +538,7 @@ namespace Scripts.World
                 }
 
                 dir = DirectionsHelper.BlockDirectionFlag.Down | DirectionsHelper.BlockDirectionFlag.Left;
-                vec = dir.ToVec();
+                vec = dir.ToVecInt();
                 if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
                 {
                     var nextVox = GetChunk(chunk.Pos + vec).Voxels;
@@ -547,7 +547,7 @@ namespace Scripts.World
                 }
 
                 dir = DirectionsHelper.BlockDirectionFlag.Down | DirectionsHelper.BlockDirectionFlag.Back;
-                vec = dir.ToVec();
+                vec = dir.ToVecInt();
                 if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
                 {
                     var nextVox = GetChunk(chunk.Pos + vec).Voxels;
@@ -556,7 +556,7 @@ namespace Scripts.World
                 }
 
                 dir = DirectionsHelper.BlockDirectionFlag.Down | DirectionsHelper.BlockDirectionFlag.Front;
-                vec = dir.ToVec();
+                vec = dir.ToVecInt();
                 if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
                 {
                     var nextVox = GetChunk(chunk.Pos + vec).Voxels;
@@ -565,7 +565,7 @@ namespace Scripts.World
                 }
 
                 dir = DirectionsHelper.BlockDirectionFlag.Front | DirectionsHelper.BlockDirectionFlag.Right;
-                vec = dir.ToVec();
+                vec = dir.ToVecInt();
                 if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
                 {
                     var nextVox = GetChunk(chunk.Pos + vec).Voxels;
@@ -574,7 +574,7 @@ namespace Scripts.World
                 }
 
                 dir = DirectionsHelper.BlockDirectionFlag.Front | DirectionsHelper.BlockDirectionFlag.Left;
-                vec = dir.ToVec();
+                vec = dir.ToVecInt();
                 if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
                 {
                     var nextVox = GetChunk(chunk.Pos + vec).Voxels;
@@ -583,7 +583,7 @@ namespace Scripts.World
                 }
 
                 dir = DirectionsHelper.BlockDirectionFlag.Back | DirectionsHelper.BlockDirectionFlag.Right;
-                vec = dir.ToVec();
+                vec = dir.ToVecInt();
                 if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
                 {
                     var nextVox = GetChunk(chunk.Pos + vec).Voxels;
@@ -592,7 +592,7 @@ namespace Scripts.World
                 }
 
                 dir = DirectionsHelper.BlockDirectionFlag.Back | DirectionsHelper.BlockDirectionFlag.Left;
-                vec = dir.ToVec();
+                vec = dir.ToVecInt();
                 if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
                 {
                     var nextVox = GetChunk(chunk.Pos + vec).Voxels;
@@ -603,7 +603,7 @@ namespace Scripts.World
             void Check8Vertices()
             {
                 var dir = DirectionsHelper.BlockDirectionFlag.Up | DirectionsHelper.BlockDirectionFlag.Left | DirectionsHelper.BlockDirectionFlag.Front;
-                var vec = dir.ToVec();
+                var vec = dir.ToVecInt();
                 if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
                 {
                     var nextVox = GetChunk(chunk.Pos + vec).Voxels;
@@ -611,7 +611,7 @@ namespace Scripts.World
                 }
 
                 dir = DirectionsHelper.BlockDirectionFlag.Up | DirectionsHelper.BlockDirectionFlag.Left | DirectionsHelper.BlockDirectionFlag.Back;
-                vec = dir.ToVec();
+                vec = dir.ToVecInt();
                 if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
                 {
                     var nextVox = GetChunk(chunk.Pos + vec).Voxels;
@@ -619,7 +619,7 @@ namespace Scripts.World
                 }
 
                 dir = DirectionsHelper.BlockDirectionFlag.Up | DirectionsHelper.BlockDirectionFlag.Right | DirectionsHelper.BlockDirectionFlag.Front;
-                vec = dir.ToVec();
+                vec = dir.ToVecInt();
                 if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
                 {
                     var nextVox = GetChunk(chunk.Pos + vec).Voxels;
@@ -627,7 +627,7 @@ namespace Scripts.World
                 }
 
                 dir = DirectionsHelper.BlockDirectionFlag.Up | DirectionsHelper.BlockDirectionFlag.Right | DirectionsHelper.BlockDirectionFlag.Back;
-                vec = dir.ToVec();
+                vec = dir.ToVecInt();
                 if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
                 {
                     var nextVox = GetChunk(chunk.Pos + vec).Voxels;
@@ -635,7 +635,7 @@ namespace Scripts.World
                 }
 
                 dir = DirectionsHelper.BlockDirectionFlag.Down | DirectionsHelper.BlockDirectionFlag.Left | DirectionsHelper.BlockDirectionFlag.Front;
-                vec = dir.ToVec();
+                vec = dir.ToVecInt();
                 if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
                 {
                     var nextVox = GetChunk(chunk.Pos + vec).Voxels;
@@ -643,7 +643,7 @@ namespace Scripts.World
                 }
 
                 dir = DirectionsHelper.BlockDirectionFlag.Down | DirectionsHelper.BlockDirectionFlag.Left | DirectionsHelper.BlockDirectionFlag.Back;
-                vec = dir.ToVec();
+                vec = dir.ToVecInt();
                 if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
                 {
                     var nextVox = GetChunk(chunk.Pos + vec).Voxels;
@@ -651,7 +651,7 @@ namespace Scripts.World
                 }
 
                 dir = DirectionsHelper.BlockDirectionFlag.Down | DirectionsHelper.BlockDirectionFlag.Right | DirectionsHelper.BlockDirectionFlag.Front;
-                vec = dir.ToVec();
+                vec = dir.ToVecInt();
                 if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
                 {
                     var nextVox = GetChunk(chunk.Pos + vec).Voxels;
@@ -659,7 +659,7 @@ namespace Scripts.World
                 }
 
                 dir = DirectionsHelper.BlockDirectionFlag.Down | DirectionsHelper.BlockDirectionFlag.Right | DirectionsHelper.BlockDirectionFlag.Back;
-                vec = dir.ToVec();
+                vec = dir.ToVecInt();
                 if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
                 {
                     var nextVox = GetChunk(chunk.Pos + vec).Voxels;
@@ -705,7 +705,7 @@ namespace Scripts.World
             void Check6Sides()
             {
                 var dir = DirectionsHelper.BlockDirectionFlag.Up;
-                var vec = dir.ToVec();
+                var vec = dir.ToVecInt();
                 if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
                 {
                     var nextVox = GetChunk(chunk.Pos + vec).VoxelLightingLevels;
@@ -715,7 +715,7 @@ namespace Scripts.World
                 }
 
                 dir = DirectionsHelper.BlockDirectionFlag.Down;
-                vec = dir.ToVec();
+                vec = dir.ToVecInt();
                 if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
                 {
                     var nextVox = GetChunk(chunk.Pos + vec).VoxelLightingLevels;
@@ -725,7 +725,7 @@ namespace Scripts.World
                 }
 
                 dir = DirectionsHelper.BlockDirectionFlag.Left;
-                vec = dir.ToVec();
+                vec = dir.ToVecInt();
                 if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
                 {
                     var nextVox = GetChunk(chunk.Pos + vec).VoxelLightingLevels;
@@ -735,7 +735,7 @@ namespace Scripts.World
                 }
 
                 dir = DirectionsHelper.BlockDirectionFlag.Right;
-                vec = dir.ToVec();
+                vec = dir.ToVecInt();
                 if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
                 {
                     var nextVox = GetChunk(chunk.Pos + vec).VoxelLightingLevels;
@@ -745,7 +745,7 @@ namespace Scripts.World
                 }
 
                 dir = DirectionsHelper.BlockDirectionFlag.Back;
-                vec = dir.ToVec();
+                vec = dir.ToVecInt();
                 if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
                 {
                     var nextVox = GetChunk(chunk.Pos + vec).VoxelLightingLevels;
@@ -755,7 +755,7 @@ namespace Scripts.World
                 }
 
                 dir = DirectionsHelper.BlockDirectionFlag.Front;
-                vec = dir.ToVec();
+                vec = dir.ToVecInt();
                 if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
                 {
                     var nextVox = GetChunk(chunk.Pos + vec).VoxelLightingLevels;
@@ -767,7 +767,7 @@ namespace Scripts.World
             void Check12Edges()
             {
                 var dir = DirectionsHelper.BlockDirectionFlag.Up | DirectionsHelper.BlockDirectionFlag.Right;
-                var vec = dir.ToVec();
+                var vec = dir.ToVecInt();
                 if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
                 {
                     var nextVox = GetChunk(chunk.Pos + vec).VoxelLightingLevels;
@@ -776,7 +776,7 @@ namespace Scripts.World
                 }
 
                 dir = DirectionsHelper.BlockDirectionFlag.Up | DirectionsHelper.BlockDirectionFlag.Left;
-                vec = dir.ToVec();
+                vec = dir.ToVecInt();
                 if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
                 {
                     var nextVox = GetChunk(chunk.Pos + vec).VoxelLightingLevels;
@@ -785,7 +785,7 @@ namespace Scripts.World
                 }
 
                 dir = DirectionsHelper.BlockDirectionFlag.Up | DirectionsHelper.BlockDirectionFlag.Back;
-                vec = dir.ToVec();
+                vec = dir.ToVecInt();
                 if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
                 {
                     var nextVox = GetChunk(chunk.Pos + vec).VoxelLightingLevels;
@@ -794,7 +794,7 @@ namespace Scripts.World
                 }
 
                 dir = DirectionsHelper.BlockDirectionFlag.Up | DirectionsHelper.BlockDirectionFlag.Front;
-                vec = dir.ToVec();
+                vec = dir.ToVecInt();
                 if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
                 {
                     var nextVox = GetChunk(chunk.Pos + vec).VoxelLightingLevels;
@@ -803,7 +803,7 @@ namespace Scripts.World
                 }
 
                 dir = DirectionsHelper.BlockDirectionFlag.Down | DirectionsHelper.BlockDirectionFlag.Right;
-                vec = dir.ToVec();
+                vec = dir.ToVecInt();
                 if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
                 {
                     var nextVox = GetChunk(chunk.Pos + vec).VoxelLightingLevels;
@@ -812,7 +812,7 @@ namespace Scripts.World
                 }
 
                 dir = DirectionsHelper.BlockDirectionFlag.Down | DirectionsHelper.BlockDirectionFlag.Left;
-                vec = dir.ToVec();
+                vec = dir.ToVecInt();
                 if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
                 {
                     var nextVox = GetChunk(chunk.Pos + vec).VoxelLightingLevels;
@@ -821,7 +821,7 @@ namespace Scripts.World
                 }
 
                 dir = DirectionsHelper.BlockDirectionFlag.Down | DirectionsHelper.BlockDirectionFlag.Back;
-                vec = dir.ToVec();
+                vec = dir.ToVecInt();
                 if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
                 {
                     var nextVox = GetChunk(chunk.Pos + vec).VoxelLightingLevels;
@@ -830,7 +830,7 @@ namespace Scripts.World
                 }
 
                 dir = DirectionsHelper.BlockDirectionFlag.Down | DirectionsHelper.BlockDirectionFlag.Front;
-                vec = dir.ToVec();
+                vec = dir.ToVecInt();
                 if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
                 {
                     var nextVox = GetChunk(chunk.Pos + vec).VoxelLightingLevels;
@@ -839,7 +839,7 @@ namespace Scripts.World
                 }
 
                 dir = DirectionsHelper.BlockDirectionFlag.Front | DirectionsHelper.BlockDirectionFlag.Right;
-                vec = dir.ToVec();
+                vec = dir.ToVecInt();
                 if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
                 {
                     var nextVox = GetChunk(chunk.Pos + vec).VoxelLightingLevels;
@@ -848,7 +848,7 @@ namespace Scripts.World
                 }
 
                 dir = DirectionsHelper.BlockDirectionFlag.Front | DirectionsHelper.BlockDirectionFlag.Left;
-                vec = dir.ToVec();
+                vec = dir.ToVecInt();
                 if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
                 {
                     var nextVox = GetChunk(chunk.Pos + vec).VoxelLightingLevels;
@@ -857,7 +857,7 @@ namespace Scripts.World
                 }
 
                 dir = DirectionsHelper.BlockDirectionFlag.Back | DirectionsHelper.BlockDirectionFlag.Right;
-                vec = dir.ToVec();
+                vec = dir.ToVecInt();
                 if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
                 {
                     var nextVox = GetChunk(chunk.Pos + vec).VoxelLightingLevels;
@@ -866,7 +866,7 @@ namespace Scripts.World
                 }
 
                 dir = DirectionsHelper.BlockDirectionFlag.Back | DirectionsHelper.BlockDirectionFlag.Left;
-                vec = dir.ToVec();
+                vec = dir.ToVecInt();
                 if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
                 {
                     var nextVox = GetChunk(chunk.Pos + vec).VoxelLightingLevels;
@@ -877,7 +877,7 @@ namespace Scripts.World
             void Check8Vertices()
             {
                 var dir = DirectionsHelper.BlockDirectionFlag.Up | DirectionsHelper.BlockDirectionFlag.Left | DirectionsHelper.BlockDirectionFlag.Front;
-                var vec = dir.ToVec();
+                var vec = dir.ToVecInt();
                 if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
                 {
                     var nextVox = GetChunk(chunk.Pos + vec).VoxelLightingLevels;
@@ -885,7 +885,7 @@ namespace Scripts.World
                 }
 
                 dir = DirectionsHelper.BlockDirectionFlag.Up | DirectionsHelper.BlockDirectionFlag.Left | DirectionsHelper.BlockDirectionFlag.Back;
-                vec = dir.ToVec();
+                vec = dir.ToVecInt();
                 if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
                 {
                     var nextVox = GetChunk(chunk.Pos + vec).VoxelLightingLevels;
@@ -893,7 +893,7 @@ namespace Scripts.World
                 }
 
                 dir = DirectionsHelper.BlockDirectionFlag.Up | DirectionsHelper.BlockDirectionFlag.Right | DirectionsHelper.BlockDirectionFlag.Front;
-                vec = dir.ToVec();
+                vec = dir.ToVecInt();
                 if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
                 {
                     var nextVox = GetChunk(chunk.Pos + vec).VoxelLightingLevels;
@@ -901,7 +901,7 @@ namespace Scripts.World
                 }
 
                 dir = DirectionsHelper.BlockDirectionFlag.Up | DirectionsHelper.BlockDirectionFlag.Right | DirectionsHelper.BlockDirectionFlag.Back;
-                vec = dir.ToVec();
+                vec = dir.ToVecInt();
                 if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
                 {
                     var nextVox = GetChunk(chunk.Pos + vec).VoxelLightingLevels;
@@ -909,7 +909,7 @@ namespace Scripts.World
                 }
 
                 dir = DirectionsHelper.BlockDirectionFlag.Down | DirectionsHelper.BlockDirectionFlag.Left | DirectionsHelper.BlockDirectionFlag.Front;
-                vec = dir.ToVec();
+                vec = dir.ToVecInt();
                 if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
                 {
                     var nextVox = GetChunk(chunk.Pos + vec).VoxelLightingLevels;
@@ -917,7 +917,7 @@ namespace Scripts.World
                 }
 
                 dir = DirectionsHelper.BlockDirectionFlag.Down | DirectionsHelper.BlockDirectionFlag.Left | DirectionsHelper.BlockDirectionFlag.Back;
-                vec = dir.ToVec();
+                vec = dir.ToVecInt();
                 if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
                 {
                     var nextVox = GetChunk(chunk.Pos + vec).VoxelLightingLevels;
@@ -925,7 +925,7 @@ namespace Scripts.World
                 }
 
                 dir = DirectionsHelper.BlockDirectionFlag.Down | DirectionsHelper.BlockDirectionFlag.Right | DirectionsHelper.BlockDirectionFlag.Front;
-                vec = dir.ToVec();
+                vec = dir.ToVecInt();
                 if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
                 {
                     var nextVox = GetChunk(chunk.Pos + vec).VoxelLightingLevels;
@@ -933,7 +933,7 @@ namespace Scripts.World
                 }
 
                 dir = DirectionsHelper.BlockDirectionFlag.Down | DirectionsHelper.BlockDirectionFlag.Right | DirectionsHelper.BlockDirectionFlag.Back;
-                vec = dir.ToVec();
+                vec = dir.ToVecInt();
                 if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
                 {
                     var nextVox = GetChunk(chunk.Pos + vec).VoxelLightingLevels;
@@ -1006,7 +1006,7 @@ namespace Scripts.World
                 for (int i = 0; i < 6; i++)
                 {
                     var dir = (DirectionsHelper.BlockDirectionFlag)(1 << i);
-                    var vec = dir.ToVec();
+                    var vec = dir.ToVecInt();
 
                     DirectionsHelper.BlockDirectionFlag oppositeDir = dir.Opposite();
 
@@ -1039,7 +1039,10 @@ namespace Scripts.World
 
                             if (newVoxelType.IsAir())
                             {
-                                nextVisibleSides[nextBlockPos.x, nextBlockPos.y, nextBlockPos.z] |= oppositeDir;//enable side of the next block
+                                if (!nextVoxels[nextBlockPos.x, nextBlockPos.y, nextBlockPos.z].type.IsAir())
+                                    nextVisibleSides[nextBlockPos.x, nextBlockPos.y, nextBlockPos.z] |= oppositeDir;//enable side of the next block
+                                else
+                                    nextVisibleSides[nextBlockPos.x, nextBlockPos.y, nextBlockPos.z] &= ~oppositeDir;//disable side of the next block
 
                                 visibleSides[blockPos.x, blockPos.y, blockPos.z] &= ~dir;//disable side of this block
 
@@ -1051,7 +1054,10 @@ namespace Scripts.World
                             {
                                 nextVisibleSides[nextBlockPos.x, nextBlockPos.y, nextBlockPos.z] &= ~oppositeDir;//disable side of the next block
 
-                                visibleSides[blockPos.x, blockPos.y, blockPos.z] |= dir;//enable side of this block
+                                if (!nextVoxels[nextBlockPos.x, nextBlockPos.y, nextBlockPos.z].type.IsAir())//if solid
+                                    visibleSides[blockPos.x, blockPos.y, blockPos.z] &= ~dir;//disable side of the next block
+                                else
+                                    visibleSides[blockPos.x, blockPos.y, blockPos.z] |= dir;//enable side of the next block
                             }
                         }
                         else
@@ -1066,7 +1072,10 @@ namespace Scripts.World
                     {
                         if (newVoxelType.IsAir())
                         {
-                            visibleSides[nextBlockPos.x, nextBlockPos.y, nextBlockPos.z] |= oppositeDir;//enable side of the next block
+                            if (!voxels[nextBlockPos.x, nextBlockPos.y, nextBlockPos.z].type.IsAir())//if solid
+                                visibleSides[nextBlockPos.x, nextBlockPos.y, nextBlockPos.z] |= oppositeDir;//enable side of the next block
+                            else
+                                visibleSides[nextBlockPos.x, nextBlockPos.y, nextBlockPos.z] &= ~oppositeDir;//disable side of the next block
 
                             visibleSides[blockPos.x, blockPos.y, blockPos.z] &= ~dir;//disable side of this block
 
@@ -1078,7 +1087,10 @@ namespace Scripts.World
                         {
                             visibleSides[nextBlockPos.x, nextBlockPos.y, nextBlockPos.z] &= ~oppositeDir;//disable side of the next block
 
-                            visibleSides[blockPos.x, blockPos.y, blockPos.z] |= dir;//enable side of this block
+                            if (!voxels[nextBlockPos.x, nextBlockPos.y, nextBlockPos.z].type.IsAir())//if solid
+                                visibleSides[blockPos.x, blockPos.y, blockPos.z] &= ~dir;//disable side of the next block
+                            else
+                                visibleSides[blockPos.x, blockPos.y, blockPos.z] |= dir;//enable side of the next block
                         }
                     }
                 }

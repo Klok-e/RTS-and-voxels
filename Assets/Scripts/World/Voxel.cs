@@ -15,32 +15,12 @@ namespace Scripts.World
     public enum VoxelType : byte
     {
         Air = 0,
-        Solid = 1,
-    }
-
-    public enum BlittableBool : byte
-    {
-        False = 0,
-        True = 1,
+        Dirt = 1,
+        Grass = 2,
     }
 
     public static class VoxelExtensions
     {
-        public static Color[] colors;
-
-        public static Color ToColor(this Voxel vox)
-        {
-            try
-            {
-                return colors[(byte)vox.type];
-            }
-            catch (IndexOutOfRangeException)
-            {
-                Debug.LogError("Color not in the list!");
-                return Color.magenta;
-            }
-        }
-
         public static Vector3 ToVector3(this Color col)
         {
             return new Vector3(col.r, col.g, col.b);

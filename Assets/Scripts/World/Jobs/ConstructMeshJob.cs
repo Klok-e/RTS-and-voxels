@@ -1,12 +1,14 @@
 ﻿using Scripts.Help;
 using Scripts.World;
 using System;
+using Unity.Burst;
 using Unity.Collections;
 using Unity.Jobs;
 using UnityEngine;
 
 namespace Scripts.World.Jobs
 {
+    [BurstCompile]
     public struct ConstructMeshJob : IJob
     {
         [ReadOnly]
@@ -31,10 +33,9 @@ namespace Scripts.World.Jobs
                     {
                         if (chunkAndNeighboursVoxels[x + 1, y + 1, z + 1].type != VoxelType.Air)
                         {
-                            var col = chunkAndNeighboursVoxels[x + 1, y + 1, z + 1].ToColor();
-                            var faces = CalculateVisibleFaces(x, y, z);
-                            //var faces = voxelsVisibleFaces[x, y, z];
-                            CreateCube(meshData, new Vector3(x, y, z) * VoxelWorldController._blockSize, faces, col, new Vector3Int(x, y, z));
+                            //var faces = CalculateVisibleFaces(x, y, z);
+                            var faces = voxelsVisibleFaces[x, y, z];
+                            CreateCube(meshData, new Vector3(x, y, z) * VoxelWorldController._blockSize, faces, new Vector3Int(x, y, z), chunkAndNeighboursVoxels[x + 1, y + 1, z + 1].type);
                         }
                     }
                 }
@@ -57,30 +58,28 @@ namespace Scripts.World.Jobs
 
         #region Mesh generation
 
-        private void CreateCube(NativeMeshData mesh, Vector3 pos, DirectionsHelper.BlockDirectionFlag facesVisible, Color color, Vector3Int blockPos)
+        private void CreateCube(NativeMeshData mesh, Vector3 pos, DirectionsHelper.BlockDirectionFlag facesVisible, Vector3Int blockPos, VoxelType voxelType)
         {
             for (int i = 0; i < 6; i++)
             {
                 var curr = (DirectionsHelper.BlockDirectionFlag)(1 << i);
                 if ((curr & facesVisible) != 0)//0b010 00 & 0b010 00 -> 0b010 00; 0b100 00 & 0b010 00 -> 0b000 00
-                    CreateFace(mesh, pos, curr, color, blockPos);
+                    CreateFace(mesh, pos, curr, blockPos, voxelType);
             }
         }
 
-        private void CreateFace(NativeMeshData mesh, Vector3 vertOffset, DirectionsHelper.BlockDirectionFlag dir, Color color, Vector3Int blockPos)
+        private void CreateFace(NativeMeshData mesh, Vector3 vertOffset, DirectionsHelper.BlockDirectionFlag dir, Vector3Int blockPos, VoxelType voxelType)
         {
             var vec = dir.ToVecInt();
 
             byte light = CalculateLightForAFace(blockPos, dir);
-            //var occlusion = (new Vector4(2, 2, 2, 2) - CalculateAmbientOcclusion(nextBlockPos, dir)) / 2;
-
-            color *= (float)(light + 8) / 32;
 
             var ao = CalculateAO(blockPos, dir, out bool isFlipped);
             var startIndex = mesh._vertices.Length;
 
             Quaternion rotation = Quaternion.LookRotation(vec);
 
+            var color = new Color(1, 1, 1) * (light + 8) / 32;
             mesh._colors.Add(color);
             mesh._colors.Add(color);
             mesh._colors.Add(color);
@@ -91,15 +90,37 @@ namespace Scripts.World.Jobs
             mesh._uv.Add(new Vector2(0, 1));
             mesh._uv.Add(new Vector2(1, 1));
 
-            mesh._uv2.Add(new Vector2(ao.x, 0));
-            mesh._uv2.Add(new Vector2(ao.y, 0));
-            mesh._uv2.Add(new Vector2(ao.z, 0));
-            mesh._uv2.Add(new Vector2(ao.w, 0));
+            switch (voxelType)
+            {
+                case VoxelType.Dirt:
+                    mesh._uv2.Add(new Vector2(ao.x, 0));
+                    mesh._uv2.Add(new Vector2(ao.y, 0));
+                    mesh._uv2.Add(new Vector2(ao.z, 0));
+                    mesh._uv2.Add(new Vector2(ao.w, 0));
+                    break;
 
-            mesh._vertices.Add((rotation * (new Vector3(-.5f, -.5f, .5f) * VoxelWorldController._blockSize)) + vertOffset);
-            mesh._vertices.Add((rotation * (new Vector3(.5f, -.5f, .5f) * VoxelWorldController._blockSize)) + vertOffset);
+                case VoxelType.Grass:
+                    if (dir == DirectionsHelper.BlockDirectionFlag.Up)
+                    {
+                        mesh._uv2.Add(new Vector2(ao.x, 1));
+                        mesh._uv2.Add(new Vector2(ao.y, 1));
+                        mesh._uv2.Add(new Vector2(ao.z, 1));
+                        mesh._uv2.Add(new Vector2(ao.w, 1));
+                    }
+                    else
+                    {
+                        mesh._uv2.Add(new Vector2(ao.x, 0));
+                        mesh._uv2.Add(new Vector2(ao.y, 0));
+                        mesh._uv2.Add(new Vector2(ao.z, 0));
+                        mesh._uv2.Add(new Vector2(ao.w, 0));
+                    }
+                    break;
+            }
+
             mesh._vertices.Add((rotation * (new Vector3(-.5f, .5f, .5f) * VoxelWorldController._blockSize)) + vertOffset);
             mesh._vertices.Add((rotation * (new Vector3(.5f, .5f, .5f) * VoxelWorldController._blockSize)) + vertOffset);
+            mesh._vertices.Add((rotation * (new Vector3(-.5f, -.5f, .5f) * VoxelWorldController._blockSize)) + vertOffset);
+            mesh._vertices.Add((rotation * (new Vector3(.5f, -.5f, .5f) * VoxelWorldController._blockSize)) + vertOffset);
 
             Vector3Int normal = dir.ToVecInt();
 
@@ -110,21 +131,21 @@ namespace Scripts.World.Jobs
 
             if (isFlipped)
             {
-                mesh._triangles.Add(startIndex + 1);
+                mesh._triangles.Add(startIndex + 2);
                 mesh._triangles.Add(startIndex + 3);
                 mesh._triangles.Add(startIndex + 0);
-                mesh._triangles.Add(startIndex + 2);
+                mesh._triangles.Add(startIndex + 1);
                 mesh._triangles.Add(startIndex + 0);
                 mesh._triangles.Add(startIndex + 3);
             }
             else
             {
                 mesh._triangles.Add(startIndex + 0);
-                mesh._triangles.Add(startIndex + 1);
                 mesh._triangles.Add(startIndex + 2);
+                mesh._triangles.Add(startIndex + 1);
                 mesh._triangles.Add(startIndex + 3);
-                mesh._triangles.Add(startIndex + 2);
                 mesh._triangles.Add(startIndex + 1);
+                mesh._triangles.Add(startIndex + 2);
             }
         }
 
@@ -136,11 +157,6 @@ namespace Scripts.World.Jobs
 
         private Vector4 CalculateAO(Vector3Int blockPos, DirectionsHelper.BlockDirectionFlag dir, out bool isFlipped)
         {
-            const int side1Mask = 0b100;
-            const int side2Mask = 0b010;
-            const int cornerMask = 0b001;
-
-            int occl = 0;
             /*
              *  occl[0]   occl[1]    occl[2]
              *  -1,1      0,1       1,1
@@ -154,74 +170,77 @@ namespace Scripts.World.Jobs
              *  occl[6]   occl[5]    occl[4]
              *  -1,-1       0,-1        1,-1
              */
-            var vec = dir.ToVecInt();
+            var vec = dir.ToVecFloat();
             blockPos += new Vector3Int(1, 1, 1);
 
-            var rotationToDir = Quaternion.LookRotation(vec, new Vector3(0, 1, 0));
+            var rotationToDir = Quaternion.LookRotation(vec);
+
             //set occluders
-            var left = (rotationToDir * new Vector3(-1, 0, 1)).ToInt();
-            var right = (rotationToDir * new Vector3(1, 0, 1)).ToInt();
-            var front = (rotationToDir * new Vector3(0, 1, 1)).ToInt();
-            var back = (rotationToDir * new Vector3(0, -1, 1)).ToInt();
+            var leftInd = (rotationToDir * new Vector3(-1, 0, 1)).ToInt();
+            var rightInd = (rotationToDir * new Vector3(1, 0, 1)).ToInt();
+            var frontInd = (rotationToDir * new Vector3(0, -1, 1)).ToInt();
+            var backInd = (rotationToDir * new Vector3(0, 1, 1)).ToInt();
+            var frontLeftInd = (rotationToDir * new Vector3(-1, -1, 1)).ToInt();
+            var frontRightInd = (rotationToDir * new Vector3(1, -1, 1)).ToInt();
+            var backLeftInd = (rotationToDir * new Vector3(-1, 1, 1)).ToInt();
+            var backRightInd = (rotationToDir * new Vector3(1, 1, 1)).ToInt();
 
-            var frontLeft = (rotationToDir * new Vector3(-1, 1, 1)).ToInt();
-            var frontRight = (rotationToDir * new Vector3(1, 1, 1)).ToInt();
-            var backLeft = (rotationToDir * new Vector3(-1, -1, 1)).ToInt();
-            var backRight = (rotationToDir * new Vector3(1, -1, 1)).ToInt();
+            leftInd += blockPos;
+            rightInd += blockPos;
+            frontInd += blockPos;
+            backInd += blockPos;
+            frontLeftInd += blockPos;
+            frontRightInd += blockPos;
+            backLeftInd += blockPos;
+            backRightInd += blockPos;
 
-            left += blockPos;
-            right += blockPos;
-            front += blockPos;
-            back += blockPos;
+            int left = 0;
+            int right = 0;
+            int front = 0;
+            int back = 0;
+            int frontLeft = 0;
+            int frontRight = 0;
+            int backLeft = 0;
+            int backRight = 0;
 
-            frontLeft += blockPos;
-            frontRight += blockPos;
-            backLeft += blockPos;
-            backRight += blockPos;
+            if (!chunkAndNeighboursVoxels[frontLeftInd.x, frontLeftInd.y, frontLeftInd.z].type.IsAir())
+                frontLeft = 1;
+            if (!chunkAndNeighboursVoxels[frontInd.x, frontInd.y, frontInd.z].type.IsAir())
+                front = 1;
+            if (!chunkAndNeighboursVoxels[frontRightInd.x, frontRightInd.y, frontRightInd.z].type.IsAir())
+                frontRight = 1;
+            if (!chunkAndNeighboursVoxels[rightInd.x, rightInd.y, rightInd.z].type.IsAir())
+                right = 1;
+            if (!chunkAndNeighboursVoxels[backRightInd.x, backRightInd.y, backRightInd.z].type.IsAir())
+                backRight = 1;
+            if (!chunkAndNeighboursVoxels[backInd.x, backInd.y, backInd.z].type.IsAir())
+                back = 1;
+            if (!chunkAndNeighboursVoxels[backLeftInd.x, backLeftInd.y, backLeftInd.z].type.IsAir())
+                backLeft = 1;
+            if (!chunkAndNeighboursVoxels[leftInd.x, leftInd.y, leftInd.z].type.IsAir())
+                left = 1;
 
-            //sides
-            if (!chunkAndNeighboursVoxels[left.x, left.y, left.z].type.IsAir())
-                occl |= 0b10000000;
-            if (!chunkAndNeighboursVoxels[right.x, right.y, right.z].type.IsAir())
-                occl |= 0b00001000;
-            if (!chunkAndNeighboursVoxels[front.x, front.y, front.z].type.IsAir())
-                occl |= 0b00000010;
-            if (!chunkAndNeighboursVoxels[back.x, back.y, back.z].type.IsAir())
-                occl |= 0b00100000;
-            //corners
-            if (!chunkAndNeighboursVoxels[frontLeft.x, frontLeft.y, frontLeft.z].type.IsAir())
-                occl |= 0b00000001;
-            if (!chunkAndNeighboursVoxels[backLeft.x, backLeft.y, backLeft.z].type.IsAir())
-                occl |= 0b01000000;
-            if (!chunkAndNeighboursVoxels[frontRight.x, frontRight.y, frontRight.z].type.IsAir())
-                occl |= 0b00000100;
-            if (!chunkAndNeighboursVoxels[backRight.x, backRight.y, backRight.z].type.IsAir())
-                occl |= 0b00010000;
-
-            float vert1 = VertexAO(((occl & 0b10000000) >> 5) | ((occl & 0b00100000) >> 4) | ((occl & 0b01000000) >> 6));
-            float vert2 = VertexAO(((occl & 0b00100000) >> 3) | ((occl & 0b00001000) >> 2) | ((occl & 0b00010000) >> 4));
-            float vert3 = VertexAO(((occl & 0b10000000) >> 5) | ((occl & 0b00000010) >> 0) | ((occl & 0b00000001) >> 0));
-            float vert4 = VertexAO(((occl & 0b00000010) << 1) | ((occl & 0b00001000) >> 2) | ((occl & 0b00000100) >> 2));
+            float vert1 = VertexAO(left, back, backLeft);
+            float vert2 = VertexAO(right, back, backRight);
+            float vert3 = VertexAO(left, front, frontLeft);
+            float vert4 = VertexAO(right, front, frontRight);
 
             //from here: https://0fps.net/2013/07/03/ambient-occlusion-for-minecraft-like-worlds/
-            if (vert1 + vert4 > vert3 + vert2)
+            if (vert1 + vert4 > vert2 + vert3)
                 isFlipped = true;
             else
                 isFlipped = false;
 
             return new Vector4(vert1, vert2, vert3, vert4);
+        }
 
-            float VertexAO(int side12Corner)
+        private float VertexAO(int side1, int side2, int corner)
+        {
+            if (side1 == 1 && side2 == 1)
             {
-                int side1 = (side12Corner & side1Mask) >> 2;
-                int side2 = (side12Corner & side2Mask) >> 1;
-                int corner = side12Corner & cornerMask;
-                if (side1 != 0 && side2 != 0)
-                {
-                    return 0;
-                }
-                return (3 - (side1 + side2 + corner)) / 3;
+                return 0;
             }
+            return (3 - (side1 + side2 + corner)) / 3f;
         }
 
         #endregion Mesh generation

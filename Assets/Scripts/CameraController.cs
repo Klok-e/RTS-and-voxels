@@ -33,6 +33,9 @@ namespace MarchingCubesProject
         private Text objectTypeLabel;
 
         [SerializeField]
+        private Text voxelCoordinatesLabel;
+
+        [SerializeField]
         private Slider sphereSizeSlider;
 
         private int _sphereSize = 3;
@@ -96,8 +99,21 @@ namespace MarchingCubesProject
             sphereSizeSlider.value = _sphereSize;
         }
 
+        private void ChangeVoxelCoord()
+        {
+            Ray ray = new Ray(transform.position, transform.forward);
+            if (Physics.Raycast(ray, out RaycastHit hit))
+            {
+                var pos = hit.point - (hit.normal * VoxelWorldController._blockSize / 2);
+
+                VoxelWorldController.ChunkVoxelCoordinates(pos, out var chunk, out var voxel);
+                voxelCoordinatesLabel.text = voxel.ToString();
+            }
+        }
+
         private void Update()
         {
+            ChangeVoxelCoord();
             ChangeObjectType();
             ChangeSphereSize();
 
@@ -121,37 +137,37 @@ namespace MarchingCubesProject
                         switch (interctionType)
                         {
                             case InteractionTypes.Place:
-                                var pos = hit.point + (hit.normal * (VoxelWorldController._blockSize) / 2);
+                                var pos = hit.point + (hit.normal * VoxelWorldController._blockSize / 2);
                                 switch (objectType)
                                 {
                                     case ObjectTypes.Voxel:
-                                        VoxelWorldController.Instance.SetVoxel(pos / VoxelWorldController._blockSize, VoxelType.Solid);
+                                        VoxelWorldController.Instance.SetVoxel(pos, VoxelType.Dirt);
                                         break;
 
                                     case ObjectTypes.Sphere:
-                                        VoxelWorldController.Instance.InsertSphere(pos / VoxelWorldController._blockSize, _sphereSize, VoxelType.Solid);
+                                        VoxelWorldController.Instance.InsertSphere(pos, _sphereSize, VoxelType.Dirt);
                                         break;
 
                                     case ObjectTypes.Light:
-                                        VoxelWorldController.Instance.SetLight(pos / VoxelWorldController._blockSize, 15);
+                                        VoxelWorldController.Instance.SetLight(pos, 15);
                                         break;
                                 }
                                 break;
 
                             case InteractionTypes.Remove:
-                                pos = hit.point - (hit.normal * (VoxelWorldController._blockSize) / 2);
+                                pos = hit.point - (hit.normal * VoxelWorldController._blockSize / 2);
                                 switch (objectType)
                                 {
                                     case ObjectTypes.Voxel:
-                                        VoxelWorldController.Instance.SetVoxel(pos / VoxelWorldController._blockSize, VoxelType.Air);
+                                        VoxelWorldController.Instance.SetVoxel(pos, VoxelType.Air);
                                         break;
 
                                     case ObjectTypes.Sphere:
-                                        VoxelWorldController.Instance.InsertSphere(pos / VoxelWorldController._blockSize, _sphereSize, VoxelType.Air);
+                                        VoxelWorldController.Instance.InsertSphere(pos, _sphereSize, VoxelType.Air);
                                         break;
 
                                     case ObjectTypes.Light:
-                                        VoxelWorldController.Instance.SetLight(pos / VoxelWorldController._blockSize, 15);
+                                        VoxelWorldController.Instance.SetLight(pos, 15);
                                         break;
                                 }
                                 break;

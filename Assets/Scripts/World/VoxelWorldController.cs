@@ -18,6 +18,10 @@ namespace Scripts.World
 
         [SerializeField] private Color[] _colors;
 
+        [SerializeField] private Texture2D[] _textures;
+
+        private Texture2DArray _textureArray;
+
         private Queue<ChunkCleaningData> _updateDataToProcess;
         private Queue<VoxelLightPropagationData> _toPropagateLight;
         private Queue<VoxelLightPropagationData> _toRemoveLight;
@@ -27,7 +31,7 @@ namespace Scripts.World
         /// <summary>
         /// Only uneven amount or else SetVoxel won't work at all
         /// </summary>
-        public const int _chunkSize = 17;
+        public const int _chunkSize = 33;
 
         public const float _blockSize = 0.5f;
 
@@ -41,7 +45,6 @@ namespace Scripts.World
 
         private void Awake()
         {
-            VoxelExtensions.colors = _colors;
             RegularChunk._material = _material;
             RegularChunk._chunkParent = transform;
 
@@ -119,9 +122,26 @@ namespace Scripts.World
             _toRemoveLight = new Queue<VoxelLightPropagationData>();
             _toRebuildVisibleFaces = new Queue<RegularChunk>();
 
+            CreateTextureArray();
+
             //_placeholderChunk = CreatePlaceholderChunk();
 
-            CreateStartingLevels(0, 2, 2);
+            CreateStartingLevels(0, 0, 0);
+
+            void CreateTextureArray()
+            {
+                _textureArray = new Texture2DArray(16, 16, _textures.Length, TextureFormat.RGBA32, true);
+                for (int i = 0; i < _textures.Length; i++)
+                {
+                    var pix = _textures[i].GetPixels();
+                    _textureArray.SetPixels(pix, i);
+                }
+                _textureArray.Apply();
+
+                _textureArray.filterMode = FilterMode.Point;
+
+                _material.SetTexture("Texture2DArray_7C085864", _textureArray);
+            }
         }
 
         public ChunkRebuildingVisibleFacesData RebuildChunkVisibleFaces(RegularChunk chunk, JobHandle dependency = default(JobHandle))
@@ -357,41 +377,6 @@ namespace Scripts.World
                 throw new Exception();
 
             return ch;
-        }
-
-        public struct ChunkAndAdjacent<T>
-            where T : struct
-        {
-            public DirectionsHelper.BlockDirectionFlag dirChunksAvailable;
-
-            public NativeArray3D<T> chunk;
-            public NativeArray3D<T> chunkFront;
-            public NativeArray3D<T> chunkBack;
-            public NativeArray3D<T> chunkUp;
-            public NativeArray3D<T> chunkDown;
-            public NativeArray3D<T> chunkLeft;
-            public NativeArray3D<T> chunkRight;
-
-            public void DisposeUnavailable()
-            {
-                for (int i = 0; i < 6; i++)
-                {
-                    var dir = (DirectionsHelper.BlockDirectionFlag)(1 << i);
-                    if ((dir & dirChunksAvailable) == 0)
-                    {
-                        switch (dir)
-                        {
-                            case DirectionsHelper.BlockDirectionFlag.Up: chunkUp.Dispose(); break;
-                            case DirectionsHelper.BlockDirectionFlag.Down: chunkDown.Dispose(); break;
-                            case DirectionsHelper.BlockDirectionFlag.Left: chunkLeft.Dispose(); break;
-                            case DirectionsHelper.BlockDirectionFlag.Right: chunkRight.Dispose(); break;
-                            case DirectionsHelper.BlockDirectionFlag.Back: chunkBack.Dispose(); break;
-                            case DirectionsHelper.BlockDirectionFlag.Front: chunkFront.Dispose(); break;
-                            default: throw new Exception();
-                        }
-                    }
-                }
-            }
         }
 
         private NativeArray3D<Voxel> CopyGivenAndNeighbourBordersVoxels(RegularChunk chunk)
@@ -977,14 +962,11 @@ namespace Scripts.World
         #region Voxel editing
 
         /// <summary>
-        ///Set voxel at block coords (posOfCollision/VoxelVorld._blockSize) (not physics world coords)
+        ///Set voxel at world coords (physics world coords)
         /// </summary>
-        /// <param name="blockWorldPos">In block coordinates</param>
-        /// <param name="newVoxelType"></param>
-        public void SetVoxel(Vector3 blockWorldPos, VoxelType newVoxelType)
+        public void SetVoxel(Vector3 worldPos, VoxelType newVoxelType)
         {
-            var chunkPos = ((blockWorldPos - (Vector3.one * (_chunkSize / 2))) / _chunkSize).ToInt();
-            var blockPos = (blockWorldPos - chunkPos * _chunkSize).ToInt();
+            ChunkVoxelCoordinates(worldPos, out var chunkPos, out var blockPos);
 
             if (IsChunkPosInBordersOfTheMap(chunkPos))
             {
@@ -1099,10 +1081,16 @@ namespace Scripts.World
             }
         }
 
-        public void SetLight(Vector3 blockWorldPos, byte level)
+        public static void ChunkVoxelCoordinates(Vector3 worldPos, out Vector3Int chunkPos, out Vector3Int voxelPos)
         {
-            var chunkPos = ((blockWorldPos - (Vector3.one * (_chunkSize / 2))) / _chunkSize).ToInt();
-            var blockPos = (blockWorldPos - chunkPos * _chunkSize).ToInt();
+            worldPos /= _blockSize;
+            chunkPos = ((worldPos - (Vector3.one * (_chunkSize / 2))) / _chunkSize).ToInt();
+            voxelPos = (worldPos - chunkPos * _chunkSize).ToInt();
+        }
+
+        public void SetLight(Vector3 worldPos, byte level)
+        {
+            ChunkVoxelCoordinates(worldPos, out var chunkPos, out var blockPos);
 
             if (IsChunkPosInBordersOfTheMap(chunkPos))
             {
@@ -1122,23 +1110,23 @@ namespace Scripts.World
         }
 
         /// <summary>
-        /// Insert a sphere in a block coordinate (posOfCollision/VoxelVorld._blockSize)
+        /// Insert a sphere in a world coordinate
         /// </summary>
         /// <param name="sphereWorldPos"></param>
         /// <param name="radiusInBlocks"></param>
         /// <param name="newVoxelType"></param>
         public void InsertSphere(Vector3 sphereWorldPos, int radiusInBlocks, VoxelType newVoxelType)
         {
-            for (int x = -radiusInBlocks; x < radiusInBlocks; x++)
+            for (float x = -radiusInBlocks; x < radiusInBlocks; x++)
             {
-                for (int y = -radiusInBlocks; y < radiusInBlocks; y++)
+                for (float y = -radiusInBlocks; y < radiusInBlocks; y++)
                 {
-                    for (int z = -radiusInBlocks; z < radiusInBlocks; z++)
+                    for (float z = -radiusInBlocks; z < radiusInBlocks; z++)
                     {
                         var pos = new Vector3(x, y, z);
                         if (pos.sqrMagnitude <= radiusInBlocks * radiusInBlocks)
                         {
-                            SetVoxel(sphereWorldPos + pos, newVoxelType);
+                            SetVoxel(sphereWorldPos + pos * _blockSize, newVoxelType);
                         }
                     }
                 }

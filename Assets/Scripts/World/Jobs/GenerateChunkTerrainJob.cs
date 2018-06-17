@@ -6,12 +6,14 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Unity.Burst;
 using Unity.Collections;
 using Unity.Jobs;
 using UnityEngine;
 
 namespace Scripts.World.Jobs
 {
+    [BurstCompile]
     public struct GenerateChunkTerrainJob : IJob
     {
         [WriteOnly]
@@ -25,29 +27,45 @@ namespace Scripts.World.Jobs
 
         public void Execute()
         {
-            var fractal = new FractalNoise(new PerlinNoise(1337, 2.0f, 1.3f), 2, 0.2f, 1.5f)
+            for (int z = 0; z < chunkSize; z++)
             {
-                Offset = offset
-            };
-
-            for (int x = 0; x < chunkSize; x++)
-            {
-                for (int y = 0; y < chunkSize; y++)
+                for (int x = 0; x < chunkSize; x++)
                 {
-                    for (int z = 0; z < chunkSize; z++)
-                    {
-                        float fx = x / (chunkSize - 1f);
-                        float fz = z / (chunkSize - 1f);
-                        float fy = y / (chunkSize - 1f);
-                        var fill = fractal.Sample3D(fx, fy, fz);
+                    float fx = x / (chunkSize - 1f);
+                    float fz = z / (chunkSize - 1f);
+                    float sample = Perlin(fx, fz);
 
-                        voxels[x, y, z] = new Voxel()
+                    for (int y = 0; y < chunkSize; y++)
+                    {
+                        float fy = y / (chunkSize - 1f) + offset.y;
+                        if (fy < sample)
                         {
-                            type = (fill * chunkSize > y + (offset.y * chunkSize)) ? VoxelType.Solid : VoxelType.Air,
-                        };
+                            if (((y + 1) / (chunkSize - 1f) + offset.y) > sample)
+                                voxels[x, y, z] = new Voxel()
+                                {
+                                    type = VoxelType.Grass,
+                                };
+                            else
+                                voxels[x, y, z] = new Voxel()
+                                {
+                                    type = VoxelType.Dirt,
+                                };
+                        }
+                        else
+                        {
+                            voxels[x, y, z] = new Voxel()
+                            {
+                                type = VoxelType.Air,
+                            };
+                        }
                     }
                 }
             }
+        }
+
+        private float Perlin(float fx, float fz)
+        {
+            return 0.5f * Mathf.PerlinNoise((fx + offset.x) * 1.2f, (fz + offset.z) * 1.2f);
         }
     }
 }

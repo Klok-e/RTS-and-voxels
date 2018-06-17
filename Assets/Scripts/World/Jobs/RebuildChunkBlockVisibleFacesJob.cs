@@ -4,12 +4,14 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Unity.Burst;
 using Unity.Collections;
 using Unity.Jobs;
 using UnityEngine;
 
 namespace Scripts.World.Jobs
 {
+    [BurstCompile]
     public struct RebuildChunkBlockVisibleFacesJob : IJobParallelFor
     {
         [WriteOnly]

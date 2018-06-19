@@ -201,10 +201,7 @@ namespace Scripts.World
                 var lightLevels = chunk.VoxelLightingLevels;
 
                 var lightLvl = lightLevels[data._blockPos.x, data._blockPos.y, data._blockPos.z];
-                lightLevels[data._blockPos.x, data._blockPos.y, data._blockPos.z] = new VoxelLightingLevel()
-                {
-                    _level = 0,
-                };
+                lightLevels[data._blockPos.x, data._blockPos.y, data._blockPos.z] = new VoxelLightingLevel(0, 0);
 
                 //check 6 sides
                 for (int i = 0; i < 6; i++)

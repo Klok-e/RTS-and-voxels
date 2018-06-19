@@ -72,18 +72,17 @@ namespace Scripts.World.Jobs
         {
             var vec = dir.ToVecInt();
 
-            byte light = CalculateLightForAFace(blockPos, dir);
+            var light = CalculateLightForAFaceSmooth(blockPos, dir, out bool isFlipped);
 
-            var ao = CalculateAO(blockPos, dir, out bool isFlipped);
+            //var ao = CalculateAO(blockPos, dir, out isFlipped);
             var startIndex = mesh._vertices.Length;
 
             Quaternion rotation = Quaternion.LookRotation(vec);
 
-            var color = new Color(1, 1, 1) * (light + 8) / 32;
-            mesh._colors.Add(color);
-            mesh._colors.Add(color);
-            mesh._colors.Add(color);
-            mesh._colors.Add(color);
+            mesh._colors.Add(new Color(1, 1, 1) * light.x);
+            mesh._colors.Add(new Color(1, 1, 1) * light.y);
+            mesh._colors.Add(new Color(1, 1, 1) * light.z);
+            mesh._colors.Add(new Color(1, 1, 1) * light.w);
 
             mesh._uv.Add(new Vector2(0, 0));
             mesh._uv.Add(new Vector2(1, 0));
@@ -93,26 +92,26 @@ namespace Scripts.World.Jobs
             switch (voxelType)
             {
                 case VoxelType.Dirt:
-                    mesh._uv2.Add(new Vector2(ao.x, 0));
-                    mesh._uv2.Add(new Vector2(ao.y, 0));
-                    mesh._uv2.Add(new Vector2(ao.z, 0));
-                    mesh._uv2.Add(new Vector2(ao.w, 0));
+                    mesh._uv2.Add(new Vector2(1, 0));
+                    mesh._uv2.Add(new Vector2(1, 0));
+                    mesh._uv2.Add(new Vector2(1, 0));
+                    mesh._uv2.Add(new Vector2(1, 0));
                     break;
 
                 case VoxelType.Grass:
                     if (dir == DirectionsHelper.BlockDirectionFlag.Up)
                     {
-                        mesh._uv2.Add(new Vector2(ao.x, 1));
-                        mesh._uv2.Add(new Vector2(ao.y, 1));
-                        mesh._uv2.Add(new Vector2(ao.z, 1));
-                        mesh._uv2.Add(new Vector2(ao.w, 1));
+                        mesh._uv2.Add(new Vector2(1, 1));
+                        mesh._uv2.Add(new Vector2(1, 1));
+                        mesh._uv2.Add(new Vector2(1, 1));
+                        mesh._uv2.Add(new Vector2(1, 1));
                     }
                     else
                     {
-                        mesh._uv2.Add(new Vector2(ao.x, 0));
-                        mesh._uv2.Add(new Vector2(ao.y, 0));
-                        mesh._uv2.Add(new Vector2(ao.z, 0));
-                        mesh._uv2.Add(new Vector2(ao.w, 0));
+                        mesh._uv2.Add(new Vector2(1, 0));
+                        mesh._uv2.Add(new Vector2(1, 0));
+                        mesh._uv2.Add(new Vector2(1, 0));
+                        mesh._uv2.Add(new Vector2(1, 0));
                     }
                     break;
             }
@@ -149,27 +148,88 @@ namespace Scripts.World.Jobs
             }
         }
 
-        private byte CalculateLightForAFace(Vector3Int blockPos, DirectionsHelper.BlockDirectionFlag dir)
+        private Vector4 CalculateLightForAFaceSimple(Vector3Int blockPos, DirectionsHelper.BlockDirectionFlag dir, out bool isFlipped)
         {
             blockPos += dir.ToVecInt();
-            return chunkAndNeighboursLighting[blockPos.x + 1, blockPos.y + 1, blockPos.z + 1]._level;
+            float light = chunkAndNeighboursLighting[blockPos.x + 1, blockPos.y + 1, blockPos.z + 1].RegularLight;
+
+            isFlipped = false;
+
+            return new Vector4(light, light, light, light) / 15f;
+        }
+
+        private Vector4 CalculateLightForAFaceSmooth(Vector3Int blockPos, DirectionsHelper.BlockDirectionFlag dir, out bool isFlipped)
+        {
+            var vec = dir.ToVecFloat();
+            blockPos += new Vector3Int(1, 1, 1);
+
+            /*
+             *  -1,1       0,1        1,1
+             *
+             *          2--------3
+             *          |        |
+             *  -1,0    |  0,0   |    1,0
+             *          |        |
+             *          |        |
+             *          0--------1
+             *
+             *  -1,-1      0,-1       1,-1
+             */
+
+            var rotationToDir = Quaternion.LookRotation(vec);
+
+            //set occluders
+            var centerInd = (rotationToDir * new Vector3(0, 0, 1)).ToInt();
+            var leftInd = (rotationToDir * new Vector3(-1, 0, 1)).ToInt();
+            var rightInd = (rotationToDir * new Vector3(1, 0, 1)).ToInt();
+            var frontInd = (rotationToDir * new Vector3(0, -1, 1)).ToInt();
+            var backInd = (rotationToDir * new Vector3(0, 1, 1)).ToInt();
+            var frontLeftInd = (rotationToDir * new Vector3(-1, -1, 1)).ToInt();
+            var frontRightInd = (rotationToDir * new Vector3(1, -1, 1)).ToInt();
+            var backLeftInd = (rotationToDir * new Vector3(-1, 1, 1)).ToInt();
+            var backRightInd = (rotationToDir * new Vector3(1, 1, 1)).ToInt();
+
+            centerInd += blockPos;
+            leftInd += blockPos;
+            rightInd += blockPos;
+            frontInd += blockPos;
+            backInd += blockPos;
+            frontLeftInd += blockPos;
+            frontRightInd += blockPos;
+            backLeftInd += blockPos;
+            backRightInd += blockPos;
+
+            int center = chunkAndNeighboursLighting[centerInd.x, centerInd.y, centerInd.z].RegularLight;
+            int left = chunkAndNeighboursLighting[leftInd.x, leftInd.y, leftInd.z].RegularLight;
+            int right = chunkAndNeighboursLighting[rightInd.x, rightInd.y, rightInd.z].RegularLight;
+            int front = chunkAndNeighboursLighting[frontInd.x, frontInd.y, frontInd.z].RegularLight;
+            int back = chunkAndNeighboursLighting[backInd.x, backInd.y, backInd.z].RegularLight;
+            int frontLeft = chunkAndNeighboursLighting[frontLeftInd.x, frontLeftInd.y, frontLeftInd.z].RegularLight;
+            int frontRight = chunkAndNeighboursLighting[frontRightInd.x, frontRightInd.y, frontRightInd.z].RegularLight;
+            int backLeft = chunkAndNeighboursLighting[backLeftInd.x, backLeftInd.y, backLeftInd.z].RegularLight;
+            int backRight = chunkAndNeighboursLighting[backRightInd.x, backRightInd.y, backRightInd.z].RegularLight;
+
+            float vert1 = VertexLight(center, left, back, backLeft);
+            float vert2 = VertexLight(center, right, back, backRight);
+            float vert3 = VertexLight(center, left, front, frontLeft);
+            float vert4 = VertexLight(center, right, front, frontRight);
+
+            //source: https://0fps.net/2013/07/03/ambient-occlusion-for-minecraft-like-worlds/
+            if (vert1 + vert4 > vert2 + vert3)
+                isFlipped = true;
+            else
+                isFlipped = false;
+
+            return new Vector4(vert1, vert2, vert3, vert4);
+        }
+
+        private float VertexLight(int center, int side1, int side2, int corner)
+        {
+            return (center + side1 + side2 + corner) / 4f / 15f;
         }
 
         private Vector4 CalculateAO(Vector3Int blockPos, DirectionsHelper.BlockDirectionFlag dir, out bool isFlipped)
         {
-            /*
-             *  occl[0]   occl[1]    occl[2]
-             *  -1,1      0,1       1,1
-             *
-             *          2--------3
-             *  occl[7] |        |   occl[3]
-             *  -1,0    |   0,0  |    1,0
-             *          |        |
-             *          |        |
-             *          0--------1
-             *  occl[6]   occl[5]    occl[4]
-             *  -1,-1       0,-1        1,-1
-             */
             var vec = dir.ToVecFloat();
             blockPos += new Vector3Int(1, 1, 1);
 
@@ -225,22 +285,22 @@ namespace Scripts.World.Jobs
             float vert3 = VertexAO(left, front, frontLeft);
             float vert4 = VertexAO(right, front, frontRight);
 
-            //from here: https://0fps.net/2013/07/03/ambient-occlusion-for-minecraft-like-worlds/
+            //source: https://0fps.net/2013/07/03/ambient-occlusion-for-minecraft-like-worlds/
             if (vert1 + vert4 > vert2 + vert3)
                 isFlipped = true;
             else
                 isFlipped = false;
 
             return new Vector4(vert1, vert2, vert3, vert4);
-        }
 
-        private float VertexAO(int side1, int side2, int corner)
-        {
-            if (side1 == 1 && side2 == 1)
+            float VertexAO(int side1, int side2, int corner)
             {
-                return 0;
+                if (side1 == 1 && side2 == 1)
+                {
+                    return 0;
+                }
+                return (3 - (side1 + side2 + corner)) / 3f;
             }
-            return (3 - (side1 + side2 + corner)) / 3f;
         }
 
         #endregion Mesh generation

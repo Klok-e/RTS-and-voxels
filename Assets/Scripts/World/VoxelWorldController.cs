@@ -1,5 +1,4 @@
-﻿using Plugins.Helpers;
-using Scripts.Help;
+﻿using Scripts.Help;
 using Scripts.World.Jobs;
 using System;
 using System.Collections.Generic;
@@ -48,7 +47,6 @@ namespace Scripts.World
             RegularChunk._material = _material;
             RegularChunk._chunkParent = transform;
 
-            UnityThread.InitUnityThread();
             Initialize();
             Instance = this;
         }
@@ -63,6 +61,17 @@ namespace Scripts.World
                 SetDirty(data._chunk);
             }
 
+            if (_dirty.Count > 0)
+            {
+                int count = _dirty.Count > (Environment.ProcessorCount - 1) ? (Environment.ProcessorCount - 1) : _dirty.Count;
+                for (int i = 0; i < count; i++)
+                {
+                    var ch = _dirty.Dequeue();
+                    var data = CleanChunk(ch);
+                    _updateDataToProcess.Enqueue(data);
+                }
+            }
+
             if (_toPropagateLight.Count > 0)
             {
                 PropagateAllLightSynchronously();
@@ -74,17 +83,6 @@ namespace Scripts.World
             if (_toPropagateLight.Count > 0)
             {
                 PropagateAllLightSynchronously();
-            }
-
-            if (_dirty.Count > 0)
-            {
-                int count = _dirty.Count > (Environment.ProcessorCount - 1) ? (Environment.ProcessorCount - 1) : _dirty.Count;
-                for (int i = 0; i < count; i++)
-                {
-                    var ch = _dirty.Dequeue();
-                    var data = CleanChunk(ch);
-                    _updateDataToProcess.Enqueue(data);
-                }
             }
 
             if (_updateDataToProcess.Count > 0)
@@ -322,14 +320,18 @@ namespace Scripts.World
                             var voxelsDir = nextChunk.Voxels;
                             var lightLvlDir = nextChunk.VoxelLightingLevels;
 
-                            if (lightLvlDir[nextBlockPos.x, nextBlockPos.y, nextBlockPos.z]._level < (lightLvl._level - 1)
-                                &&
-                                voxelsDir[nextBlockPos.x, nextBlockPos.y, nextBlockPos.z].type.IsAir())
+                            if (voxelsDir[nextBlockPos.x, nextBlockPos.y, nextBlockPos.z].type.IsAir())
                             {
-                                lightLvlDir[nextBlockPos.x, nextBlockPos.y, nextBlockPos.z] = new VoxelLightingLevel()
+                                if (lightLvlDir[nextBlockPos.x, nextBlockPos.y, nextBlockPos.z].RegularLight < (lightLvl.RegularLight - 1))
                                 {
-                                    _level = (byte)(lightLvl._level - 1),
-                                };
+                                    lightLvlDir[nextBlockPos.x, nextBlockPos.y, nextBlockPos.z] = new VoxelLightingLevel(lightLvl.RegularLight - 1, 0);
+                                }
+
+                                if (lightLvlDir[nextBlockPos.x, nextBlockPos.y, nextBlockPos.z].Sunlight < (lightLvl.Sunlight - 1))
+                                {
+                                    lightLvlDir[nextBlockPos.x, nextBlockPos.y, nextBlockPos.z] = new VoxelLightingLevel(0, lightLvl._level - 1);
+                                }
+
                                 if (lightLvl._level - 1 > 0)
                                 {
                                     _toPropagateLight.Enqueue(new VoxelLightPropagationData()
@@ -367,7 +369,7 @@ namespace Scripts.World
             if (!IsChunkPosInBordersOfTheMap(chunkPos))
             {
                 var up = new Exception();
-                throw up;
+                throw up; //ha ha
             }
             var ch = _chunks[chunkPos.y][chunkPos.x, chunkPos.z];
             if (!ch.IsInitialized)
@@ -1172,6 +1174,7 @@ namespace Scripts.World
                         offset = new Vector3Int(x, height, z),
                         chunkSize = _chunkSize,
                         voxels = chunk.Voxels,
+                        light = chunk.VoxelLightingLevels,
                     }.Schedule());
                     SetToRebuildVisibleFaces(chunk);
                     level[x, z] = chunk;

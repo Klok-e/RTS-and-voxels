@@ -199,20 +199,30 @@ namespace Scripts.World.Jobs
             backLeftInd += blockPos;
             backRightInd += blockPos;
 
-            int center = chunkAndNeighboursLighting[centerInd.x, centerInd.y, centerInd.z].RegularLight;
-            int left = chunkAndNeighboursLighting[leftInd.x, leftInd.y, leftInd.z].RegularLight;
-            int right = chunkAndNeighboursLighting[rightInd.x, rightInd.y, rightInd.z].RegularLight;
-            int front = chunkAndNeighboursLighting[frontInd.x, frontInd.y, frontInd.z].RegularLight;
-            int back = chunkAndNeighboursLighting[backInd.x, backInd.y, backInd.z].RegularLight;
-            int frontLeft = chunkAndNeighboursLighting[frontLeftInd.x, frontLeftInd.y, frontLeftInd.z].RegularLight;
-            int frontRight = chunkAndNeighboursLighting[frontRightInd.x, frontRightInd.y, frontRightInd.z].RegularLight;
-            int backLeft = chunkAndNeighboursLighting[backLeftInd.x, backLeftInd.y, backLeftInd.z].RegularLight;
-            int backRight = chunkAndNeighboursLighting[backRightInd.x, backRightInd.y, backRightInd.z].RegularLight;
+            var center = chunkAndNeighboursLighting[centerInd.x, centerInd.y, centerInd.z];
+            var left = chunkAndNeighboursLighting[leftInd.x, leftInd.y, leftInd.z];
+            var right = chunkAndNeighboursLighting[rightInd.x, rightInd.y, rightInd.z];
+            var front = chunkAndNeighboursLighting[frontInd.x, frontInd.y, frontInd.z];
+            var back = chunkAndNeighboursLighting[backInd.x, backInd.y, backInd.z];
+            var frontLeft = chunkAndNeighboursLighting[frontLeftInd.x, frontLeftInd.y, frontLeftInd.z];
+            var frontRight = chunkAndNeighboursLighting[frontRightInd.x, frontRightInd.y, frontRightInd.z];
+            var backLeft = chunkAndNeighboursLighting[backLeftInd.x, backLeftInd.y, backLeftInd.z];
+            var backRight = chunkAndNeighboursLighting[backRightInd.x, backRightInd.y, backRightInd.z];
 
-            float vert1 = VertexLight(center, left, back, backLeft);
-            float vert2 = VertexLight(center, right, back, backRight);
-            float vert3 = VertexLight(center, left, front, frontLeft);
-            float vert4 = VertexLight(center, right, front, frontRight);
+            int centerVal = Math.Max(center.RegularLight, center.Sunlight);
+            int leftVal = Math.Max(left.RegularLight, left.Sunlight);
+            int rightVal = Math.Max(right.RegularLight, right.Sunlight);
+            int frontVal = Math.Max(front.RegularLight, front.Sunlight);
+            int backVal = Math.Max(back.RegularLight, back.Sunlight);
+            int frontLeftVal = Math.Max(frontLeft.RegularLight, frontLeft.Sunlight);
+            int frontRightVal = Math.Max(frontRight.RegularLight, frontRight.Sunlight);
+            int backLeftVal = Math.Max(backLeft.RegularLight, backLeft.Sunlight);
+            int backRightVal = Math.Max(backRight.RegularLight, backRight.Sunlight);
+
+            float vert1 = VertexLight(centerVal, leftVal, backVal, backLeftVal);
+            float vert2 = VertexLight(centerVal, rightVal, backVal, backRightVal);
+            float vert3 = VertexLight(centerVal, leftVal, frontVal, frontLeftVal);
+            float vert4 = VertexLight(centerVal, rightVal, frontVal, frontRightVal);
 
             //source: https://0fps.net/2013/07/03/ambient-occlusion-for-minecraft-like-worlds/
             if (vert1 + vert4 > vert2 + vert3)

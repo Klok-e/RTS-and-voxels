@@ -19,6 +19,9 @@ namespace Scripts.World.Jobs
         [WriteOnly]
         public NativeArray3D<Voxel> voxels;
 
+        [WriteOnly]
+        public NativeArray3D<VoxelLightingLevel> light;
+
         [ReadOnly]
         public Vector3Int offset;
 
@@ -57,6 +60,7 @@ namespace Scripts.World.Jobs
                             {
                                 type = VoxelType.Air,
                             };
+                            light[x, y, z] = new VoxelLightingLevel(0, VoxelLightingLevel.maxLight);
                         }
                     }
                 }

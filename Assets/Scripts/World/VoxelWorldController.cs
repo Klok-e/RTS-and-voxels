@@ -12,6 +12,7 @@ namespace Scripts.World
     public class VoxelWorldController : MonoBehaviour
     {
         [SerializeField] private int _mapMaxX, _mapMaxZ;
+        [SerializeField] private int _up, _down;
 
         [SerializeField] private Material _material;
 
@@ -22,8 +23,10 @@ namespace Scripts.World
         private Texture2DArray _textureArray;
 
         private Queue<ChunkCleaningData> _updateDataToProcess;
-        private Queue<VoxelLightPropagationData> _toPropagateLight;
-        private Queue<VoxelLightPropagationData> _toRemoveLight;
+        private Queue<VoxelLightPropagationData> _toPropagateRegularLight;
+        private Queue<VoxelLightPropagationData> _toRemoveRegularLight;
+        private Queue<VoxelLightPropagationData> _toPropagateSunlight;
+        private Queue<VoxelLightPropagationData> _toRemoveSunlight;
         private Queue<RegularChunk> _toRebuildVisibleFaces;
         private Queue<RegularChunk> _dirty;
 
@@ -72,18 +75,14 @@ namespace Scripts.World
                 }
             }
 
-            if (_toPropagateLight.Count > 0)
-            {
-                PropagateAllLightSynchronously();
-            }
-            if (_toRemoveLight.Count > 0)
-            {
-                DepropagateAllLightSynchronously();
-            }
-            if (_toPropagateLight.Count > 0)
-            {
-                PropagateAllLightSynchronously();
-            }
+            PropagateRegularLightSynchronously();
+            //PropagateSunlightSynchronously();
+
+            DepropagateRegularLightSynchronously();
+            //DepropagateSunlightSynchronously();
+
+            PropagateRegularLightSynchronously();
+            //PropagateSunlightSynchronously();
 
             if (_updateDataToProcess.Count > 0)
             {
@@ -116,15 +115,19 @@ namespace Scripts.World
             _massJobThing = new MassJobThing(0);
             _dirty = new Queue<RegularChunk>();
             _updateDataToProcess = new Queue<ChunkCleaningData>();
-            _toPropagateLight = new Queue<VoxelLightPropagationData>();
-            _toRemoveLight = new Queue<VoxelLightPropagationData>();
+
+            _toPropagateRegularLight = new Queue<VoxelLightPropagationData>();
+            _toRemoveRegularLight = new Queue<VoxelLightPropagationData>();
+            _toPropagateSunlight = new Queue<VoxelLightPropagationData>();
+            _toRemoveSunlight = new Queue<VoxelLightPropagationData>();
+
             _toRebuildVisibleFaces = new Queue<RegularChunk>();
 
             CreateTextureArray();
 
             //_placeholderChunk = CreatePlaceholderChunk();
 
-            CreateStartingLevels(0, 0, 0);
+            CreateStartingLevels(0, _up, _down);
 
             void CreateTextureArray()
             {
@@ -187,19 +190,21 @@ namespace Scripts.World
             };
         }
 
-        public void DepropagateAllLightSynchronously()
+        #region LightPropagation
+
+        public void DepropagateRegularLightSynchronously()
         {
-            while (_toRemoveLight.Count > 0)
+            while (_toRemoveRegularLight.Count > 0)
             {
-                var data = _toRemoveLight.Dequeue();
+                var data = _toRemoveRegularLight.Dequeue();
                 var chunk = GetChunk(data._chunkPos);
                 SetDirty(chunk);
 
                 var voxels = chunk.Voxels;
-                var lightLevels = chunk.VoxelLightingLevels;
+                var lightLevels = chunk.VoxelLightLevels;
 
                 var lightLvl = lightLevels[data._blockPos.x, data._blockPos.y, data._blockPos.z];
-                lightLevels[data._blockPos.x, data._blockPos.y, data._blockPos.z] = new VoxelLightingLevel(0, 0);
+                lightLevels[data._blockPos.x, data._blockPos.y, data._blockPos.z] = new VoxelLightingLevel(0, lightLvl.Sunlight);
 
                 //check 6 sides
                 for (int i = 0; i < 6; i++)
@@ -231,110 +236,21 @@ namespace Scripts.World
                             SetDirty(nextChunk);
 
                             var voxelsDir = nextChunk.Voxels;
-                            var lightLvlDir = nextChunk.VoxelLightingLevels;
-
-                            if (lightLvlDir[nextBlockPos.x, nextBlockPos.y, nextBlockPos.z]._level < lightLvl._level
-                                &&
-                                voxelsDir[nextBlockPos.x, nextBlockPos.y, nextBlockPos.z].type.IsAir())
-                            {
-                                SetToRemoveLight(new VoxelLightPropagationData()
-                                {
-                                    _blockPos = nextBlockPos,
-                                    _chunkPos = nextChunkPos,
-                                });
-                            }
-                            else if (voxelsDir[nextBlockPos.x, nextBlockPos.y, nextBlockPos.z].type.IsAir())
-                            {
-                                SetToPropagateLight(new VoxelLightPropagationData()
-                                {
-                                    _blockPos = nextBlockPos,
-                                    _chunkPos = nextChunkPos,
-                                });
-                            }
-                        }
-                    }
-                    else if (lightLevels[nextBlockPos.x, nextBlockPos.y, nextBlockPos.z]._level < lightLvl._level
-                             &&
-                             voxels[nextBlockPos.x, nextBlockPos.y, nextBlockPos.z].type.IsAir())
-                    {
-                        SetToRemoveLight(new VoxelLightPropagationData()
-                        {
-                            _blockPos = nextBlockPos,
-                            _chunkPos = data._chunkPos,
-                        });
-                    }
-                    else if (voxels[nextBlockPos.x, nextBlockPos.y, nextBlockPos.z].type.IsAir())
-                    {
-                        SetToPropagateLight(new VoxelLightPropagationData()
-                        {
-                            _blockPos = nextBlockPos,
-                            _chunkPos = data._chunkPos,
-                        });
-                    }
-                }
-            }
-        }
-
-        public void PropagateAllLightSynchronously()
-        {
-            while (_toPropagateLight.Count > 0)
-            {
-                var data = _toPropagateLight.Dequeue();
-                var chunk = GetChunk(data._chunkPos);
-
-                var voxels = chunk.Voxels;
-                var lightLevels = chunk.VoxelLightingLevels;
-
-                var lightLvl = chunk.VoxelLightingLevels[data._blockPos.x, data._blockPos.y, data._blockPos.z];
-
-                SetDirty(chunk);
-                //check 6 sides
-                for (int i = 0; i < 6; i++)
-                {
-                    var dir = (DirectionsHelper.BlockDirectionFlag)(1 << i);
-                    var vec = dir.ToVecInt();
-
-                    var nextBlockPos = data._blockPos + vec;
-
-                    if (nextBlockPos.x >= _chunkSize || nextBlockPos.x < 0
-                        ||
-                        nextBlockPos.y >= _chunkSize || nextBlockPos.y < 0
-                        ||
-                        nextBlockPos.z >= _chunkSize || nextBlockPos.z < 0)
-                    {
-                        if (nextBlockPos.x >= _chunkSize) nextBlockPos.x = 0;
-                        else if (nextBlockPos.x < 0) nextBlockPos.x = _chunkSize - 1;
-
-                        if (nextBlockPos.y >= _chunkSize) nextBlockPos.y = 0;
-                        else if (nextBlockPos.y < 0) nextBlockPos.y = _chunkSize - 1;
-
-                        if (nextBlockPos.z >= _chunkSize) nextBlockPos.z = 0;
-                        else if (nextBlockPos.z < 0) nextBlockPos.z = _chunkSize - 1;
-
-                        var nextChunkPos = data._chunkPos + vec;
-                        if (IsChunkPosInBordersOfTheMap(nextChunkPos))
-                        {
-                            var nextChunk = GetChunk(nextChunkPos);
-                            SetDirty(nextChunk);
-
-                            var voxelsDir = nextChunk.Voxels;
-                            var lightLvlDir = nextChunk.VoxelLightingLevels;
+                            var lightLvlDir = nextChunk.VoxelLightLevels;
 
                             if (voxelsDir[nextBlockPos.x, nextBlockPos.y, nextBlockPos.z].type.IsAir())
                             {
-                                if (lightLvlDir[nextBlockPos.x, nextBlockPos.y, nextBlockPos.z].RegularLight < (lightLvl.RegularLight - 1))
+                                if (lightLvlDir[nextBlockPos.x, nextBlockPos.y, nextBlockPos.z].RegularLight < lightLvl.RegularLight)
                                 {
-                                    lightLvlDir[nextBlockPos.x, nextBlockPos.y, nextBlockPos.z] = new VoxelLightingLevel(lightLvl.RegularLight - 1, 0);
+                                    SetToRemoveRegularLight(new VoxelLightPropagationData()
+                                    {
+                                        _blockPos = nextBlockPos,
+                                        _chunkPos = nextChunkPos,
+                                    });
                                 }
-
-                                if (lightLvlDir[nextBlockPos.x, nextBlockPos.y, nextBlockPos.z].Sunlight < (lightLvl.Sunlight - 1))
+                                else
                                 {
-                                    lightLvlDir[nextBlockPos.x, nextBlockPos.y, nextBlockPos.z] = new VoxelLightingLevel(0, lightLvl._level - 1);
-                                }
-
-                                if (lightLvl._level - 1 > 0)
-                                {
-                                    _toPropagateLight.Enqueue(new VoxelLightPropagationData()
+                                    SetToPropagateRegularLight(new VoxelLightPropagationData()
                                     {
                                         _blockPos = nextBlockPos,
                                         _chunkPos = nextChunkPos,
@@ -343,17 +259,19 @@ namespace Scripts.World
                             }
                         }
                     }
-                    else if (lightLevels[nextBlockPos.x, nextBlockPos.y, nextBlockPos.z]._level < (lightLvl._level - 1)
-                             &&
-                             voxels[nextBlockPos.x, nextBlockPos.y, nextBlockPos.z].type.IsAir())
+                    else if (voxels[nextBlockPos.x, nextBlockPos.y, nextBlockPos.z].type.IsAir())
                     {
-                        lightLevels[nextBlockPos.x, nextBlockPos.y, nextBlockPos.z] = new VoxelLightingLevel()
+                        if (lightLevels[nextBlockPos.x, nextBlockPos.y, nextBlockPos.z].RegularLight < lightLvl.RegularLight)
                         {
-                            _level = (byte)(lightLvl._level - 1),
-                        };
-                        if (lightLvl._level - 1 > 0)
+                            SetToRemoveRegularLight(new VoxelLightPropagationData()
+                            {
+                                _blockPos = nextBlockPos,
+                                _chunkPos = data._chunkPos,
+                            });
+                        }
+                        else
                         {
-                            _toPropagateLight.Enqueue(new VoxelLightPropagationData()
+                            SetToPropagateRegularLight(new VoxelLightPropagationData()
                             {
                                 _blockPos = nextBlockPos,
                                 _chunkPos = data._chunkPos,
@@ -363,6 +281,297 @@ namespace Scripts.World
                 }
             }
         }
+
+        public void PropagateRegularLightSynchronously()
+        {
+            while (_toPropagateRegularLight.Count > 0)
+            {
+                var data = _toPropagateRegularLight.Dequeue();
+                var chunk = GetChunk(data._chunkPos);
+
+                var voxels = chunk.Voxels;
+                var lightLevels = chunk.VoxelLightLevels;
+
+                var lightLvl = chunk.VoxelLightLevels[data._blockPos.x, data._blockPos.y, data._blockPos.z];
+
+                SetDirty(chunk);
+                //check 6 sides
+                for (int i = 0; i < 6; i++)
+                {
+                    var dir = (DirectionsHelper.BlockDirectionFlag)(1 << i);
+                    var vec = dir.ToVecInt();
+
+                    var nextBlockPos = data._blockPos + vec;
+
+                    if (nextBlockPos.x >= _chunkSize || nextBlockPos.x < 0
+                        ||
+                        nextBlockPos.y >= _chunkSize || nextBlockPos.y < 0
+                        ||
+                        nextBlockPos.z >= _chunkSize || nextBlockPos.z < 0)
+                    {
+                        if (nextBlockPos.x >= _chunkSize) nextBlockPos.x = 0;
+                        else if (nextBlockPos.x < 0) nextBlockPos.x = _chunkSize - 1;
+
+                        if (nextBlockPos.y >= _chunkSize) nextBlockPos.y = 0;
+                        else if (nextBlockPos.y < 0) nextBlockPos.y = _chunkSize - 1;
+
+                        if (nextBlockPos.z >= _chunkSize) nextBlockPos.z = 0;
+                        else if (nextBlockPos.z < 0) nextBlockPos.z = _chunkSize - 1;
+
+                        var nextChunkPos = data._chunkPos + vec;
+                        if (IsChunkPosInBordersOfTheMap(nextChunkPos))
+                        {
+                            var nextChunk = GetChunk(nextChunkPos);
+                            SetDirty(nextChunk);
+
+                            var voxelsDir = nextChunk.Voxels;
+                            var lightLvlDir = nextChunk.VoxelLightLevels;
+
+                            if (lightLvlDir[nextBlockPos.x, nextBlockPos.y, nextBlockPos.z].RegularLight < (lightLvl.RegularLight - 1)
+                                &&
+                                voxelsDir[nextBlockPos.x, nextBlockPos.y, nextBlockPos.z].type.IsAir())
+                            {
+                                lightLvlDir[nextBlockPos.x, nextBlockPos.y, nextBlockPos.z] = new VoxelLightingLevel(lightLvl.RegularLight - 1,
+                                    lightLvlDir[nextBlockPos.x, nextBlockPos.y, nextBlockPos.z].Sunlight);
+                                if (lightLvl.RegularLight - 1 > 0)
+                                {
+                                    SetToPropagateRegularLight(new VoxelLightPropagationData()
+                                    {
+                                        _blockPos = nextBlockPos,
+                                        _chunkPos = nextChunkPos,
+                                    });
+                                }
+                            }
+                        }
+                    }
+                    else if (lightLevels[nextBlockPos.x, nextBlockPos.y, nextBlockPos.z].RegularLight < (lightLvl.RegularLight - 1)
+                             &&
+                             voxels[nextBlockPos.x, nextBlockPos.y, nextBlockPos.z].type.IsAir())
+                    {
+                        lightLevels[nextBlockPos.x, nextBlockPos.y, nextBlockPos.z] = new VoxelLightingLevel(lightLvl.RegularLight - 1,
+                            lightLevels[nextBlockPos.x, nextBlockPos.y, nextBlockPos.z].Sunlight);
+                        if (lightLvl.RegularLight - 1 > 0)
+                        {
+                            SetToPropagateRegularLight(new VoxelLightPropagationData()
+                            {
+                                _blockPos = nextBlockPos,
+                                _chunkPos = data._chunkPos,
+                            });
+                        }
+                    }
+                }
+            }
+        }
+
+        public void DepropagateSunlightSynchronously()
+        {
+            while (_toRemoveSunlight.Count > 0)
+            {
+                var data = _toRemoveSunlight.Dequeue();
+                var chunk = GetChunk(data._chunkPos);
+                SetDirty(chunk);
+
+                var voxels = chunk.Voxels;
+                var lightLevels = chunk.VoxelLightLevels;
+
+                var lightLvl = lightLevels[data._blockPos.x, data._blockPos.y, data._blockPos.z];
+                lightLevels[data._blockPos.x, data._blockPos.y, data._blockPos.z] = new VoxelLightingLevel(lightLvl.RegularLight, 0);
+
+                //check 6 sides
+                for (int i = 0; i < 6; i++)
+                {
+                    var dir = (DirectionsHelper.BlockDirectionFlag)(1 << i);
+                    var vec = dir.ToVecInt();
+
+                    var nextBlockPos = data._blockPos + vec;
+
+                    if (nextBlockPos.x >= _chunkSize || nextBlockPos.x < 0
+                        ||
+                        nextBlockPos.y >= _chunkSize || nextBlockPos.y < 0
+                        ||
+                        nextBlockPos.z >= _chunkSize || nextBlockPos.z < 0)
+                    {
+                        if (nextBlockPos.x >= _chunkSize) nextBlockPos.x = 0;
+                        else if (nextBlockPos.x < 0) nextBlockPos.x = _chunkSize - 1;
+
+                        if (nextBlockPos.y >= _chunkSize) nextBlockPos.y = 0;
+                        else if (nextBlockPos.y < 0) nextBlockPos.y = _chunkSize - 1;
+
+                        if (nextBlockPos.z >= _chunkSize) nextBlockPos.z = 0;
+                        else if (nextBlockPos.z < 0) nextBlockPos.z = _chunkSize - 1;
+
+                        var nextChunkPos = data._chunkPos + vec;
+                        if (IsChunkPosInBordersOfTheMap(nextChunkPos))
+                        {
+                            var nextChunk = GetChunk(nextChunkPos);
+                            SetDirty(nextChunk);
+
+                            var voxelsDir = nextChunk.Voxels;
+                            var lightLvlDir = nextChunk.VoxelLightLevels;
+
+                            if (voxelsDir[nextBlockPos.x, nextBlockPos.y, nextBlockPos.z].type.IsAir())
+                            {
+                                if (dir == DirectionsHelper.BlockDirectionFlag.Down
+                                    &&
+                                    lightLvlDir[nextBlockPos.x, nextBlockPos.y, nextBlockPos.z].Sunlight == VoxelLightingLevel.maxLight)
+                                {
+                                    SetToRemoveSunlight(new VoxelLightPropagationData()
+                                    {
+                                        _blockPos = nextBlockPos,
+                                        _chunkPos = nextChunkPos,
+                                    });
+                                }
+                                else if (lightLvlDir[nextBlockPos.x, nextBlockPos.y, nextBlockPos.z].Sunlight < lightLvl.Sunlight)
+                                {
+                                    SetToRemoveSunlight(new VoxelLightPropagationData()
+                                    {
+                                        _blockPos = nextBlockPos,
+                                        _chunkPos = nextChunkPos,
+                                    });
+                                }
+                                else
+                                {
+                                    SetToPropagateSunlight(new VoxelLightPropagationData()
+                                    {
+                                        _blockPos = nextBlockPos,
+                                        _chunkPos = nextChunkPos,
+                                    });
+                                }
+                            }
+                        }
+                    }
+                    else if (voxels[nextBlockPos.x, nextBlockPos.y, nextBlockPos.z].type.IsAir())
+                    {
+                        if (dir == DirectionsHelper.BlockDirectionFlag.Down
+                            &&
+                            lightLevels[nextBlockPos.x, nextBlockPos.y, nextBlockPos.z].Sunlight == VoxelLightingLevel.maxLight)
+                        {
+                            SetToRemoveSunlight(new VoxelLightPropagationData()
+                            {
+                                _blockPos = nextBlockPos,
+                                _chunkPos = data._chunkPos,
+                            });
+                        }
+                        else if (lightLevels[nextBlockPos.x, nextBlockPos.y, nextBlockPos.z].Sunlight < lightLvl.Sunlight)
+                        {
+                            SetToRemoveSunlight(new VoxelLightPropagationData()
+                            {
+                                _blockPos = nextBlockPos,
+                                _chunkPos = data._chunkPos,
+                            });
+                        }
+                        else
+                        {
+                            SetToPropagateSunlight(new VoxelLightPropagationData()
+                            {
+                                _blockPos = nextBlockPos,
+                                _chunkPos = data._chunkPos,
+                            });
+                        }
+                    }
+                }
+            }
+        }
+
+        public void PropagateSunlightSynchronously()
+        {
+            while (_toPropagateSunlight.Count > 0)
+            {
+                var data = _toPropagateSunlight.Dequeue();
+                var chunk = GetChunk(data._chunkPos);
+
+                var voxels = chunk.Voxels;
+                var lightLevels = chunk.VoxelLightLevels;
+
+                var lightLvl = lightLevels[data._blockPos.x, data._blockPos.y, data._blockPos.z];
+
+                SetDirty(chunk);
+                //check 6 sides
+                for (int i = 0; i < 6; i++)
+                {
+                    var dir = (DirectionsHelper.BlockDirectionFlag)(1 << i);
+                    var vec = dir.ToVecInt();
+
+                    var nextBlockPos = data._blockPos + vec;
+
+                    if (nextBlockPos.x >= _chunkSize || nextBlockPos.x < 0
+                        ||
+                        nextBlockPos.y >= _chunkSize || nextBlockPos.y < 0
+                        ||
+                        nextBlockPos.z >= _chunkSize || nextBlockPos.z < 0)
+                    {
+                        if (nextBlockPos.x >= _chunkSize) nextBlockPos.x = 0;
+                        else if (nextBlockPos.x < 0) nextBlockPos.x = _chunkSize - 1;
+
+                        if (nextBlockPos.y >= _chunkSize) nextBlockPos.y = 0;
+                        else if (nextBlockPos.y < 0) nextBlockPos.y = _chunkSize - 1;
+
+                        if (nextBlockPos.z >= _chunkSize) nextBlockPos.z = 0;
+                        else if (nextBlockPos.z < 0) nextBlockPos.z = _chunkSize - 1;
+
+                        var nextChunkPos = data._chunkPos + vec;
+                        if (IsChunkPosInBordersOfTheMap(nextChunkPos))
+                        {
+                            var nextChunk = GetChunk(nextChunkPos);
+                            SetDirty(nextChunk);
+
+                            var voxelsDir = nextChunk.Voxels;
+                            var lightLvlDir = nextChunk.VoxelLightLevels;
+
+                            if (lightLvlDir[nextBlockPos.x, nextBlockPos.y, nextBlockPos.z].Sunlight < (lightLvl.Sunlight - 1)
+                                &&
+                                voxelsDir[nextBlockPos.x, nextBlockPos.y, nextBlockPos.z].type.IsAir())
+                            {
+                                if (dir == DirectionsHelper.BlockDirectionFlag.Down && lightLvl.Sunlight == VoxelLightingLevel.maxLight)
+                                {
+                                    lightLvlDir[nextBlockPos.x, nextBlockPos.y, nextBlockPos.z] = new VoxelLightingLevel(lightLvlDir[nextBlockPos.x, nextBlockPos.y, nextBlockPos.z].RegularLight,
+                                        lightLvl.Sunlight);
+                                }
+                                else
+                                {
+                                    lightLvlDir[nextBlockPos.x, nextBlockPos.y, nextBlockPos.z] = new VoxelLightingLevel(lightLvlDir[nextBlockPos.x, nextBlockPos.y, nextBlockPos.z].RegularLight,
+                                        lightLvl.Sunlight - 1);
+                                }
+                                if (lightLvl.Sunlight - 1 > 0)
+                                {
+                                    SetToPropagateSunlight(new VoxelLightPropagationData()
+                                    {
+                                        _blockPos = nextBlockPos,
+                                        _chunkPos = nextChunkPos,
+                                    });
+                                }
+                            }
+                        }
+                    }
+                    else if (lightLevels[nextBlockPos.x, nextBlockPos.y, nextBlockPos.z].Sunlight < (lightLvl.Sunlight - 1)
+                             &&
+                             voxels[nextBlockPos.x, nextBlockPos.y, nextBlockPos.z].type.IsAir())
+                    {
+                        if (dir == DirectionsHelper.BlockDirectionFlag.Down && lightLvl.Sunlight == VoxelLightingLevel.maxLight)
+                        {
+                            lightLevels[nextBlockPos.x, nextBlockPos.y, nextBlockPos.z] = new VoxelLightingLevel(lightLevels[nextBlockPos.x, nextBlockPos.y, nextBlockPos.z].RegularLight,
+                                lightLvl.Sunlight);
+                        }
+                        else
+                        {
+                            lightLevels[nextBlockPos.x, nextBlockPos.y, nextBlockPos.z] = new VoxelLightingLevel(lightLevels[nextBlockPos.x, nextBlockPos.y, nextBlockPos.z].RegularLight,
+                                lightLvl.Sunlight - 1);
+                        }
+
+                        if (lightLvl.Sunlight - 1 > 0)
+                        {
+                            SetToPropagateSunlight(new VoxelLightPropagationData()
+                            {
+                                _blockPos = nextBlockPos,
+                                _chunkPos = data._chunkPos,
+                            });
+                        }
+                    }
+                }
+            }
+        }
+
+        #endregion LightPropagation
 
         public RegularChunk GetChunk(Vector3Int chunkPos)
         {
@@ -377,6 +586,8 @@ namespace Scripts.World
 
             return ch;
         }
+
+        #region Copy voxel data
 
         private NativeArray3D<Voxel> CopyGivenAndNeighbourBordersVoxels(RegularChunk chunk)
         {
@@ -654,7 +865,7 @@ namespace Scripts.World
 
         private NativeArray3D<VoxelLightingLevel> CopyGivenAndNeighbourBordersLighting(RegularChunk chunk)
         {
-            var chunkLight = chunk.VoxelLightingLevels;
+            var chunkLight = chunk.VoxelLightLevels;
 
             var array = new NativeArray3D<VoxelLightingLevel>(_chunkSize + 2, _chunkSize + 2, _chunkSize + 2, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
             //fill array with air
@@ -692,7 +903,7 @@ namespace Scripts.World
                 var vec = dir.ToVecInt();
                 if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
                 {
-                    var nextVox = GetChunk(chunk.Pos + vec).VoxelLightingLevels;
+                    var nextVox = GetChunk(chunk.Pos + vec).VoxelLightLevels;
                     for (int z = 0; z < _chunkSize; z++)
                         for (int x = 0; x < _chunkSize; x++)
                             array[x + 1, _chunkSize + 1, z + 1] = nextVox[x, 0, z];
@@ -702,7 +913,7 @@ namespace Scripts.World
                 vec = dir.ToVecInt();
                 if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
                 {
-                    var nextVox = GetChunk(chunk.Pos + vec).VoxelLightingLevels;
+                    var nextVox = GetChunk(chunk.Pos + vec).VoxelLightLevels;
                     for (int z = 0; z < _chunkSize; z++)
                         for (int x = 0; x < _chunkSize; x++)
                             array[x + 1, 0, z + 1] = nextVox[x, _chunkSize - 1, z];
@@ -712,7 +923,7 @@ namespace Scripts.World
                 vec = dir.ToVecInt();
                 if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
                 {
-                    var nextVox = GetChunk(chunk.Pos + vec).VoxelLightingLevels;
+                    var nextVox = GetChunk(chunk.Pos + vec).VoxelLightLevels;
                     for (int z = 0; z < _chunkSize; z++)
                         for (int y = 0; y < _chunkSize; y++)
                             array[0, y + 1, z + 1] = nextVox[_chunkSize - 1, y, z];
@@ -722,7 +933,7 @@ namespace Scripts.World
                 vec = dir.ToVecInt();
                 if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
                 {
-                    var nextVox = GetChunk(chunk.Pos + vec).VoxelLightingLevels;
+                    var nextVox = GetChunk(chunk.Pos + vec).VoxelLightLevels;
                     for (int z = 0; z < _chunkSize; z++)
                         for (int y = 0; y < _chunkSize; y++)
                             array[_chunkSize + 1, y + 1, z + 1] = nextVox[0, y, z];
@@ -732,7 +943,7 @@ namespace Scripts.World
                 vec = dir.ToVecInt();
                 if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
                 {
-                    var nextVox = GetChunk(chunk.Pos + vec).VoxelLightingLevels;
+                    var nextVox = GetChunk(chunk.Pos + vec).VoxelLightLevels;
                     for (int y = 0; y < _chunkSize; y++)
                         for (int x = 0; x < _chunkSize; x++)
                             array[x + 1, y + 1, 0] = nextVox[x, y, _chunkSize - 1];
@@ -742,7 +953,7 @@ namespace Scripts.World
                 vec = dir.ToVecInt();
                 if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
                 {
-                    var nextVox = GetChunk(chunk.Pos + vec).VoxelLightingLevels;
+                    var nextVox = GetChunk(chunk.Pos + vec).VoxelLightLevels;
                     for (int y = 0; y < _chunkSize; y++)
                         for (int x = 0; x < _chunkSize; x++)
                             array[x + 1, y + 1, _chunkSize + 1] = nextVox[x, y, 0];
@@ -754,7 +965,7 @@ namespace Scripts.World
                 var vec = dir.ToVecInt();
                 if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
                 {
-                    var nextVox = GetChunk(chunk.Pos + vec).VoxelLightingLevels;
+                    var nextVox = GetChunk(chunk.Pos + vec).VoxelLightLevels;
                     for (int z = 0; z < _chunkSize; z++)
                         array[_chunkSize + 1, _chunkSize + 1, z + 1] = nextVox[0, 0, z];
                 }
@@ -763,7 +974,7 @@ namespace Scripts.World
                 vec = dir.ToVecInt();
                 if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
                 {
-                    var nextVox = GetChunk(chunk.Pos + vec).VoxelLightingLevels;
+                    var nextVox = GetChunk(chunk.Pos + vec).VoxelLightLevels;
                     for (int z = 0; z < _chunkSize; z++)
                         array[0, _chunkSize + 1, z + 1] = nextVox[_chunkSize - 1, 0, z];
                 }
@@ -772,7 +983,7 @@ namespace Scripts.World
                 vec = dir.ToVecInt();
                 if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
                 {
-                    var nextVox = GetChunk(chunk.Pos + vec).VoxelLightingLevels;
+                    var nextVox = GetChunk(chunk.Pos + vec).VoxelLightLevels;
                     for (int x = 0; x < _chunkSize; x++)
                         array[x + 1, _chunkSize + 1, 0] = nextVox[x, 0, _chunkSize - 1];
                 }
@@ -781,7 +992,7 @@ namespace Scripts.World
                 vec = dir.ToVecInt();
                 if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
                 {
-                    var nextVox = GetChunk(chunk.Pos + vec).VoxelLightingLevels;
+                    var nextVox = GetChunk(chunk.Pos + vec).VoxelLightLevels;
                     for (int x = 0; x < _chunkSize; x++)
                         array[x + 1, _chunkSize + 1, _chunkSize + 1] = nextVox[x, 0, 0];
                 }
@@ -790,7 +1001,7 @@ namespace Scripts.World
                 vec = dir.ToVecInt();
                 if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
                 {
-                    var nextVox = GetChunk(chunk.Pos + vec).VoxelLightingLevels;
+                    var nextVox = GetChunk(chunk.Pos + vec).VoxelLightLevels;
                     for (int z = 0; z < _chunkSize; z++)
                         array[_chunkSize + 1, 0, z + 1] = nextVox[0, _chunkSize - 1, z];
                 }
@@ -799,7 +1010,7 @@ namespace Scripts.World
                 vec = dir.ToVecInt();
                 if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
                 {
-                    var nextVox = GetChunk(chunk.Pos + vec).VoxelLightingLevels;
+                    var nextVox = GetChunk(chunk.Pos + vec).VoxelLightLevels;
                     for (int z = 0; z < _chunkSize; z++)
                         array[0, 0, z + 1] = nextVox[_chunkSize - 1, _chunkSize - 1, z];
                 }
@@ -808,7 +1019,7 @@ namespace Scripts.World
                 vec = dir.ToVecInt();
                 if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
                 {
-                    var nextVox = GetChunk(chunk.Pos + vec).VoxelLightingLevels;
+                    var nextVox = GetChunk(chunk.Pos + vec).VoxelLightLevels;
                     for (int x = 0; x < _chunkSize; x++)
                         array[x + 1, 0, 0] = nextVox[x, _chunkSize - 1, _chunkSize - 1];
                 }
@@ -817,7 +1028,7 @@ namespace Scripts.World
                 vec = dir.ToVecInt();
                 if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
                 {
-                    var nextVox = GetChunk(chunk.Pos + vec).VoxelLightingLevels;
+                    var nextVox = GetChunk(chunk.Pos + vec).VoxelLightLevels;
                     for (int x = 0; x < _chunkSize; x++)
                         array[x + 1, 0, _chunkSize + 1] = nextVox[x, _chunkSize - 1, 0];
                 }
@@ -826,7 +1037,7 @@ namespace Scripts.World
                 vec = dir.ToVecInt();
                 if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
                 {
-                    var nextVox = GetChunk(chunk.Pos + vec).VoxelLightingLevels;
+                    var nextVox = GetChunk(chunk.Pos + vec).VoxelLightLevels;
                     for (int y = 0; y < _chunkSize; y++)
                         array[_chunkSize + 1, y + 1, _chunkSize + 1] = nextVox[0, y, 0];
                 }
@@ -835,7 +1046,7 @@ namespace Scripts.World
                 vec = dir.ToVecInt();
                 if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
                 {
-                    var nextVox = GetChunk(chunk.Pos + vec).VoxelLightingLevels;
+                    var nextVox = GetChunk(chunk.Pos + vec).VoxelLightLevels;
                     for (int y = 0; y < _chunkSize; y++)
                         array[0, y + 1, _chunkSize + 1] = nextVox[_chunkSize - 1, y, 0];
                 }
@@ -844,7 +1055,7 @@ namespace Scripts.World
                 vec = dir.ToVecInt();
                 if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
                 {
-                    var nextVox = GetChunk(chunk.Pos + vec).VoxelLightingLevels;
+                    var nextVox = GetChunk(chunk.Pos + vec).VoxelLightLevels;
                     for (int y = 0; y < _chunkSize; y++)
                         array[_chunkSize + 1, y + 1, 0] = nextVox[0, y, _chunkSize - 1];
                 }
@@ -853,7 +1064,7 @@ namespace Scripts.World
                 vec = dir.ToVecInt();
                 if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
                 {
-                    var nextVox = GetChunk(chunk.Pos + vec).VoxelLightingLevels;
+                    var nextVox = GetChunk(chunk.Pos + vec).VoxelLightLevels;
                     for (int y = 0; y < _chunkSize; y++)
                         array[0, y + 1, 0] = nextVox[_chunkSize - 1, y, _chunkSize - 1];
                 }
@@ -864,7 +1075,7 @@ namespace Scripts.World
                 var vec = dir.ToVecInt();
                 if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
                 {
-                    var nextVox = GetChunk(chunk.Pos + vec).VoxelLightingLevels;
+                    var nextVox = GetChunk(chunk.Pos + vec).VoxelLightLevels;
                     array[0, _chunkSize + 1, _chunkSize + 1] = nextVox[_chunkSize - 1, 0, 0];
                 }
 
@@ -872,7 +1083,7 @@ namespace Scripts.World
                 vec = dir.ToVecInt();
                 if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
                 {
-                    var nextVox = GetChunk(chunk.Pos + vec).VoxelLightingLevels;
+                    var nextVox = GetChunk(chunk.Pos + vec).VoxelLightLevels;
                     array[0, _chunkSize + 1, 0] = nextVox[_chunkSize - 1, 0, _chunkSize - 1];
                 }
 
@@ -880,7 +1091,7 @@ namespace Scripts.World
                 vec = dir.ToVecInt();
                 if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
                 {
-                    var nextVox = GetChunk(chunk.Pos + vec).VoxelLightingLevels;
+                    var nextVox = GetChunk(chunk.Pos + vec).VoxelLightLevels;
                     array[_chunkSize + 1, _chunkSize + 1, _chunkSize + 1] = nextVox[0, 0, 0];
                 }
 
@@ -888,7 +1099,7 @@ namespace Scripts.World
                 vec = dir.ToVecInt();
                 if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
                 {
-                    var nextVox = GetChunk(chunk.Pos + vec).VoxelLightingLevels;
+                    var nextVox = GetChunk(chunk.Pos + vec).VoxelLightLevels;
                     array[_chunkSize + 1, _chunkSize + 1, 0] = nextVox[0, 0, _chunkSize - 1];
                 }
 
@@ -896,7 +1107,7 @@ namespace Scripts.World
                 vec = dir.ToVecInt();
                 if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
                 {
-                    var nextVox = GetChunk(chunk.Pos + vec).VoxelLightingLevels;
+                    var nextVox = GetChunk(chunk.Pos + vec).VoxelLightLevels;
                     array[0, 0, _chunkSize + 1] = nextVox[_chunkSize - 1, _chunkSize - 1, 0];
                 }
 
@@ -904,7 +1115,7 @@ namespace Scripts.World
                 vec = dir.ToVecInt();
                 if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
                 {
-                    var nextVox = GetChunk(chunk.Pos + vec).VoxelLightingLevels;
+                    var nextVox = GetChunk(chunk.Pos + vec).VoxelLightLevels;
                     array[0, 0, 0] = nextVox[_chunkSize - 1, _chunkSize - 1, _chunkSize - 1];
                 }
 
@@ -912,7 +1123,7 @@ namespace Scripts.World
                 vec = dir.ToVecInt();
                 if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
                 {
-                    var nextVox = GetChunk(chunk.Pos + vec).VoxelLightingLevels;
+                    var nextVox = GetChunk(chunk.Pos + vec).VoxelLightLevels;
                     array[_chunkSize + 1, 0, _chunkSize + 1] = nextVox[0, _chunkSize - 1, 0];
                 }
 
@@ -920,11 +1131,13 @@ namespace Scripts.World
                 vec = dir.ToVecInt();
                 if (IsChunkPosInBordersOfTheMap(chunk.Pos + vec))
                 {
-                    var nextVox = GetChunk(chunk.Pos + vec).VoxelLightingLevels;
+                    var nextVox = GetChunk(chunk.Pos + vec).VoxelLightLevels;
                     array[_chunkSize + 1, 0, 0] = nextVox[0, _chunkSize - 1, _chunkSize - 1];
                 }
             }
         }
+
+        #endregion Copy voxel data
 
         public Voxel GetVoxel(Vector3Int chunkPos, Vector3Int blockPos)
         {
@@ -940,15 +1153,41 @@ namespace Scripts.World
             }
         }
 
-        private void SetToPropagateLight(VoxelLightPropagationData data)
+        #region Add to queues methods
+
+        private void SetToPropagateAllLight(VoxelLightPropagationData data)
         {
-            _toPropagateLight.Enqueue(data);
+            _toPropagateRegularLight.Enqueue(data);
+            _toPropagateSunlight.Enqueue(data);
         }
 
-        private void SetToRemoveLight(VoxelLightPropagationData data)
+        private void SetToRemoveAllLight(VoxelLightPropagationData data)
         {
-            _toRemoveLight.Enqueue(data);
+            _toRemoveRegularLight.Enqueue(data);
+            _toRemoveSunlight.Enqueue(data);
         }
+
+        private void SetToPropagateRegularLight(VoxelLightPropagationData data)
+        {
+            _toPropagateRegularLight.Enqueue(data);
+        }
+
+        private void SetToRemoveRegularLight(VoxelLightPropagationData data)
+        {
+            _toRemoveRegularLight.Enqueue(data);
+        }
+
+        private void SetToPropagateSunlight(VoxelLightPropagationData data)
+        {
+            _toPropagateSunlight.Enqueue(data);
+        }
+
+        private void SetToRemoveSunlight(VoxelLightPropagationData data)
+        {
+            _toRemoveSunlight.Enqueue(data);
+        }
+
+        #endregion Add to queues methods
 
         private void SetToRebuildVisibleFaces(RegularChunk chunk)
         {
@@ -979,9 +1218,9 @@ namespace Scripts.World
                     type = newVoxelType,
                 };
 
-                if (ch.VoxelLightingLevels[blockPos.x, blockPos.y, blockPos.z]._level > 0)
+                if (ch.VoxelLightLevels[blockPos.x, blockPos.y, blockPos.z].IsAnyLightPresent)
                     //if this block is solid then remove light from this block
-                    SetToRemoveLight(new VoxelLightPropagationData() { _blockPos = blockPos, _chunkPos = chunkPos });
+                    SetToRemoveAllLight(new VoxelLightPropagationData() { _blockPos = blockPos, _chunkPos = chunkPos });
 
                 //check 6 sides of a voxel
                 for (int i = 0; i < 6; i++)
@@ -1027,9 +1266,9 @@ namespace Scripts.World
 
                                 visibleSides[blockPos.x, blockPos.y, blockPos.z] &= ~dir;//disable side of this block
 
-                                if (nextChunk.VoxelLightingLevels[nextBlockPos.x, nextBlockPos.y, nextBlockPos.z]._level > 0)
+                                if (nextChunk.VoxelLightLevels[nextBlockPos.x, nextBlockPos.y, nextBlockPos.z].IsAnyLightPresent)
                                     //if this block is air then propagate light here
-                                    SetToPropagateLight(new VoxelLightPropagationData() { _blockPos = nextBlockPos, _chunkPos = nextChunkPos });
+                                    SetToPropagateAllLight(new VoxelLightPropagationData() { _blockPos = nextBlockPos, _chunkPos = nextChunkPos });
                             }
                             else
                             {
@@ -1060,9 +1299,9 @@ namespace Scripts.World
 
                             visibleSides[blockPos.x, blockPos.y, blockPos.z] &= ~dir;//disable side of this block
 
-                            if (ch.VoxelLightingLevels[nextBlockPos.x, nextBlockPos.y, nextBlockPos.z]._level > 0)
+                            if (ch.VoxelLightLevels[nextBlockPos.x, nextBlockPos.y, nextBlockPos.z].IsAnyLightPresent)
                                 //if this block is air then propagate light here
-                                SetToPropagateLight(new VoxelLightPropagationData() { _blockPos = nextBlockPos, _chunkPos = chunkPos });
+                                SetToPropagateAllLight(new VoxelLightPropagationData() { _blockPos = nextBlockPos, _chunkPos = chunkPos });
                         }
                         else
                         {
@@ -1095,12 +1334,12 @@ namespace Scripts.World
             {
                 var ch = GetChunk(chunkPos);
 
-                var t = ch.VoxelLightingLevels;
+                var t = ch.VoxelLightLevels;
                 t[blockPos.x, blockPos.y, blockPos.z] = new VoxelLightingLevel()
                 {
                     _level = level,
                 };
-                SetToPropagateLight(new VoxelLightPropagationData()
+                SetToPropagateAllLight(new VoxelLightPropagationData()
                 {
                     _blockPos = blockPos,
                     _chunkPos = chunkPos,
@@ -1174,7 +1413,7 @@ namespace Scripts.World
                         offset = new Vector3Int(x, height, z),
                         chunkSize = _chunkSize,
                         voxels = chunk.Voxels,
-                        light = chunk.VoxelLightingLevels,
+                        light = chunk.VoxelLightLevels,
                     }.Schedule());
                     SetToRebuildVisibleFaces(chunk);
                     level[x, z] = chunk;

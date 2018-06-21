@@ -22,7 +22,7 @@ namespace Scripts.World
         public Vector3Int Pos { get; private set; }
 
         public NativeArray3D<DirectionsHelper.BlockDirectionFlag> VoxelsVisibleFaces { get; private set; }
-        public NativeArray3D<VoxelLightingLevel> VoxelLightingLevels { get; private set; }
+        public NativeArray3D<VoxelLightingLevel> VoxelLightLevels { get; private set; }
         public NativeArray3D<Voxel> Voxels { get; private set; }
         public NativeMeshData MeshData { get; private set; }
 
@@ -45,7 +45,7 @@ namespace Scripts.World
             IsBeingRebult = false;
 
             MeshData = new NativeMeshData(0, Allocator.Persistent);
-            VoxelLightingLevels = new NativeArray3D<VoxelLightingLevel>(VoxelWorldController._chunkSize, VoxelWorldController._chunkSize, VoxelWorldController._chunkSize, Allocator.Persistent);
+            VoxelLightLevels = new NativeArray3D<VoxelLightingLevel>(VoxelWorldController._chunkSize, VoxelWorldController._chunkSize, VoxelWorldController._chunkSize, Allocator.Persistent);
             VoxelsVisibleFaces = new NativeArray3D<DirectionsHelper.BlockDirectionFlag>(VoxelWorldController._chunkSize, VoxelWorldController._chunkSize, VoxelWorldController._chunkSize, Allocator.Persistent);
             Voxels = new NativeArray3D<Voxel>(VoxelWorldController._chunkSize, VoxelWorldController._chunkSize, VoxelWorldController._chunkSize, Allocator.Persistent);
         }
@@ -59,7 +59,7 @@ namespace Scripts.World
             VoxelsVisibleFaces.Dispose();
             Voxels.Dispose();
             MeshData.Dispose();
-            VoxelLightingLevels.Dispose();
+            VoxelLightLevels.Dispose();
         }
 
         public void SetBeingRebuilt()

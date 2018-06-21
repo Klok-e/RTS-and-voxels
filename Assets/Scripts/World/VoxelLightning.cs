@@ -48,6 +48,11 @@ namespace Scripts.World
             }
         }
 
+        public bool IsAnyLightPresent
+        {
+            get { return _level > 0; }
+        }
+
         public VoxelLightingLevel(int light, int sunlight)
         {
             _level = 0;

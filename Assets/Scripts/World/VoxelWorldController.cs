@@ -64,6 +64,15 @@ namespace Scripts.World
                 SetDirty(data._chunk);
             }
 
+            PropagateRegularLightSynchronously();
+            PropagateSunlightSynchronously();
+
+            DepropagateRegularLightSynchronously();
+            DepropagateSunlightSynchronously();
+
+            PropagateRegularLightSynchronously();
+            PropagateSunlightSynchronously();
+
             if (_dirty.Count > 0)
             {
                 int count = _dirty.Count > (Environment.ProcessorCount - 1) ? (Environment.ProcessorCount - 1) : _dirty.Count;
@@ -74,15 +83,6 @@ namespace Scripts.World
                     _updateDataToProcess.Enqueue(data);
                 }
             }
-
-            PropagateRegularLightSynchronously();
-            //PropagateSunlightSynchronously();
-
-            DepropagateRegularLightSynchronously();
-            //DepropagateSunlightSynchronously();
-
-            PropagateRegularLightSynchronously();
-            //PropagateSunlightSynchronously();
 
             if (_updateDataToProcess.Count > 0)
             {

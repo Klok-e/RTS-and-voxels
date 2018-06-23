@@ -209,15 +209,15 @@ namespace Scripts.World.Jobs
             var backLeft = chunkAndNeighboursLighting[backLeftInd.x, backLeftInd.y, backLeftInd.z];
             var backRight = chunkAndNeighboursLighting[backRightInd.x, backRightInd.y, backRightInd.z];
 
-            int centerVal = Math.Max(center.RegularLight, center.Sunlight / 4);
-            int leftVal = Math.Max(left.RegularLight, left.Sunlight / 4);
-            int rightVal = Math.Max(right.RegularLight, right.Sunlight / 4);
-            int frontVal = Math.Max(front.RegularLight, front.Sunlight / 4);
-            int backVal = Math.Max(back.RegularLight, back.Sunlight / 4);
-            int frontLeftVal = Math.Max(frontLeft.RegularLight, frontLeft.Sunlight / 4);
-            int frontRightVal = Math.Max(frontRight.RegularLight, frontRight.Sunlight / 4);
-            int backLeftVal = Math.Max(backLeft.RegularLight, backLeft.Sunlight / 4);
-            int backRightVal = Math.Max(backRight.RegularLight, backRight.Sunlight / 4);
+            int centerVal = Math.Max(center.RegularLight, center.Sunlight);
+            int leftVal = Math.Max(left.RegularLight, left.Sunlight);
+            int rightVal = Math.Max(right.RegularLight, right.Sunlight);
+            int frontVal = Math.Max(front.RegularLight, front.Sunlight);
+            int backVal = Math.Max(back.RegularLight, back.Sunlight);
+            int frontLeftVal = Math.Max(frontLeft.RegularLight, frontLeft.Sunlight);
+            int frontRightVal = Math.Max(frontRight.RegularLight, frontRight.Sunlight);
+            int backLeftVal = Math.Max(backLeft.RegularLight, backLeft.Sunlight);
+            int backRightVal = Math.Max(backRight.RegularLight, backRight.Sunlight);
 
             float vert1 = VertexLight(centerVal, leftVal, backVal, backLeftVal);
             float vert2 = VertexLight(centerVal, rightVal, backVal, backRightVal);

@@ -38,6 +38,11 @@ namespace MarchingCubesProject
         [SerializeField]
         private Slider sphereSizeSlider;
 
+        [SerializeField]
+        private GameObject menu;
+
+        private bool isPaused;
+
         private int _sphereSize = 3;
 
         private float X;
@@ -52,6 +57,8 @@ namespace MarchingCubesProject
 
             Cursor.visible = false;
             Cursor.lockState = CursorLockMode.Locked;
+
+            menu.SetActive(false);
         }
 
         private void ChangeObjectType()
@@ -111,66 +118,103 @@ namespace MarchingCubesProject
             }
         }
 
+        private void Pause()
+        {
+            if (isPaused)
+                throw new System.Exception();
+
+            isPaused = true;
+
+            menu.SetActive(true);
+
+            Cursor.visible = true;
+            Cursor.lockState = CursorLockMode.Confined;
+        }
+
+        private void Resume()
+        {
+            if (!isPaused)
+                throw new System.Exception();
+
+            isPaused = false;
+
+            menu.SetActive(false);
+
+            Cursor.visible = false;
+            Cursor.lockState = CursorLockMode.Locked;
+        }
+
         private void Update()
         {
-            ChangeVoxelCoord();
-            ChangeObjectType();
-            ChangeSphereSize();
-
-            var leftClick = Input.GetMouseButtonDown(0);
-            var rightClick = Input.GetMouseButtonDown(1);
-
-            if (leftClick || rightClick)
+            if (Input.GetKeyDown(KeyCode.Escape))
             {
-                if (leftClick)
-                    interctionType = InteractionTypes.Remove;
-                if (rightClick)
-                    interctionType = InteractionTypes.Place;
+                if (isPaused)
+                    Resume();
+                else
+                    Pause();
+            }
 
-                Ray ray = new Ray(transform.position, transform.forward);
+            if (!isPaused)
+            {
+                ChangeVoxelCoord();
+                ChangeObjectType();
+                ChangeSphereSize();
 
-                if (Physics.Raycast(ray, out RaycastHit hit))
+                var leftClick = Input.GetMouseButtonDown(0);
+                var rightClick = Input.GetMouseButtonDown(1);
+
+                if (leftClick || rightClick)
                 {
-                    var chunk = hit.collider.GetComponent<RegularChunk>();
-                    if (chunk)
+                    if (leftClick)
+                        interctionType = InteractionTypes.Remove;
+                    if (rightClick)
+                        interctionType = InteractionTypes.Place;
+
+                    Ray ray = new Ray(transform.position, transform.forward);
+
+                    if (Physics.Raycast(ray, out RaycastHit hit))
                     {
-                        switch (interctionType)
+                        var chunk = hit.collider.GetComponent<RegularChunk>();
+                        if (chunk)
                         {
-                            case InteractionTypes.Place:
-                                var pos = hit.point + (hit.normal * VoxelWorldController._blockSize / 2);
-                                switch (objectType)
-                                {
-                                    case ObjectTypes.Voxel:
-                                        VoxelWorldController.Instance.SetVoxel(pos, VoxelType.Dirt);
-                                        break;
+                            switch (interctionType)
+                            {
+                                case InteractionTypes.Place:
+                                    var pos = hit.point + (hit.normal * VoxelWorldController._blockSize / 2);
+                                    switch (objectType)
+                                    {
+                                        case ObjectTypes.Voxel:
+                                            VoxelWorldController.Instance.SetVoxel(pos, VoxelType.Dirt);
+                                            break;
 
-                                    case ObjectTypes.Sphere:
-                                        VoxelWorldController.Instance.InsertSphere(pos, _sphereSize, VoxelType.Dirt);
-                                        break;
+                                        case ObjectTypes.Sphere:
+                                            VoxelWorldController.Instance.InsertSphere(pos, _sphereSize, VoxelType.Dirt);
+                                            break;
 
-                                    case ObjectTypes.Light:
-                                        VoxelWorldController.Instance.SetLight(pos, 15);
-                                        break;
-                                }
-                                break;
+                                        case ObjectTypes.Light:
+                                            VoxelWorldController.Instance.SetLight(pos, 15);
+                                            break;
+                                    }
+                                    break;
 
-                            case InteractionTypes.Remove:
-                                pos = hit.point - (hit.normal * VoxelWorldController._blockSize / 2);
-                                switch (objectType)
-                                {
-                                    case ObjectTypes.Voxel:
-                                        VoxelWorldController.Instance.SetVoxel(pos, VoxelType.Air);
-                                        break;
+                                case InteractionTypes.Remove:
+                                    pos = hit.point - (hit.normal * VoxelWorldController._blockSize / 2);
+                                    switch (objectType)
+                                    {
+                                        case ObjectTypes.Voxel:
+                                            VoxelWorldController.Instance.SetVoxel(pos, VoxelType.Air);
+                                            break;
 
-                                    case ObjectTypes.Sphere:
-                                        VoxelWorldController.Instance.InsertSphere(pos, _sphereSize, VoxelType.Air);
-                                        break;
+                                        case ObjectTypes.Sphere:
+                                            VoxelWorldController.Instance.InsertSphere(pos, _sphereSize, VoxelType.Air);
+                                            break;
 
-                                    case ObjectTypes.Light:
-                                        VoxelWorldController.Instance.SetLight(pos, 15);
-                                        break;
-                                }
-                                break;
+                                        case ObjectTypes.Light:
+                                            VoxelWorldController.Instance.SetLight(pos, 15);
+                                            break;
+                                    }
+                                    break;
+                            }
                         }
                     }
                 }
@@ -179,13 +223,16 @@ namespace MarchingCubesProject
 
         private void LateUpdate()
         {
-            transform.Rotate(new Vector3(-Input.GetAxis("Mouse Y") * rotationSpeed, Input.GetAxis("Mouse X") * rotationSpeed, 0));
-            X = transform.rotation.eulerAngles.x;
-            Y = transform.rotation.eulerAngles.y;
-            transform.rotation = Quaternion.Euler(X, Y, 0);
+            if (!isPaused)
+            {
+                transform.Rotate(new Vector3(-Input.GetAxis("Mouse Y") * rotationSpeed, Input.GetAxis("Mouse X") * rotationSpeed, 0));
+                X = transform.rotation.eulerAngles.x;
+                Y = transform.rotation.eulerAngles.y;
+                transform.rotation = Quaternion.Euler(X, Y, 0);
 
-            var move = new Vector3(Input.GetAxis("Horizontal"), 0, Input.GetAxis("Vertical")) * moveSpeed;
-            transform.Translate(move);
+                var move = new Vector3(Input.GetAxis("Horizontal"), 0, Input.GetAxis("Vertical")) * moveSpeed;
+                transform.Translate(move);
+            }
         }
     }
 }

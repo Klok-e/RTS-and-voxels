@@ -43,8 +43,6 @@ namespace Scripts.World
         private Transform _chunkParent;
         private MassJobThing _massJobThing;
 
-        //public  Disposer _disposer;
-
         private void Awake()
         {
             RegularChunk._material = _material;
@@ -63,9 +61,6 @@ namespace Scripts.World
                 data.CompleteChunkVisibleFacesRebuilding();
                 SetDirty(data._chunk);
             }
-
-            PropagateRegularLightSynchronously();
-            PropagateSunlightSynchronously();
 
             DepropagateRegularLightSynchronously();
             DepropagateSunlightSynchronously();
@@ -198,7 +193,6 @@ namespace Scripts.World
             {
                 var data = _toRemoveRegularLight.Dequeue();
                 var chunk = GetChunk(data._chunkPos);
-                SetDirty(chunk);
 
                 var voxels = chunk.Voxels;
                 var lightLevels = chunk.VoxelLightLevels;
@@ -206,6 +200,7 @@ namespace Scripts.World
                 var lightLvl = lightLevels[data._blockPos.x, data._blockPos.y, data._blockPos.z];
                 lightLevels[data._blockPos.x, data._blockPos.y, data._blockPos.z] = new VoxelLightingLevel(0, lightLvl.Sunlight);
 
+                SetDirty(chunk);
                 //check 6 sides
                 for (int i = 0; i < 6; i++)
                 {
@@ -369,7 +364,6 @@ namespace Scripts.World
             {
                 var data = _toRemoveSunlight.Dequeue();
                 var chunk = GetChunk(data._chunkPos);
-                SetDirty(chunk);
 
                 var voxels = chunk.Voxels;
                 var lightLevels = chunk.VoxelLightLevels;
@@ -377,6 +371,7 @@ namespace Scripts.World
                 var lightLvl = lightLevels[data._blockPos.x, data._blockPos.y, data._blockPos.z];
                 lightLevels[data._blockPos.x, data._blockPos.y, data._blockPos.z] = new VoxelLightingLevel(lightLvl.RegularLight, 0);
 
+                SetDirty(chunk);
                 //check 6 sides
                 for (int i = 0; i < 6; i++)
                 {
@@ -1144,6 +1139,18 @@ namespace Scripts.World
             return GetChunk(chunkPos).Voxels[blockPos.x, blockPos.y, blockPos.z];
         }
 
+        public Voxel GetVoxel(Vector3Int voxelWorldPos)
+        {
+            ChunkVoxelCoordinates(voxelWorldPos, out var chunkPos, out var voxelPos);
+            return GetChunk(chunkPos).Voxels[voxelPos.x, voxelPos.y, voxelPos.z];
+        }
+
+        public Voxel GetVoxel(Vector3 worldPos)
+        {
+            ChunkVoxelCoordinates(worldPos, out var chunkPos, out var voxelPos);
+            return GetChunk(chunkPos).Voxels[voxelPos.x, voxelPos.y, voxelPos.z];
+        }
+
         private void SetDirty(RegularChunk ch)
         {
             if (ch.IsInitialized && !ch.IsBeingRebult)
@@ -1187,8 +1194,6 @@ namespace Scripts.World
             _toRemoveSunlight.Enqueue(data);
         }
 
-        #endregion Add to queues methods
-
         private void SetToRebuildVisibleFaces(RegularChunk chunk)
         {
             if (chunk.IsInitialized)
@@ -1196,6 +1201,8 @@ namespace Scripts.World
                 _toRebuildVisibleFaces.Enqueue(chunk);
             }
         }
+
+        #endregion Add to queues methods
 
         #region Voxel editing
 
@@ -1319,13 +1326,6 @@ namespace Scripts.World
             }
         }
 
-        public static void ChunkVoxelCoordinates(Vector3 worldPos, out Vector3Int chunkPos, out Vector3Int voxelPos)
-        {
-            worldPos /= _blockSize;
-            chunkPos = ((worldPos - (Vector3.one * (_chunkSize / 2))) / _chunkSize).ToInt();
-            voxelPos = (worldPos - chunkPos * _chunkSize).ToInt();
-        }
-
         public void SetLight(Vector3 worldPos, byte level)
         {
             ChunkVoxelCoordinates(worldPos, out var chunkPos, out var blockPos);
@@ -1428,11 +1428,30 @@ namespace Scripts.World
 
         #region Helper methods
 
-        private bool IsChunkPosInBordersOfTheMap(Vector3Int pos)
+        public bool IsChunkPosInBordersOfTheMap(Vector3Int pos)
         {
             return pos.x < _mapMaxX && pos.z < _mapMaxZ && pos.x >= 0 && pos.z >= 0
                     &&
                     _chunks.ContainsHeight(pos.y);
+        }
+
+        public bool IsVoxelInBordersOfTheMap(Vector3Int pos)
+        {
+            ChunkVoxelCoordinates(pos, out var chunkPos, out var voxelPos);
+            return IsChunkPosInBordersOfTheMap(chunkPos);
+        }
+
+        public static void ChunkVoxelCoordinates(Vector3 worldPos, out Vector3Int chunkPos, out Vector3Int voxelPos)
+        {
+            worldPos /= _blockSize;
+            chunkPos = ((worldPos - (Vector3.one * (_chunkSize / 2))) / _chunkSize).ToInt();
+            voxelPos = (worldPos - chunkPos * _chunkSize).ToInt();
+        }
+
+        public static void ChunkVoxelCoordinates(Vector3Int voxelWorldPos, out Vector3Int chunkPos, out Vector3Int voxelPos)
+        {
+            chunkPos = ((voxelWorldPos - (Vector3.one * (_chunkSize / 2))) / _chunkSize).ToInt();
+            voxelPos = (voxelWorldPos - chunkPos * _chunkSize);
         }
 
         #endregion Helper methods

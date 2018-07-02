@@ -1,11 +1,42 @@
-﻿using System.Collections;
+﻿using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 using UnityEngine;
 
 namespace Scripts.Pathfinding
 {
-    public struct PathCell
+    public class PathCell
     {
-        public Vector3Int pos;
+        public Vector3Int Pos { get; }
+        public PathCell Parent { get; private set; }
+
+        public float _gCost;
+        public float _hCost;
+
+        public float FCost
+        {
+            get => _gCost + _hCost;
+        }
+
+        public PathCell(Vector3Int pos)
+        {
+            Pos = pos;
+            _gCost = 0;
+            _hCost = 0;
+            Parent = null;
+        }
+
+        public void SetParent(PathCell parentNew)
+        {
+            Parent = parentNew;
+            _gCost = parentNew._gCost + Vector3Int.Distance(parentNew.Pos, Pos);
+        }
+
+        public override int GetHashCode()
+        {
+            return Pos.GetHashCode();
+        }
     }
 }

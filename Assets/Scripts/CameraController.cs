@@ -6,7 +6,7 @@ using Unity.Jobs;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace MarchingCubesProject
+namespace Scripts
 {
     public enum ObjectTypes : byte
     {

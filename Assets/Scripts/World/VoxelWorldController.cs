@@ -30,6 +30,9 @@ namespace Scripts.World
         private Queue<RegularChunk> _toRebuildVisibleFaces;
         private Queue<RegularChunk> _dirty;
 
+        private Queue<VoxelChangeQueryData> _voxelsToChange;
+        private Queue<LightChangeQueryData> _lightToChange;
+
         /// <summary>
         /// Only uneven amount or else SetVoxel won't work at all
         /// </summary>
@@ -61,6 +64,9 @@ namespace Scripts.World
                 data.CompleteChunkVisibleFacesRebuilding();
                 SetDirty(data._chunk);
             }
+
+            EmptySetLightQueue();
+            EmptySetVoxelQueue();
 
             DepropagateRegularLightSynchronously();
             DepropagateSunlightSynchronously();
@@ -111,6 +117,8 @@ namespace Scripts.World
             _dirty = new Queue<RegularChunk>();
             _updateDataToProcess = new Queue<ChunkCleaningData>();
 
+            _voxelsToChange = new Queue<VoxelChangeQueryData>();
+            _lightToChange = new Queue<LightChangeQueryData>();
             _toPropagateRegularLight = new Queue<VoxelLightPropagationData>();
             _toRemoveRegularLight = new Queue<VoxelLightPropagationData>();
             _toPropagateSunlight = new Queue<VoxelLightPropagationData>();
@@ -1206,10 +1214,40 @@ namespace Scripts.World
 
         #region Voxel editing
 
+        private struct VoxelChangeQueryData
+        {
+            public Vector3 worldPos;
+            public VoxelType newVoxelType;
+        }
+
+        private struct LightChangeQueryData
+        {
+            public Vector3 worldPos;
+            public int level;
+        }
+
+        private void EmptySetVoxelQueue()
+        {
+            while (_voxelsToChange.Count > 0)
+            {
+                var t = _voxelsToChange.Dequeue();
+                SetVoxel(t.worldPos, t.newVoxelType);
+            }
+        }
+
+        private void EmptySetLightQueue()
+        {
+            while (_lightToChange.Count > 0)
+            {
+                var t = _lightToChange.Dequeue();
+                SetLight(t.worldPos, t.level);
+            }
+        }
+
         /// <summary>
         ///Set voxel at world coords (physics world coords)
         /// </summary>
-        public void QuerySetVoxel(Vector3 worldPos, VoxelType newVoxelType)
+        private void SetVoxel(Vector3 worldPos, VoxelType newVoxelType)
         {
             ChunkVoxelCoordinates(worldPos, out var chunkPos, out var blockPos);
 
@@ -1326,7 +1364,7 @@ namespace Scripts.World
             }
         }
 
-        public void QuerySetLight(Vector3 worldPos, byte level)
+        private void SetLight(Vector3 worldPos, int level)
         {
             ChunkVoxelCoordinates(worldPos, out var chunkPos, out var blockPos);
 
@@ -1335,10 +1373,7 @@ namespace Scripts.World
                 var ch = GetChunk(chunkPos);
 
                 var t = ch.VoxelLightLevels;
-                t[blockPos.x, blockPos.y, blockPos.z] = new VoxelLightingLevel()
-                {
-                    _level = level,
-                };
+                t[blockPos.x, blockPos.y, blockPos.z] = new VoxelLightingLevel(level, t[blockPos.x, blockPos.y, blockPos.z].Sunlight);
                 SetToPropagateAllLight(new VoxelLightPropagationData()
                 {
                     _blockPos = blockPos,
@@ -1369,6 +1404,27 @@ namespace Scripts.World
                     }
                 }
             }
+        }
+
+        /// <summary>
+        ///Query set voxel at world coords (physics world coords)
+        /// </summary>
+        public void QuerySetVoxel(Vector3 worldPos, VoxelType newVoxelType)
+        {
+            _voxelsToChange.Enqueue(new VoxelChangeQueryData()
+            {
+                newVoxelType = newVoxelType,
+                worldPos = worldPos,
+            });
+        }
+
+        public void QuerySetLight(Vector3 worldPos, int level)
+        {
+            _lightToChange.Enqueue(new LightChangeQueryData()
+            {
+                level = level,
+                worldPos = worldPos,
+            });
         }
 
         #endregion Voxel editing

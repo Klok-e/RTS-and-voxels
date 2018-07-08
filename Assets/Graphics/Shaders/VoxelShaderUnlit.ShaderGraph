@@ -4,7 +4,7 @@
             "typeInfo": {
                 "fullName": "UnityEditor.ShaderGraph.Texture2DArrayShaderProperty"
             },
-            "JSONnodeData": "{\n    \"m_Value\": {\n        \"m_SerializedTexture\": \"\",\n        \"m_Guid\": \"\"\n    },\n    \"m_Name\": \"Texture2D Array\",\n    \"m_GeneratePropertyBlock\": true,\n    \"m_Guid\": {\n        \"m_GuidSerialized\": \"c260469e-6a9a-406e-8d68-a665912598e4\"\n    },\n    \"m_OverrideReferenceName\": \"_VoxelTextureArray\",\n    \"m_Modifiable\": true\n}"
+            "JSONnodeData": "{\n    \"m_Value\": {\n        \"m_SerializedTexture\": \"\",\n        \"m_Guid\": \"\"\n    },\n    \"m_Name\": \"Texture2D Array\",\n    \"m_GeneratePropertyBlock\": false,\n    \"m_Guid\": {\n        \"m_GuidSerialized\": \"c260469e-6a9a-406e-8d68-a665912598e4\"\n    },\n    \"m_OverrideReferenceName\": \"_VoxelTextureArray\",\n    \"m_Modifiable\": true\n}"
         }
     ],
     "m_GUID": {

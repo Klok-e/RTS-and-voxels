@@ -184,15 +184,15 @@ namespace MarchingCubesProject
                                     switch (objectType)
                                     {
                                         case ObjectTypes.Voxel:
-                                            VoxelWorldController.Instance.SetVoxel(pos, VoxelType.Dirt);
+                                            VoxelWorldController.Instance.QuerySetVoxel(pos, VoxelType.Dirt);
                                             break;
 
                                         case ObjectTypes.Sphere:
-                                            VoxelWorldController.Instance.InsertSphere(pos, _sphereSize, VoxelType.Dirt);
+                                            VoxelWorldController.Instance.QueryInsertSphere(pos, _sphereSize, VoxelType.Dirt);
                                             break;
 
                                         case ObjectTypes.Light:
-                                            VoxelWorldController.Instance.SetLight(pos, 15);
+                                            VoxelWorldController.Instance.QuerySetLight(pos, 15);
                                             break;
                                     }
                                     break;
@@ -202,15 +202,15 @@ namespace MarchingCubesProject
                                     switch (objectType)
                                     {
                                         case ObjectTypes.Voxel:
-                                            VoxelWorldController.Instance.SetVoxel(pos, VoxelType.Air);
+                                            VoxelWorldController.Instance.QuerySetVoxel(pos, VoxelType.Air);
                                             break;
 
                                         case ObjectTypes.Sphere:
-                                            VoxelWorldController.Instance.InsertSphere(pos, _sphereSize, VoxelType.Air);
+                                            VoxelWorldController.Instance.QueryInsertSphere(pos, _sphereSize, VoxelType.Air);
                                             break;
 
                                         case ObjectTypes.Light:
-                                            VoxelWorldController.Instance.SetLight(pos, 15);
+                                            VoxelWorldController.Instance.QuerySetLight(pos, 15);
                                             break;
                                     }
                                     break;

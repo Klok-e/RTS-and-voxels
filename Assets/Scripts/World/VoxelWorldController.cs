@@ -136,7 +136,7 @@ namespace Scripts.World
 
                 _textureArray.filterMode = FilterMode.Point;
 
-                _material.SetTexture("Texture2DArray_7C085864", _textureArray);
+                _material.SetTexture("_VoxelTextureArray", _textureArray);
             }
         }
 
@@ -1209,7 +1209,7 @@ namespace Scripts.World
         /// <summary>
         ///Set voxel at world coords (physics world coords)
         /// </summary>
-        public void SetVoxel(Vector3 worldPos, VoxelType newVoxelType)
+        public void QuerySetVoxel(Vector3 worldPos, VoxelType newVoxelType)
         {
             ChunkVoxelCoordinates(worldPos, out var chunkPos, out var blockPos);
 
@@ -1326,7 +1326,7 @@ namespace Scripts.World
             }
         }
 
-        public void SetLight(Vector3 worldPos, byte level)
+        public void QuerySetLight(Vector3 worldPos, byte level)
         {
             ChunkVoxelCoordinates(worldPos, out var chunkPos, out var blockPos);
 
@@ -1353,7 +1353,7 @@ namespace Scripts.World
         /// <param name="sphereWorldPos"></param>
         /// <param name="radiusInBlocks"></param>
         /// <param name="newVoxelType"></param>
-        public void InsertSphere(Vector3 sphereWorldPos, int radiusInBlocks, VoxelType newVoxelType)
+        public void QueryInsertSphere(Vector3 sphereWorldPos, int radiusInBlocks, VoxelType newVoxelType)
         {
             for (float x = -radiusInBlocks; x < radiusInBlocks; x++)
             {
@@ -1364,7 +1364,7 @@ namespace Scripts.World
                         var pos = new Vector3(x, y, z);
                         if (pos.sqrMagnitude <= radiusInBlocks * radiusInBlocks)
                         {
-                            SetVoxel(sphereWorldPos + pos * _blockSize, newVoxelType);
+                            QuerySetVoxel(sphereWorldPos + pos * _blockSize, newVoxelType);
                         }
                     }
                 }

@@ -7,7 +7,7 @@ using UnityEngine;
 
 namespace Scripts.Pathfinding
 {
-    public class PathCell
+    public class PathCell : IEquatable<PathCell>
     {
         public Vector3Int Pos { get; }
         public PathCell Parent { get; private set; }
@@ -32,6 +32,11 @@ namespace Scripts.Pathfinding
         {
             Parent = parentNew;
             _gCost = parentNew._gCost + Vector3Int.Distance(parentNew.Pos, Pos);
+        }
+
+        public bool Equals(PathCell obj)
+        {
+            return Pos.Equals(obj.Pos);
         }
 
         public override int GetHashCode()

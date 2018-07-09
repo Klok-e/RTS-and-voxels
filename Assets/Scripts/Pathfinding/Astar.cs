@@ -2,7 +2,6 @@
 using Scripts.World;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
@@ -39,23 +38,38 @@ namespace Scripts.Pathfinding
                 new Vector3Int(0, 0, -1),//back
         };
 
-        public Vector3[] GetPath(Vector3 start, Vector3 destination)
+        public Vector3[] ConstructPath(Vector3 start, Vector3 destination)
         {
-            var startInt = NearestVoxelPos(start);
-            var destinationInt = NearestVoxelPos(destination);
+            var startInt = WorldPosToVoxelPos(start);
+            var destinationInt = WorldPosToVoxelPos(destination);
 
             var closedSet = new HashSet<PathCell>();
-            var openSet = new List<PathCell>(1);
+            var openSet = new List<PathCell>();
 
-            openSet.Add(new PathCell(startInt)
+            var cells = new Dictionary<Vector3Int, PathCell>();
+
+            var neihboursArr = new PathCell[neighbPosRelative.Length];
+
+            var t = new PathCell(startInt)
             {
                 _gCost = 0,
                 _hCost = Vector3Int.Distance(startInt, destinationInt),
-            });
+            };
+
+            openSet.Add(t);
+            cells.Add(t.Pos, t);
+
+            int z = 0;
 
             PathCell dest = null;
             while (openSet.Count > 0)
             {
+                z++;
+                if (z > 1000)
+                {
+                    break;
+                }
+
                 int ind = 0;
                 var current = openSet[ind];
                 for (int i = 1; i < openSet.Count; i++)
@@ -75,19 +89,21 @@ namespace Scripts.Pathfinding
                     break;
                 }
 
-                var neighb = GetNeighbours(current);
-                for (int i = 0; i < neighb.Length; i++)
+                GetNeighboursNoAlloc(current, neihboursArr);
+                for (int i = 0; i < neihboursArr.Length; i++)
                 {
-                    neighb[i]._hCost = Distance(neighb[i].Pos, destinationInt);
+                    if (neihboursArr[i] == null)
+                        continue;
 
-                    if ((current._gCost + Distance(neighb[i].Pos, current.Pos)) < neighb[i]._gCost
+                    var contains = openSet.Contains(neihboursArr[i]);
+                    if ((current._gCost + Distance(neihboursArr[i].Pos, current.Pos)) < neihboursArr[i]._gCost
                         ||
-                        !openSet.Contains(neighb[i]))
+                        !contains)
                     {
-                        neighb[i].SetParent(current);
+                        neihboursArr[i].SetParent(current);
 
-                        if (!openSet.Contains(neighb[i]))
-                            openSet.Add(neighb[i]);
+                        if (!contains)
+                            openSet.Add(neihboursArr[i]);
                     }
                 }
             }
@@ -96,9 +112,9 @@ namespace Scripts.Pathfinding
                 var path = new List<Vector3>();
                 while (true)
                 {
-                    if (dest == null)
+                    if (dest.Parent == null)
                         break;
-                    path.Add(dest.Pos);
+                    path.Add(VoxelPosToWorldPos(dest.Pos));
                     dest = dest.Parent;
                 }
                 path.Reverse();
@@ -109,10 +125,12 @@ namespace Scripts.Pathfinding
                 return null;
             }
 
-            PathCell[] GetNeighbours(PathCell pathCell)
+            void GetNeighboursNoAlloc(PathCell pathCell, PathCell[] bufferArray)
             {
+                for (int i = 0; i < bufferArray.Length; i++)//reset array
+                    bufferArray[i] = null;
+
                 var world = VoxelWorldController.Instance;
-                var neighbours = new List<PathCell>(18);
 
                 for (int i = 0; i < neighbPosRelative.Length; i++)
                 {
@@ -120,26 +138,33 @@ namespace Scripts.Pathfinding
                     if (world.IsVoxelInBordersOfTheMap(pos) && world.GetVoxel(pos).type.IsAir())
                     {
                         var cell = new PathCell(pos);
+                        cell._hCost = Distance(pos, destinationInt);
+                        if (cells.ContainsKey(pos))
+                        {
+                            cell = cells[pos];
+                        }
+                        else
+                        {
+                            cells.Add(pos, cell);
+                        }
+
                         if (!closedSet.Contains(cell))
                         {
-                            for (int k = 0; k < openSet.Count; k++)
-                            {
-                                if (openSet[k].Pos == cell.Pos)
-                                {
-                                    cell = openSet[k];
-                                }
-                            }
-                            neighbours.Add(cell);
+                            bufferArray[i] = cell;
                         }
                     }
                 }
-                return neighbours.ToArray();
             }
         }
 
-        private static Vector3Int NearestVoxelPos(Vector3 pos)
+        private static Vector3Int WorldPosToVoxelPos(Vector3 pos)
         {
             return (pos / VoxelWorldController._blockSize).ToInt();
+        }
+
+        private static Vector3 VoxelPosToWorldPos(Vector3Int pos)
+        {
+            return ((Vector3)pos * VoxelWorldController._blockSize);
         }
 
         private static float Distance(Vector3Int from, Vector3Int to)

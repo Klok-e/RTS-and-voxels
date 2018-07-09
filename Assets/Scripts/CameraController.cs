@@ -1,5 +1,6 @@
 ﻿using Scripts;
 using Scripts.Help;
+using Scripts.Pathfinding;
 using Scripts.World;
 using System.Collections.Generic;
 using Unity.Jobs;

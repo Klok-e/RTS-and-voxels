@@ -9,7 +9,7 @@ namespace Scripts.Pathfinding
 {
     public class PathCell : IEquatable<PathCell>
     {
-        public Vector3Int Pos { get; }
+        public Vector3Int Pos { get; private set; }
         public PathCell Parent { get; private set; }
 
         public float _gCost;
@@ -26,6 +26,16 @@ namespace Scripts.Pathfinding
             _gCost = 0;
             _hCost = 0;
             Parent = null;
+        }
+
+        public void Deinitialize()
+        {
+            Parent = null;
+        }
+
+        public void SetPos(Vector3Int pos)
+        {
+            Pos = pos;
         }
 
         public void SetParent(PathCell parentNew)

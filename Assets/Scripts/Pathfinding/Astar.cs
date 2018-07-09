@@ -36,7 +36,27 @@ namespace Scripts.Pathfinding
                 new Vector3Int(0, 0, 1),//front
 
                 new Vector3Int(0, 0, -1),//back
+
+                //corners
+                //up
+                new Vector3Int(-1, 1, 1),
+                new Vector3Int(-1, 1, -1),
+                new Vector3Int(1, 1, 1),
+                new Vector3Int(1, 1, -1),
+
+                //down
+                new Vector3Int(-1, -1, 1),
+                new Vector3Int(-1, -1, -1),
+                new Vector3Int(1, -1, 1),
+                new Vector3Int(1, -1, -1),
         };
+
+        private PathCellPool _pathCellPool;
+
+        private void Start()
+        {
+            _pathCellPool = new PathCellPool();
+        }
 
         public Vector3[] ConstructPath(Vector3 start, Vector3 destination)
         {
@@ -44,9 +64,9 @@ namespace Scripts.Pathfinding
             var destinationInt = WorldPosToVoxelPos(destination);
 
             var closedSet = new HashSet<PathCell>();
-            var openSet = new List<PathCell>();
+            var openSet = new List<PathCell>(100);
 
-            var cells = new Dictionary<Vector3Int, PathCell>();
+            var cells = new Dictionary<Vector3Int, PathCell>(100);
 
             var neihboursArr = new PathCell[neighbPosRelative.Length];
 
@@ -107,6 +127,7 @@ namespace Scripts.Pathfinding
                     }
                 }
             }
+            _pathCellPool.PoolAllCreated();
             if (dest != null)
             {
                 var path = new List<Vector3>();
@@ -137,7 +158,7 @@ namespace Scripts.Pathfinding
                     var pos = neighbPosRelative[i] + pathCell.Pos;
                     if (world.IsVoxelInBordersOfTheMap(pos) && world.GetVoxel(pos).type.IsAir())
                     {
-                        var cell = new PathCell(pos);
+                        var cell = _pathCellPool.GetPathCell(pos);
                         cell._hCost = Distance(pos, destinationInt);
                         if (cells.ContainsKey(pos))
                         {
@@ -170,6 +191,44 @@ namespace Scripts.Pathfinding
         private static float Distance(Vector3Int from, Vector3Int to)
         {
             return (to - from).magnitude;
+        }
+
+        private class PathCellPool
+        {
+            private Queue<PathCell> mainPool;
+            private Queue<PathCell> toPoolLater;
+
+            public PathCellPool()
+            {
+                mainPool = new Queue<PathCell>();
+                toPoolLater = new Queue<PathCell>();
+            }
+
+            public PathCell GetPathCell(Vector3Int pos)
+            {
+                PathCell c;
+                if (mainPool.Count > 0)
+                {
+                    c = mainPool.Dequeue();
+                    c.SetPos(pos);
+                }
+                else
+                {
+                    c = new PathCell(pos);
+                }
+                toPoolLater.Enqueue(c);
+                return c;
+            }
+
+            public void PoolAllCreated()
+            {
+                while (toPoolLater.Count > 0)
+                {
+                    var t = toPoolLater.Dequeue();
+                    t.Deinitialize();
+                    mainPool.Enqueue(t);
+                }
+            }
         }
     }
 }

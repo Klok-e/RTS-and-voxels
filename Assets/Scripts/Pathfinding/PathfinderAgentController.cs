@@ -38,6 +38,8 @@ namespace Scripts.Pathfinding
             _pathToDraw = path;
         }
 
+#if UNITY_EDITOR
+
         private void OnDrawGizmos()
         {
             if (_pathToDraw == null)
@@ -48,5 +50,7 @@ namespace Scripts.Pathfinding
                 Gizmos.DrawLine(_pathToDraw[i], _pathToDraw[i + 1]);
             }
         }
+
+#endif
     }
 }

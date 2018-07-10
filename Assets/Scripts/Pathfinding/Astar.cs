@@ -106,7 +106,7 @@ namespace Scripts.Pathfinding
                         continue;
 
                     var contains = openSet.Contains(neihboursArr[i]);
-                    if ((current._gCost + Distance(neihboursArr[i].Pos, current.Pos)) < neihboursArr[i]._gCost
+                    if ((current._gCost + DistanceManhattan(neihboursArr[i].Pos, current.Pos)) < neihboursArr[i]._gCost
                         ||
                         !contains)
                     {
@@ -157,7 +157,7 @@ namespace Scripts.Pathfinding
                                 dir == down)//or if dir is down (simulate falling)
                             {
                                 var cell = _pathCellPool.GetPathCell(pos);
-                                cell._hCost = Distance(pos, destinationInt);
+                                cell._hCost = DistanceManhattan(pos, destinationInt);
                                 if (cells.ContainsKey(pos))
                                 {
                                     cell = cells[pos];
@@ -188,9 +188,26 @@ namespace Scripts.Pathfinding
             return ((Vector3)pos * VoxelWorldController._blockSize);
         }
 
-        private static float Distance(Vector3Int from, Vector3Int to)
+        /// <summary>
+        /// Slow but accurate
+        /// </summary>
+        /// <param name="from"></param>
+        /// <param name="to"></param>
+        /// <returns></returns>
+        private static float DistanceEuclidean(Vector3Int from, Vector3Int to)
         {
             return (to - from).magnitude;
+        }
+
+        /// <summary>
+        /// Super fast but inaccurate
+        /// </summary>
+        /// <param name="from"></param>
+        /// <param name="to"></param>
+        /// <returns></returns>
+        private static float DistanceManhattan(Vector3Int from, Vector3Int to)
+        {
+            return Mathf.Abs(from.x - to.x) + Mathf.Abs(from.y - to.y) + Mathf.Abs(from.z - to.z);
         }
 
         private class PathCellPool

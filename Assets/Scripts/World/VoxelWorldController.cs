@@ -65,8 +65,8 @@ namespace Scripts.World
                 SetDirty(data._chunk);
             }
 
-            EmptySetLightQueue();
-            EmptySetVoxelQueue();
+            EmptyQuerySetLightQueue();
+            EmptyQuerySetVoxelQueue();
 
             DepropagateRegularLightSynchronously();
             DepropagateSunlightSynchronously();
@@ -1212,6 +1212,28 @@ namespace Scripts.World
 
         #endregion Add to queues methods
 
+        #region Resolve change voxel data queries
+
+        private void EmptyQuerySetVoxelQueue()
+        {
+            while (_voxelsToChange.Count > 0)
+            {
+                var t = _voxelsToChange.Dequeue();
+                SetVoxel(t.worldPos, t.newVoxelType);
+            }
+        }
+
+        private void EmptyQuerySetLightQueue()
+        {
+            while (_lightToChange.Count > 0)
+            {
+                var t = _lightToChange.Dequeue();
+                SetLight(t.worldPos, t.level);
+            }
+        }
+
+        #endregion Resolve change voxel data queries
+
         #region Voxel editing
 
         private struct VoxelChangeQueryData
@@ -1224,24 +1246,6 @@ namespace Scripts.World
         {
             public Vector3 worldPos;
             public int level;
-        }
-
-        private void EmptySetVoxelQueue()
-        {
-            while (_voxelsToChange.Count > 0)
-            {
-                var t = _voxelsToChange.Dequeue();
-                SetVoxel(t.worldPos, t.newVoxelType);
-            }
-        }
-
-        private void EmptySetLightQueue()
-        {
-            while (_lightToChange.Count > 0)
-            {
-                var t = _lightToChange.Dequeue();
-                SetLight(t.worldPos, t.level);
-            }
         }
 
         /// <summary>

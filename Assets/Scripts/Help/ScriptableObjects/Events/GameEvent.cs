@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Scripts.Help.ScriptableObjects
+namespace Scripts.Help.ScriptableObjects.Events
 {
     [CreateAssetMenu]
     public class GameEvent : ScriptableObject
@@ -10,24 +10,28 @@ namespace Scripts.Help.ScriptableObjects
         /// <summary>
         /// The list of listeners that this event will notify if it is raised.
         /// </summary>
-        private readonly List<GameEventListener> eventListeners = new List<GameEventListener>();
+        private readonly List<GameEventListener> _eventListeners = new List<GameEventListener>();
 
         public void Raise()
         {
-            for (int i = eventListeners.Count - 1; i >= 0; i--)
-                eventListeners[i].OnEventRaised();
+            for (int i = _eventListeners.Count - 1; i >= 0; i--)
+                _eventListeners[i].OnEventRaised();
         }
 
         public void RegisterListener(GameEventListener listener)
         {
-            if (!eventListeners.Contains(listener))
-                eventListeners.Add(listener);
+            if (!_eventListeners.Contains(listener))
+                _eventListeners.Add(listener);
+            else
+                Debug.LogWarning($"The list of event listeners already contains {listener.ToString()}");
         }
 
         public void UnregisterListener(GameEventListener listener)
         {
-            if (eventListeners.Contains(listener))
-                eventListeners.Remove(listener);
+            if (_eventListeners.Contains(listener))
+                _eventListeners.Remove(listener);
+            else
+                Debug.LogWarning($"The list of event listeners does not contain {listener.ToString()}");
         }
     }
 }

@@ -39,10 +39,7 @@ namespace Scripts
         [SerializeField]
         private Slider sphereSizeSlider;
 
-        [SerializeField]
-        private GameObject menu;
-
-        private bool isPaused;
+        private bool isPaused = false;
 
         private int _sphereSize = 3;
 
@@ -52,107 +49,16 @@ namespace Scripts
         private ObjectTypes objectType = ObjectTypes.Voxel;
         private InteractionTypes interctionType = InteractionTypes.Place;
 
+        #region MonoBehaviour implementation
+
         private void Start()
         {
-            Cursor.visible = false;
-            Cursor.lockState = CursorLockMode.Locked;
-
-            menu.SetActive(false);
-        }
-
-        private void ChangeObjectType()
-        {
-            var wheel = Input.GetAxis("Mouse ScrollWheel");
-            if (Mathf.Abs(wheel) > 0)
-            {
-                byte next;
-                if (wheel > 0)
-                {
-                    next = (byte)(((byte)objectType) + 1);
-                    if (next > 3)
-                        next = 1;
-                }
-                else
-                {
-                    next = (byte)(((byte)objectType) - 1);
-                    if (next < 1)
-                        next = 3;
-                }
-                objectType = (ObjectTypes)next;
-                objectTypeLabel.text = objectType.ToString();
-            }
-        }
-
-        private void ChangeSphereSize()
-        {
-            if (Input.GetKeyDown(KeyCode.PageUp))
-            {
-                _sphereSize += 1;
-            }
-            if (Input.GetKeyDown(KeyCode.PageDown))
-            {
-                _sphereSize -= 1;
-            }
-
-            if (_sphereSize <= sphereSizeSlider.maxValue && _sphereSize >= sphereSizeSlider.minValue)
-            {
-            }
-            else if (_sphereSize > sphereSizeSlider.maxValue)
-                _sphereSize = (int)sphereSizeSlider.maxValue;
-            else if (_sphereSize < sphereSizeSlider.minValue)
-                _sphereSize = (int)sphereSizeSlider.minValue;
-
-            sphereSizeSlider.value = _sphereSize;
-        }
-
-        private void ChangeVoxelCoord()
-        {
-            Ray ray = new Ray(transform.position, transform.forward);
-            if (Physics.Raycast(ray, out RaycastHit hit))
-            {
-                var pos = hit.point - (hit.normal * VoxelWorldController._blockSize / 2);
-
-                VoxelWorldController.ChunkVoxelCoordinates(pos, out var chunk, out var voxel);
-                voxelCoordinatesLabel.text = voxel.ToString();
-            }
-        }
-
-        private void Pause()
-        {
-            if (isPaused)
-                throw new System.Exception();
-
-            isPaused = true;
-
-            menu.SetActive(true);
-
-            Cursor.visible = true;
-            Cursor.lockState = CursorLockMode.Confined;
-        }
-
-        private void Resume()
-        {
-            if (!isPaused)
-                throw new System.Exception();
-
-            isPaused = false;
-
-            menu.SetActive(false);
-
             Cursor.visible = false;
             Cursor.lockState = CursorLockMode.Locked;
         }
 
         private void Update()
         {
-            if (Input.GetKeyDown(KeyCode.Escape))
-            {
-                if (isPaused)
-                    Resume();
-                else
-                    Pause();
-            }
-
             if (!isPaused)
             {
                 ChangeVoxelCoord();
@@ -232,6 +138,70 @@ namespace Scripts
                 var move = new Vector3(Input.GetAxis("Horizontal"), 0, Input.GetAxis("Vertical")) * moveSpeed;
                 transform.Translate(move);
             }
+        }
+
+        #endregion MonoBehaviour implementation
+
+        private void ChangeObjectType()
+        {
+            var wheel = Input.GetAxis("Mouse ScrollWheel");
+            if (Mathf.Abs(wheel) > 0)
+            {
+                byte next;
+                if (wheel > 0)
+                {
+                    next = (byte)(((byte)objectType) + 1);
+                    if (next > 3)
+                        next = 1;
+                }
+                else
+                {
+                    next = (byte)(((byte)objectType) - 1);
+                    if (next < 1)
+                        next = 3;
+                }
+                objectType = (ObjectTypes)next;
+                objectTypeLabel.text = objectType.ToString();
+            }
+        }
+
+        private void ChangeSphereSize()
+        {
+            if (Input.GetKeyDown(KeyCode.PageUp))
+            {
+                _sphereSize += 1;
+            }
+            if (Input.GetKeyDown(KeyCode.PageDown))
+            {
+                _sphereSize -= 1;
+            }
+
+            if (_sphereSize <= sphereSizeSlider.maxValue && _sphereSize >= sphereSizeSlider.minValue)
+            {
+            }
+            else if (_sphereSize > sphereSizeSlider.maxValue)
+                _sphereSize = (int)sphereSizeSlider.maxValue;
+            else if (_sphereSize < sphereSizeSlider.minValue)
+                _sphereSize = (int)sphereSizeSlider.minValue;
+
+            sphereSizeSlider.value = _sphereSize;
+        }
+
+        private void ChangeVoxelCoord()
+        {
+            Ray ray = new Ray(transform.position, transform.forward);
+            if (Physics.Raycast(ray, out RaycastHit hit))
+            {
+                var pos = hit.point - (hit.normal * VoxelWorldController._blockSize / 2);
+
+                VoxelWorldController.ChunkVoxelCoordinates(pos, out var chunk, out var voxel);
+                voxelCoordinatesLabel.text = voxel.ToString();
+            }
+        }
+
+        public void WhenEscPressed()
+        {
+            isPaused = !isPaused;
         }
     }
 }

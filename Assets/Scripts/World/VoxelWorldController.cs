@@ -1449,6 +1449,25 @@ namespace Scripts.World
                 else
                     break;
             }
+            while (_toRebuildVisibleFaces.Count > 0)
+            {
+                var ch = _toRebuildVisibleFaces.Dequeue();
+                var data = RebuildChunkVisibleFaces(ch);
+                data.CompleteChunkVisibleFacesRebuilding();
+                SetDirty(data._chunk);
+            }
+            while (_dirty.Count > 0)
+            {
+                var ch = _dirty.Dequeue();
+                var data = CleanChunk(ch);
+                _updateDataToProcess.Enqueue(data);
+            }
+
+            while (_updateDataToProcess.Count > 0)
+            {
+                var data = _updateDataToProcess.Dequeue();
+                data.CompleteChunkCleaning();
+            }
         }
 
         private RegularChunk[,] GenerateTerrainLevel(bool isUp, bool isFirstLevel)

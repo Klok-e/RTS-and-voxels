@@ -64,7 +64,7 @@ namespace Scripts.Pathfinding
             var destinationInt = WorldPosToVoxelPos(destination);
 
             var closedSet = new HashSet<PathCell>();
-            var openSet = new List<PathCell>(100);
+            var openSet = new Heap<PathCell>(100);
 
             var cells = new Dictionary<Vector3Int, PathCell>(100);
 
@@ -85,22 +85,12 @@ namespace Scripts.Pathfinding
             while (openSet.Count > 0)
             {
                 z++;
-                if (z > 1000)
+                if (z > 10000)
                 {
                     break;
                 }
 
-                int ind = 0;
-                var current = openSet[ind];
-                for (int i = 1; i < openSet.Count; i++)
-                {
-                    if (openSet[i].FCost < current.FCost)
-                    {
-                        ind = i;
-                        current = openSet[ind];
-                    }
-                }
-                openSet.RemoveAt(ind);
+                var current = openSet.RemoveFirst();
                 closedSet.Add(current);
 
                 if (current.Pos == destinationInt)
@@ -152,26 +142,36 @@ namespace Scripts.Pathfinding
                     bufferArray[i] = null;
 
                 var world = VoxelWorldController.Instance;
+                var down = new Vector3Int(0, -1, 0);
 
                 for (int i = 0; i < neighbPosRelative.Length; i++)
                 {
-                    var pos = neighbPosRelative[i] + pathCell.Pos;
-                    if (world.IsVoxelInBordersOfTheMap(pos) && world.GetVoxel(pos).type.IsAir())
+                    var dir = neighbPosRelative[i];
+                    var pos = dir + pathCell.Pos;
+                    if (world.IsVoxelInBordersOfTheMap(pos) && world.IsVoxelInBordersOfTheMap(pos + down))
                     {
-                        var cell = _pathCellPool.GetPathCell(pos);
-                        cell._hCost = Distance(pos, destinationInt);
-                        if (cells.ContainsKey(pos))
+                        if (world.GetVoxel(pos).type.IsAir())
                         {
-                            cell = cells[pos];
-                        }
-                        else
-                        {
-                            cells.Add(pos, cell);
-                        }
+                            if (!world.GetVoxel(pos + down).type.IsAir()//voxel lower than this vox must be ground
+                                ||
+                                dir == down)//or if dir is down (simulate falling)
+                            {
+                                var cell = _pathCellPool.GetPathCell(pos);
+                                cell._hCost = Distance(pos, destinationInt);
+                                if (cells.ContainsKey(pos))
+                                {
+                                    cell = cells[pos];
+                                }
+                                else
+                                {
+                                    cells.Add(pos, cell);
+                                }
 
-                        if (!closedSet.Contains(cell))
-                        {
-                            bufferArray[i] = cell;
+                                if (!closedSet.Contains(cell))
+                                {
+                                    bufferArray[i] = cell;
+                                }
+                            }
                         }
                     }
                 }
@@ -225,7 +225,6 @@ namespace Scripts.Pathfinding
                 while (toPoolLater.Count > 0)
                 {
                     var t = toPoolLater.Dequeue();
-                    t.Deinitialize();
                     mainPool.Enqueue(t);
                 }
             }

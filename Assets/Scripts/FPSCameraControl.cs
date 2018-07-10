@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Scripts.Help.ScriptableObjects.Containers;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -13,7 +14,7 @@ namespace Scripts
         [SerializeField] private float sensHorizontal = 10.0f;
         [SerializeField] private float sensVertical = 10.0f;
 
-        [SerializeField] private Plugins.ScriptableObjects.Containers.FloatReference moveSpeed;
+        [SerializeField] private FloatReference moveSpeed;
         private float _rotationX = 0;
 
         private bool isInputCatchingNeeded = true;

@@ -2,12 +2,12 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Consolation
+namespace Scripts.Help
 {
     /// <summary>
     /// A console to display Unity's debug logs in-game.
     /// </summary>
-    internal class Console : MonoBehaviour
+    public class Console : MonoBehaviour
     {
         private struct Log
         {

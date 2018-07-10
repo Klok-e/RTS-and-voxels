@@ -2,13 +2,13 @@
 using System.Collections.Generic;
 using UnityEngine;
 using Scripts.Help;
-using ProceduralNoiseProject;
 using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Unity.Collections;
 using UnityEngine.AI;
+using Scripts.Help.DataContainers;
 
 namespace Scripts.World
 {

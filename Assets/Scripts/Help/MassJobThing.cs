@@ -13,6 +13,11 @@ namespace Scripts.Help
             _handles = new List<JobHandle>(size);
         }
 
+        public MassJobThing()
+        {
+            _handles = new List<JobHandle>(1);
+        }
+
         public void AddHandle(JobHandle handle)
         {
             _handles.Add(handle);
@@ -20,7 +25,7 @@ namespace Scripts.Help
 
         public JobHandle CombineAll()
         {
-            var arr = new NativeArray<JobHandle>(_handles.ToArray(), Allocator.TempJob);
+            var arr = new NativeArray<JobHandle>(_handles.ToArray(), Allocator.Temp);
             var handle = JobHandle.CombineDependencies(arr);
             _handles.Clear();
             arr.Dispose();

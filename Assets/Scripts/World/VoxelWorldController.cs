@@ -1,4 +1,5 @@
 ﻿using Scripts.Help;
+using Scripts.Help.DataContainers;
 using Scripts.World.Jobs;
 using System;
 using System.Collections.Generic;
@@ -9,8 +10,21 @@ using UnityEngine;
 
 namespace Scripts.World
 {
+    [DisallowMultipleComponent]
     public class VoxelWorldController : MonoBehaviour
     {
+        /// <summary>
+        /// Only uneven amount or else SetVoxel won't work at all
+        /// </summary>
+        public const int _chunkSize = 33;
+
+        /// <summary>
+        /// Size of a voxel
+        /// </summary>
+        public const float _blockSize = 0.5f;
+
+        #region Visible in inspector
+
         [SerializeField] private int _mapMaxX, _mapMaxZ;
         [SerializeField] private int _up, _down;
 
@@ -19,6 +33,10 @@ namespace Scripts.World
         [SerializeField] private Color[] _colors;
 
         [SerializeField] private Texture2D[] _textures;
+
+        #endregion Visible in inspector
+
+        #region Private
 
         private Texture2DArray _textureArray;
 
@@ -33,18 +51,15 @@ namespace Scripts.World
         private Queue<VoxelChangeQueryData> _voxelsToChange;
         private Queue<LightChangeQueryData> _lightToChange;
 
-        /// <summary>
-        /// Only uneven amount or else SetVoxel won't work at all
-        /// </summary>
-        public const int _chunkSize = 33;
-
-        public const float _blockSize = 0.5f;
-
         public static VoxelWorldController Instance { get; private set; }
 
         private ChunkContainer _chunks;
         private Transform _chunkParent;
         private MassJobThing _massJobThing;
+
+        #endregion Private
+
+        #region Monobehaviour implementation
 
         private void Awake()
         {
@@ -104,16 +119,13 @@ namespace Scripts.World
             }
         }
 
-        public void GenerateLevel(bool isUp)
-        {
-            _chunks.AddLevel(isUp, GenerateTerrainLevel(isUp, false));
-        }
+        #endregion Monobehaviour implementation
 
         public void Initialize()
         {
             _chunkParent = transform;
             _chunks = new ChunkContainer(_mapMaxX, _mapMaxZ);
-            _massJobThing = new MassJobThing(0);
+            _massJobThing = new MassJobThing();
             _dirty = new Queue<RegularChunk>();
             _updateDataToProcess = new Queue<ChunkCleaningData>();
 
@@ -127,8 +139,6 @@ namespace Scripts.World
             _toRebuildVisibleFaces = new Queue<RegularChunk>();
 
             CreateTextureArray();
-
-            //_placeholderChunk = CreatePlaceholderChunk();
 
             CreateStartingLevels(0, _up, _down);
 
@@ -575,20 +585,6 @@ namespace Scripts.World
         }
 
         #endregion LightPropagation
-
-        public RegularChunk GetChunk(Vector3Int chunkPos)
-        {
-            if (!IsChunkPosInBordersOfTheMap(chunkPos))
-            {
-                var up = new Exception();
-                throw up; //ha ha
-            }
-            var ch = _chunks[chunkPos.y][chunkPos.x, chunkPos.z];
-            if (!ch.IsInitialized)
-                throw new Exception();
-
-            return ch;
-        }
 
         #region Copy voxel data
 
@@ -1142,6 +1138,8 @@ namespace Scripts.World
 
         #endregion Copy voxel data
 
+        #region Get something methods
+
         public Voxel GetVoxel(Vector3Int chunkPos, Vector3Int blockPos)
         {
             return GetChunk(chunkPos).Voxels[blockPos.x, blockPos.y, blockPos.z];
@@ -1159,6 +1157,24 @@ namespace Scripts.World
             return GetChunk(chunkPos).Voxels[voxelPos.x, voxelPos.y, voxelPos.z];
         }
 
+        public RegularChunk GetChunk(Vector3Int chunkPos)
+        {
+            if (!IsChunkPosInBordersOfTheMap(chunkPos))
+            {
+                var up = new Exception();
+                throw up; //ha ha
+            }
+            var ch = _chunks[chunkPos.y][chunkPos.x, chunkPos.z];
+            if (!ch.IsInitialized)
+                throw new Exception();
+
+            return ch;
+        }
+
+        #endregion Get something methods
+
+        #region Add to queues methods
+
         private void SetDirty(RegularChunk ch)
         {
             if (ch.IsInitialized && !ch.IsBeingRebult)
@@ -1167,8 +1183,6 @@ namespace Scripts.World
                 _dirty.Enqueue(ch);
             }
         }
-
-        #region Add to queues methods
 
         private void SetToPropagateAllLight(VoxelLightPropagationData data)
         {
@@ -1435,6 +1449,11 @@ namespace Scripts.World
 
         #region Level generation
 
+        public void GenerateLevel(bool isUp)
+        {
+            _chunks.AddLevel(isUp, GenerateTerrainLevel(isUp, false));
+        }
+
         private void CreateStartingLevels(int startingHeight, int up, int down)
         {
             _chunks.InitializeStartingLevel(startingHeight, GenerateTerrainLevel(true, true));
@@ -1531,6 +1550,16 @@ namespace Scripts.World
         {
             chunkPos = ((voxelWorldPos - (Vector3.one * (_chunkSize / 2))) / _chunkSize).ToInt();
             voxelPos = (voxelWorldPos - chunkPos * _chunkSize);
+        }
+
+        public static Vector3Int WorldPosToVoxelPos(Vector3 pos)
+        {
+            return (pos / _blockSize).ToInt();
+        }
+
+        public static Vector3 VoxelPosToWorldPos(Vector3Int pos)
+        {
+            return ((Vector3)pos * _blockSize);
         }
 
         #endregion Helper methods

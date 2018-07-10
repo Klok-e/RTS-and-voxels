@@ -3,17 +3,20 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
-[RequireComponent(typeof(Button))]
-public class ExitButtonController : MonoBehaviour
+namespace Scripts.UI
 {
-    private void Start()
+    [RequireComponent(typeof(Button))]
+    public class ExitButtonController : MonoBehaviour
     {
-        var b = GetComponent<Button>();
-        b.onClick.AddListener(Exit);
-    }
+        private void Start()
+        {
+            var b = GetComponent<Button>();
+            b.onClick.AddListener(Exit);
+        }
 
-    private void Exit()
-    {
-        Application.Quit();
+        private void Exit()
+        {
+            Application.Quit();
+        }
     }
 }

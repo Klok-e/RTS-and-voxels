@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Scripts.Help.DataContainers;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -7,7 +8,7 @@ using UnityEngine;
 
 namespace Scripts.Pathfinding
 {
-    public class PathCell : IComparable<PathCell>, Help.IHeapItem<PathCell>
+    public class PathCell : IComparable<PathCell>, IHeapItem<PathCell>
     {
         public Vector3Int Pos { get; private set; }
         public PathCell Parent { get; private set; }

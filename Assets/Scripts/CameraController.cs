@@ -54,8 +54,6 @@ namespace Scripts
 
         private void Start()
         {
-            RenderSettings.fog = false;
-
             Cursor.visible = false;
             Cursor.lockState = CursorLockMode.Locked;
 

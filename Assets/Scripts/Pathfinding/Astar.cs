@@ -1,4 +1,5 @@
 ﻿using Scripts.Help;
+using Scripts.Help.DataContainers;
 using Scripts.World;
 using System;
 using System.Collections.Generic;
@@ -8,6 +9,7 @@ using UnityEngine;
 
 namespace Scripts.Pathfinding
 {
+    [DisallowMultipleComponent]
     [RequireComponent(typeof(VoxelWorldController))]
     public class Astar : MonoBehaviour
     {
@@ -60,8 +62,13 @@ namespace Scripts.Pathfinding
 
         public Vector3[] ConstructPath(Vector3 start, Vector3 destination)
         {
-            var startInt = WorldPosToVoxelPos(start);
-            var destinationInt = WorldPosToVoxelPos(destination);
+            var startInt = VoxelWorldController.WorldPosToVoxelPos(start);
+            var destinationInt = VoxelWorldController.WorldPosToVoxelPos(destination);
+
+            if (!VoxelWorldController.Instance.IsVoxelInBordersOfTheMap(startInt))
+                throw new Exception();
+            if (!VoxelWorldController.Instance.IsVoxelInBordersOfTheMap(destinationInt))
+                throw new Exception();
 
             var closedSet = new HashSet<PathCell>();
             var openSet = new Heap<PathCell>(100);
@@ -125,7 +132,7 @@ namespace Scripts.Pathfinding
                 {
                     if (dest.Parent == null)
                         break;
-                    path.Add(VoxelPosToWorldPos(dest.Pos));
+                    path.Add(VoxelWorldController.VoxelPosToWorldPos(dest.Pos));
                     dest = dest.Parent;
                 }
                 path.Reverse();
@@ -176,16 +183,6 @@ namespace Scripts.Pathfinding
                     }
                 }
             }
-        }
-
-        private static Vector3Int WorldPosToVoxelPos(Vector3 pos)
-        {
-            return (pos / VoxelWorldController._blockSize).ToInt();
-        }
-
-        private static Vector3 VoxelPosToWorldPos(Vector3Int pos)
-        {
-            return ((Vector3)pos * VoxelWorldController._blockSize);
         }
 
         /// <summary>

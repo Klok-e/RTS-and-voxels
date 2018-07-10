@@ -4,26 +4,29 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
-[RequireComponent(typeof(Text))]
-public class FPSTextController : MonoBehaviour
+namespace Scripts.UI
 {
-    private Text fpsText;
-
-    private float prevFps = 0;
-    private float prevprevFps = 0;
-
-    private void Start()
+    [RequireComponent(typeof(Text))]
+    public class FPSTextController : MonoBehaviour
     {
-        fpsText = GetComponent<Text>();
-    }
+        private Text fpsText;
 
-    private void Update()
-    {
-        float currFps = 1f / Time.deltaTime;
+        private float prevFps = 0;
+        private float prevprevFps = 0;
 
-        fpsText.text = Math.Round((currFps + prevFps + prevprevFps) / 3f, 2).ToString();
+        private void Start()
+        {
+            fpsText = GetComponent<Text>();
+        }
 
-        prevprevFps = prevFps;
-        prevFps = currFps;
+        private void Update()
+        {
+            float currFps = 1f / Time.deltaTime;
+
+            fpsText.text = Math.Round((currFps + prevFps + prevprevFps) / 3f, 2).ToString();
+
+            prevprevFps = prevFps;
+            prevFps = currFps;
+        }
     }
 }

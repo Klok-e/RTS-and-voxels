@@ -1,5 +1,5 @@
-﻿using ProceduralNoiseProject;
-using Scripts.Help;
+﻿using Scripts.Help;
+using Scripts.Help.DataContainers;
 using Scripts.World;
 using System;
 using System.Collections.Generic;

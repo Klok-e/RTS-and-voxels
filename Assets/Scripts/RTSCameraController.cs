@@ -24,12 +24,16 @@ namespace Scripts
 
         private void Move()
         {
-            var moveZ = Input.GetAxis("Vertical") * _speedXZ;
-            var moveX = Input.GetAxis("Horizontal") * _speedXZ;
+            var moveZ = Input.GetAxis("Vertical");
+            var moveX = Input.GetAxis("Horizontal");
 
-            var moveY = Input.GetAxis("Mouse ScrollWheel") * _speedY;
+            var moveY = Input.GetAxis("Mouse ScrollWheel");
 
-            transform.Translate(new Vector3(moveX, moveY, moveZ));
+            var posBefore = transform.position;
+            transform.Translate(new Vector3(moveX, 0, moveZ) * _speedXZ);
+            var posAfter = transform.position;
+            transform.position = new Vector3(posAfter.x, posBefore.y, posAfter.z);
+            transform.position += new Vector3(0, moveY, 0) * _speedY;
         }
 
         private void Rotate()
@@ -39,7 +43,9 @@ namespace Scripts
                 var mouseX = Input.GetAxis("Mouse X");
                 var mouseY = Input.GetAxis("Mouse Y");
 
-                transform.Rotate(new Vector3(mouseX, mouseY, 0) * _speedRotation);
+                var rotBy = new Vector3(mouseY, -mouseX, 0) * _speedRotation;
+
+                transform.rotation = Quaternion.Euler(transform.rotation.eulerAngles + rotBy);
             }
         }
 

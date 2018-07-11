@@ -6,7 +6,7 @@ Material:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInternal: {fileID: 0}
-  m_Name: Voxels
+  m_Name: VoxelsMat
   m_Shader: {fileID: 4800000, guid: d74cab652a092f740af06c17322bfcb0, type: 3}
   m_ShaderKeywords: 
   m_LightmapFlags: 4

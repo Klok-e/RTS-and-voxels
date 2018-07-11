@@ -22,6 +22,8 @@ namespace Scripts.Pathfinding
 
         private Vector3[] _pathToDraw;
 
+        private bool _isMoving;
+
         private void Start()
         {
             _trasform = transform;
@@ -36,18 +38,29 @@ namespace Scripts.Pathfinding
                 var dest = VoxelCastRayDown(destination, 10);
                 if (dest.DidHit)
                 {
-                    var path = ConstructPath(start.Pos, dest.Pos);
-                    if (path.Length >= 2)
+                    if (_isMoving)
                     {
-                        int i = 0;
-                        void CallMoveToIfPathNotFinishedYet()
-                        {
-                            if (i + 1 > path.Length - 1)
-                                return;
-                            _mover.MoveTo(path[i++], path[i++], CallMoveToIfPathNotFinishedYet);
-                        }
-                        _mover.MoveTo(path[i++], path[i++], CallMoveToIfPathNotFinishedYet);
+                        _mover.CancelMovement();
                     }
+
+                    var halfBlockUp = new Vector3(0, 1, 0) * VoxelWorldController._blockSize / 2f;
+                    var path = ConstructPath(start.Pos + halfBlockUp, dest.Pos + halfBlockUp);
+                    if (path != null)
+                        if (path.Length >= 2)
+                        {
+                            int i = 0;
+                            void CallMoveToIfPathNotFinishedYet()
+                            {
+                                if (i + 1 > path.Length - 1)
+                                {
+                                    _isMoving = false;
+                                    return;
+                                }
+                                _mover.MoveTo(path[i++], path[i++], CallMoveToIfPathNotFinishedYet);
+                            }
+                            _mover.MoveTo(path[i++], path[i++], CallMoveToIfPathNotFinishedYet);
+                            _isMoving = true;
+                        }
                 }
             }
         }
@@ -97,19 +110,17 @@ namespace Scripts.Pathfinding
             return new VoxelRaycastHit(VoxelWorldController.VoxelPosToWorldPos(current), hit);
         }
 
-#if UNITY_EDITOR
-
         private void OnDrawGizmos()
         {
-            if (_pathToDraw == null)
-                return;
-
-            for (int i = 0; i < _pathToDraw.Length - 1; i++)
+#if UNITY_EDITOR
+            if (_pathToDraw != null)
             {
-                Gizmos.DrawLine(_pathToDraw[i], _pathToDraw[i + 1]);
+                for (int i = 0; i < _pathToDraw.Length - 1; i++)
+                {
+                    Gizmos.DrawLine(_pathToDraw[i], _pathToDraw[i + 1]);
+                }
             }
-        }
-
 #endif
+        }
     }
 }

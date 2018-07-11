@@ -48,7 +48,7 @@ namespace Scripts.UI
             menuGraphic.SetActive(false);
 
             Cursor.visible = false;
-            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.lockState = CursorLockMode.Confined;
         }
     }
 }

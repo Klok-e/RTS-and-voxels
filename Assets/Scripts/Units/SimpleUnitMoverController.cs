@@ -10,6 +10,7 @@ using UnityEngine;
 
 namespace Scripts.Units
 {
+    [DisallowMultipleComponent]
     [RequireComponent(typeof(Rigidbody))]
     public class SimpleUnitMoverController : IMover
     {
@@ -19,6 +20,8 @@ namespace Scripts.Units
         private Transform _transform;
         private Rigidbody _rigidbody;
 
+        private bool _cancelRequested;
+
         private void Start()
         {
             _transform = transform;
@@ -27,12 +30,13 @@ namespace Scripts.Units
 
         public override void MoveTo(Vector3 pos, Vector3 nextPos, Action onMoveComplete)
         {
+            _cancelRequested = false;
             StartCoroutine(SimpleMoveCoroutine(pos, 0.1f, onMoveComplete));
         }
 
-        public override void MoveTo(Vector3 pos, Vector3 nextPos)
+        public override void CancelMovement()
         {
-            throw new NotImplementedException();
+            _cancelRequested = true;
         }
 
         private IEnumerator SimpleMoveCoroutine(Vector3 destination, float allowedError, Action onMoveComplete)
@@ -40,10 +44,13 @@ namespace Scripts.Units
             var errSqr = allowedError * allowedError;
             while ((_transform.position - destination).sqrMagnitude > errSqr)
             {
+                if (_cancelRequested)
+                    break;
                 _rigidbody.MovePosition(_transform.position + ((destination - _transform.position).normalized * _speed.Value));
                 yield return new WaitForFixedUpdate();
             }
-            onMoveComplete();
+            if (!_cancelRequested)
+                onMoveComplete();
         }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using Scripts.Help.ScriptableObjects.Containers;
 using Scripts.Pathfinding;
+using Scripts.World;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -32,10 +33,13 @@ namespace Scripts.Units
         private Transform _transform;
         private Rigidbody _rigidbody;
 
-        private bool _isCanceled;
+        private Dictionary<uint, bool> _coroutinesCanceled;
+
+        private uint _coroutineId;
 
         private void Start()
         {
+            _coroutinesCanceled = new Dictionary<uint, bool>();
             _transform = transform;
             _rigidbody = GetComponent<Rigidbody>();
         }
@@ -54,30 +58,40 @@ namespace Scripts.Units
 
         public override void MoveTo(Vector3 pos, Vector3 nextPos, Action onMoveComplete)
         {
-            _isCanceled = false;
-            StartCoroutine(MoveCoroutine(pos, nextPos, onMoveComplete));
+            _coroutinesCanceled.Add(_coroutineId, false);
+            StartCoroutine(MoveCoroutine(pos, nextPos, onMoveComplete, _coroutineId++));
         }
 
         public override void CancelMovement()
         {
-            _isCanceled = true;
+            var keys = _coroutinesCanceled.Keys.ToArray();
+            for (int i = 0; i < keys.Length; i++)
+            {
+                _coroutinesCanceled[keys[i]] = true;
+            }
         }
 
-        private IEnumerator MoveCoroutine(Vector3 pos, Vector3 nextPos, Action onMoveComplete)
+        private IEnumerator MoveCoroutine(Vector3 pos, Vector3 nextPos, Action onMoveComplete, uint id)
         {
-            var errSqr = _allowedError * _allowedError;
+            pos += new Vector3(0, _distanceToFloatAboveGround - VoxelWorldController._blockSize, 0);
+            nextPos += new Vector3(0, _distanceToFloatAboveGround - VoxelWorldController._blockSize, 0);
 
-            while ((new Vector3(pos.x, 0, pos.z) - new Vector3(_rigidbody.position.x, 0, _rigidbody.position.z)).sqrMagnitude > errSqr)
+            //_rigidbody.MoveRotation(Quaternion.LookRotation(pos - _rigidbody.position));
+
+            var errSqr = _allowedError * _allowedError;
+            while ((pos - _rigidbody.position).sqrMagnitude > errSqr)
             {
-                _rigidbody.MovePosition(_rigidbody.position + ((new Vector3(pos.x, 0, pos.z) - new Vector3(_rigidbody.position.x, 0, _rigidbody.position.z)).normalized * _speed.Value * Time.deltaTime));
-                if (_isCanceled)
-                {
+                //Debug.Log($"rigidbody pos: {_rigidbody.position}; pos: {pos}");
+                _rigidbody.AddForce(((pos - _rigidbody.position).normalized * _speed.Value * Time.deltaTime), ForceMode.Impulse);
+                if (_coroutinesCanceled[id])
                     break;
-                }
+
                 yield return new WaitForFixedUpdate();
             }
-            if (!_isCanceled)
+            if (!_coroutinesCanceled[id])
                 onMoveComplete();
+            else
+                _coroutinesCanceled.Remove(id);
         }
     }
 }

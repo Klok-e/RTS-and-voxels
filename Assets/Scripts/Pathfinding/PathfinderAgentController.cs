@@ -43,9 +43,10 @@ namespace Scripts.Pathfinding
                         _mover.CancelMovement();
                     }
 
-                    var fullBlockUp = new Vector3(0, 1, 0) * VoxelWorldController._blockSize;
-                    var path = ConstructPath(start.Pos + fullBlockUp, dest.Pos + fullBlockUp);
+                    var path = ConstructPath(new Vector3(_trasform.position.x, start.Pos.y + VoxelWorldController._blockSize, _trasform.position.z),
+                                             new Vector3(destination.x, dest.Pos.y + VoxelWorldController._blockSize, destination.z));
                     if (path != null)
+                    {
                         if (path.Length >= 2)
                         {
                             int i = 0;
@@ -60,12 +61,13 @@ namespace Scripts.Pathfinding
                                 _mover.MoveTo(path[i++], path[i++], CallMoveToIfPathNotFinishedYet);
                             }
                             _mover.MoveTo(path[i++], path[i++], CallMoveToIfPathNotFinishedYet);
-                            _isMoving = true;
                         }
                         else
                         {
                             _mover.MoveTo(path[0], path[0], FinishMoving);
                         }
+                        _isMoving = true;
+                    }
                 }
             }
             void FinishMoving()

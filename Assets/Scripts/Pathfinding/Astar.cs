@@ -128,6 +128,8 @@ namespace Scripts.Pathfinding
             if (dest != null)
             {
                 var path = new List<Vector3>();
+                path.Add(destination);
+                dest = dest.Parent;
                 while (true)
                 {
                     if (dest.Parent == null)

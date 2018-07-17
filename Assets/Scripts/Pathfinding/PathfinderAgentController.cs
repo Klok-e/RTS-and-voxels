@@ -43,8 +43,8 @@ namespace Scripts.Pathfinding
                         _mover.CancelMovement();
                     }
 
-                    var halfBlockUp = new Vector3(0, 1, 0) * VoxelWorldController._blockSize / 2f;
-                    var path = ConstructPath(start.Pos + halfBlockUp, dest.Pos + halfBlockUp);
+                    var fullBlockUp = new Vector3(0, 1, 0) * VoxelWorldController._blockSize;
+                    var path = ConstructPath(start.Pos + fullBlockUp, dest.Pos + fullBlockUp);
                     if (path != null)
                         if (path.Length >= 2)
                         {

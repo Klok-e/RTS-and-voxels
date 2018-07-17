@@ -11,28 +11,8 @@ namespace Scripts.Units
 {
     [DisallowMultipleComponent]
     [RequireComponent(typeof(PathfinderAgentController))]
-    public class UnitController : MonoBehaviour, IPointerClickHandler
+    public class UnitController : MonoBehaviour
     {
-        public bool IsSelected
-        {
-            get { return isSelected; }
-            set
-            {
-                isSelected = value;
-                if (value)
-                    selectedUnitsContainer.Register(this);
-                else
-                    selectedUnitsContainer.UnRegister(this);
-
-                selectedUnitHighlighter.SetActive(value);
-            }
-        }
-
-        private bool isSelected;
-
-        [SerializeField]
-        private SelectedUnitsContainer selectedUnitsContainer;
-
         [SerializeField]
         private GameObject selectedUnitHighlighter;
 
@@ -42,21 +22,15 @@ namespace Scripts.Units
 
         private void Start()
         {
-            IsSelected = false;
             _pathfinder = GetComponent<PathfinderAgentController>();
         }
 
         #endregion MonoBehaviour implementation
 
-        #region IPointerClickHandler implementation
-
-        public void OnPointerClick(PointerEventData eventData)
+        public void SetSelection(bool set)
         {
-            if (eventData.button == 0)
-                IsSelected = true;
+            selectedUnitHighlighter.SetActive(set);
         }
-
-        #endregion IPointerClickHandler implementation
 
         public void Move(Vector3 destination)
         {

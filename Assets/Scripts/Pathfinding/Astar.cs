@@ -65,6 +65,9 @@ namespace Scripts.Pathfinding
             var startInt = VoxelWorldController.WorldPosToVoxelPos(start);
             var destinationInt = VoxelWorldController.WorldPosToVoxelPos(destination);
 
+            if (startInt == destinationInt)
+                return null;
+
             if (!VoxelWorldController.Instance.IsVoxelInBordersOfTheMap(startInt))
                 throw new Exception();
             if (!VoxelWorldController.Instance.IsVoxelInBordersOfTheMap(destinationInt))

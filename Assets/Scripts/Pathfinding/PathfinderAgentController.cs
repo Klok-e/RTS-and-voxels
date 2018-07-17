@@ -51,9 +51,10 @@ namespace Scripts.Pathfinding
                             int i = 0;
                             void CallMoveToIfPathNotFinishedYet()
                             {
-                                if (i + 1 > path.Length - 1)
+                                if (i >= path.Length - 1)
                                 {
-                                    _isMoving = false;
+                                    if (i % 2 == 0) i--;
+                                    _mover.MoveTo(path[i], path[i], FinishMoving);
                                     return;
                                 }
                                 _mover.MoveTo(path[i++], path[i++], CallMoveToIfPathNotFinishedYet);
@@ -61,7 +62,15 @@ namespace Scripts.Pathfinding
                             _mover.MoveTo(path[i++], path[i++], CallMoveToIfPathNotFinishedYet);
                             _isMoving = true;
                         }
+                        else
+                        {
+                            _mover.MoveTo(path[0], path[0], FinishMoving);
+                        }
                 }
+            }
+            void FinishMoving()
+            {
+                _isMoving = false;
             }
         }
 

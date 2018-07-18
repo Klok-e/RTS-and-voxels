@@ -2569,10 +2569,17 @@ MonoBehaviour:
     useConstant: 0
     constantValue: 5
     referencedValue: {fileID: 11400000, guid: 2c24e93cb5d1f934b8a2891e2f2aa2a2, type: 2}
+  _rotationSpeed:
+    useConstant: 0
+    constantValue: 0
+    referencedValue: {fileID: 11400000, guid: e6bd8265a21d7d84ca374ccd418920f0, type: 2}
   _allowedError: 0.4
   _distanceToFloatAboveGround: 1.5
   _gravity: 10
   _floatForce: 14
+  _drag: 5
+  _yAxisDrag: 1
+  _rotationSmoothness: 0.1
 --- !u!114 &1933489004
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2663,8 +2670,8 @@ Rigidbody:
   m_GameObject: {fileID: 1933489001}
   serializedVersion: 2
   m_Mass: 1
-  m_Drag: 5
-  m_AngularDrag: 0.05
+  m_Drag: 0.1
+  m_AngularDrag: 2
   m_UseGravity: 0
   m_IsKinematic: 0
   m_Interpolate: 0

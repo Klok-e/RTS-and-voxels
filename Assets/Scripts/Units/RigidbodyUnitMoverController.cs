@@ -19,6 +19,9 @@ namespace Scripts.Units
         private FloatReference _speed;
 
         [SerializeField]
+        private FloatReference _rotationSpeed;
+
+        [SerializeField]
         private float _allowedError;
 
         [SerializeField]
@@ -29,6 +32,15 @@ namespace Scripts.Units
 
         [SerializeField]
         private float _floatForce;
+
+        [SerializeField]
+        private float _drag;
+
+        [SerializeField]
+        private float _yAxisDrag;
+
+        [SerializeField]
+        private float _rotationSmoothness;
 
         private Transform _transform;
         private Rigidbody _rigidbody;
@@ -51,6 +63,10 @@ namespace Scripts.Units
             {
                 _rigidbody.AddForce(new Vector3(0, 1, 0) * (_distanceToFloatAboveGround - hit.distance) * _floatForce * Time.deltaTime, ForceMode.Impulse);
             }
+
+            //drag
+            var v = _rigidbody.velocity;
+            _rigidbody.AddForce(new Vector3(v.x, Mathf.Sign(v.y) * _yAxisDrag, v.z) * -1f * _drag * Time.deltaTime, ForceMode.Impulse);
 
             //gravity
             _rigidbody.AddForce(new Vector3(0, -1, 0) * _gravity * Time.deltaTime, ForceMode.Impulse);
@@ -76,11 +92,11 @@ namespace Scripts.Units
             pos += new Vector3(0, _distanceToFloatAboveGround - VoxelWorldController._blockSize, 0);
             nextPos += new Vector3(0, _distanceToFloatAboveGround - VoxelWorldController._blockSize, 0);
 
-            //_rigidbody.MoveRotation(Quaternion.LookRotation(pos - _rigidbody.position));
-
             var errSqr = _allowedError * _allowedError;
             while ((pos - _rigidbody.position).sqrMagnitude > errSqr)
             {
+                var euler = Quaternion.LookRotation(pos - _rigidbody.position).eulerAngles;
+                _rigidbody.MoveRotation(Quaternion.Euler(0, Mathf.Lerp(_rigidbody.rotation.eulerAngles.y, euler.y, _rotationSmoothness), 0));
                 //Debug.Log($"rigidbody pos: {_rigidbody.position}; pos: {pos}");
                 _rigidbody.AddForce(((pos - _rigidbody.position).normalized * _speed.Value * Time.deltaTime), ForceMode.Impulse);
                 if (_coroutinesCanceled[id])

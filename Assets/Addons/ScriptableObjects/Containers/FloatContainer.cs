@@ -3,9 +3,9 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Scripts.Help.ScriptableObjects.Containers
+namespace ScriptableObjects.Containers
 {
-    [CreateAssetMenu]
+    [CreateAssetMenu(menuName = "Containers/FloatContainer")]
     internal class FloatContainer : ScriptableObject
     {
         public float _value;

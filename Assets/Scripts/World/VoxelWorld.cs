@@ -1,5 +1,6 @@
 ﻿using Scripts.Help;
 using Scripts.Help.DataContainers;
+using Scripts.Pathfinding;
 using Scripts.World.Jobs;
 using System;
 using System.Collections.Generic;
@@ -10,8 +11,7 @@ using UnityEngine;
 
 namespace Scripts.World
 {
-    [DisallowMultipleComponent]
-    public class VoxelWorldController : MonoBehaviour
+    public class VoxelWorld : MonoBehaviour
     {
         /// <summary>
         /// Only uneven amount or else SetVoxel won't work at all
@@ -25,14 +25,17 @@ namespace Scripts.World
 
         #region Visible in inspector
 
-        [SerializeField] private int _mapMaxX, _mapMaxZ;
-        [SerializeField] private int _up, _down;
+        [SerializeField]
+        private int _mapMaxX, _mapMaxZ;
 
-        [SerializeField] private Material _material;
+        [SerializeField]
+        private int _up, _down;
 
-        [SerializeField] private Color[] _colors;
+        [SerializeField]
+        private Material _material;
 
-        [SerializeField] private Texture2D[] _textures;
+        [SerializeField]
+        private Texture2D[] _textures;
 
         #endregion Visible in inspector
 
@@ -51,23 +54,17 @@ namespace Scripts.World
         private Queue<VoxelChangeQueryData> _voxelsToChange;
         private Queue<LightChangeQueryData> _lightToChange;
 
-        public static VoxelWorldController Instance { get; private set; }
-
         private ChunkContainer _chunks;
-        private Transform _chunkParent;
+
         private MassJobThing _massJobThing;
 
         #endregion Private
 
-        #region Monobehaviour implementation
+        #region MonoBehaviour implementations
 
-        private void Awake()
+        private void Start()
         {
-            RegularChunk._material = _material;
-            RegularChunk._chunkParent = transform;
-
             Initialize();
-            Instance = this;
         }
 
         private void Update()
@@ -111,7 +108,7 @@ namespace Scripts.World
             }
         }
 
-        private void OnDestroy()
+        public void OnDestroy()
         {
             foreach (var item in _chunks)
             {
@@ -119,11 +116,13 @@ namespace Scripts.World
             }
         }
 
-        #endregion Monobehaviour implementation
+        #endregion MonoBehaviour implementations
 
         public void Initialize()
         {
-            _chunkParent = transform;
+            RegularChunk._chunkParent = transform;
+            RegularChunk._material = _material;
+
             _chunks = new ChunkContainer(_mapMaxX, _mapMaxZ);
             _massJobThing = new MassJobThing();
             _dirty = new Queue<RegularChunk>();
@@ -157,6 +156,8 @@ namespace Scripts.World
                 _material.SetTexture("_VoxelTextureArray", _textureArray);
             }
         }
+
+        #region Chunk processing
 
         public ChunkRebuildingVisibleFacesData RebuildChunkVisibleFaces(RegularChunk chunk, JobHandle dependency = default(JobHandle))
         {
@@ -202,6 +203,8 @@ namespace Scripts.World
                 boxThatContainsChunkAndAllNeighboursBordersVox = jb2.chunkAndNeighboursVoxels,
             };
         }
+
+        #endregion Chunk processing
 
         #region LightPropagation
 
@@ -1472,6 +1475,8 @@ namespace Scripts.World
                 else
                     break;
             }
+            _massJobThing.CompleteAll();
+
             while (_toRebuildVisibleFaces.Count > 0)
             {
                 var ch = _toRebuildVisibleFaces.Dequeue();
@@ -1503,7 +1508,7 @@ namespace Scripts.World
             {
                 for (int x = 0; x < _mapMaxX; x++)
                 {
-                    var chunk = RegularChunk.CreateNew();
+                    var chunk = RegularChunk.CreateNew(this);
                     chunk.Initialize(new Vector3Int(x, height, z));
 
                     _massJobThing.AddHandle(new GenerateChunkTerrainJob()
@@ -1518,7 +1523,6 @@ namespace Scripts.World
                 }
             }
 
-            _massJobThing.CompleteAll();
             return level;
         }
 

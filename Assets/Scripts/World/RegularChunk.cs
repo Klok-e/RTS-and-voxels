@@ -19,6 +19,8 @@ namespace Scripts.World
         public static Material _material;
         public static Transform _chunkParent;
 
+        public VoxelWorld Creator { get; private set; }
+
         public Vector3Int Pos { get; private set; }
 
         public NativeArray3D<DirectionsHelper.BlockDirectionFlag> VoxelsVisibleFaces { get; private set; }
@@ -38,16 +40,16 @@ namespace Scripts.World
         {
             Pos = pos;
 
-            transform.position = (Vector3)Pos * VoxelWorldController._chunkSize * VoxelWorldController._blockSize;
+            transform.position = (Vector3)Pos * VoxelWorld._chunkSize * VoxelWorld._blockSize;
             gameObject.SetActive(true);
             name = $"Chunk Active at {pos}";
             IsInitialized = true;
             IsBeingRebult = false;
 
             MeshData = new NativeMeshData(0, Allocator.Persistent);
-            VoxelLightLevels = new NativeArray3D<VoxelLightingLevel>(VoxelWorldController._chunkSize, VoxelWorldController._chunkSize, VoxelWorldController._chunkSize, Allocator.Persistent);
-            VoxelsVisibleFaces = new NativeArray3D<DirectionsHelper.BlockDirectionFlag>(VoxelWorldController._chunkSize, VoxelWorldController._chunkSize, VoxelWorldController._chunkSize, Allocator.Persistent);
-            Voxels = new NativeArray3D<Voxel>(VoxelWorldController._chunkSize, VoxelWorldController._chunkSize, VoxelWorldController._chunkSize, Allocator.Persistent);
+            VoxelLightLevels = new NativeArray3D<VoxelLightingLevel>(VoxelWorld._chunkSize, VoxelWorld._chunkSize, VoxelWorld._chunkSize, Allocator.Persistent);
+            VoxelsVisibleFaces = new NativeArray3D<DirectionsHelper.BlockDirectionFlag>(VoxelWorld._chunkSize, VoxelWorld._chunkSize, VoxelWorld._chunkSize, Allocator.Persistent);
+            Voxels = new NativeArray3D<Voxel>(VoxelWorld._chunkSize, VoxelWorld._chunkSize, VoxelWorld._chunkSize, Allocator.Persistent);
         }
 
         public void Deinitialize()
@@ -98,7 +100,7 @@ namespace Scripts.World
             _renderer.material = _material;
         }
 
-        public static RegularChunk CreateNew()
+        public static RegularChunk CreateNew(VoxelWorld creator)
         {
             RegularChunk chunkObj;
             var go = new GameObject("Chunk");
@@ -109,6 +111,8 @@ namespace Scripts.World
             go.AddComponent<MeshCollider>();
 
             chunkObj = go.AddComponent<RegularChunk>();
+
+            chunkObj.Creator = creator;
 
             return chunkObj;
         }

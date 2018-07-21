@@ -16,6 +16,9 @@ namespace Scripts.Pathfinding
         [SerializeField]
         private Astar _astar;
 
+        [SerializeField]
+        private VoxelWorld _voxelWorld;
+
         private Transform _trasform;
 
         private IMover _mover;
@@ -43,8 +46,8 @@ namespace Scripts.Pathfinding
                         _mover.CancelMovement();
                     }
 
-                    var path = ConstructPath(new Vector3(_trasform.position.x, start.Pos.y + VoxelWorldController._blockSize, _trasform.position.z),
-                                             new Vector3(destination.x, dest.Pos.y + VoxelWorldController._blockSize, destination.z));
+                    var path = ConstructPath(new Vector3(_trasform.position.x, start.Pos.y + VoxelWorld._blockSize, _trasform.position.z),
+                                             new Vector3(destination.x, dest.Pos.y + VoxelWorld._blockSize, destination.z));
                     if (path != null)
                     {
                         if (path.Length >= 2)
@@ -103,8 +106,8 @@ namespace Scripts.Pathfinding
         {
             var down = new Vector3Int(0, -1, 0);
 
-            var world = VoxelWorldController.Instance;
-            var current = VoxelWorldController.WorldPosToVoxelPos(start);
+            var world = _voxelWorld;
+            var current = VoxelWorld.WorldPosToVoxelPos(start);
 
             bool hit = false;
             var voxelsPassed = 0;
@@ -118,7 +121,7 @@ namespace Scripts.Pathfinding
                 current += down;
                 voxelsPassed += 1;
             }
-            return new VoxelRaycastHit(VoxelWorldController.VoxelPosToWorldPos(current), hit);
+            return new VoxelRaycastHit(VoxelWorld.VoxelPosToWorldPos(current), hit);
         }
 
         private void OnDrawGizmos()

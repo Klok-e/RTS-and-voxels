@@ -3,9 +3,9 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Scripts.Help.ScriptableObjects.Containers
+namespace ScriptableObjects.Containers
 {
-    [CreateAssetMenu]
+    [CreateAssetMenu(menuName = "Containers/IntContainer")]
     internal class IntContainer : ScriptableObject
     {
         public int _value;

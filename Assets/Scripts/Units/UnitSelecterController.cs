@@ -44,7 +44,7 @@ namespace Scripts.Units
                 {
                     foreach (var unit in selectedUnits)
                     {
-                        unit.Move(hit.point + (hit.normal * VoxelWorldController._blockSize / 2f));
+                        unit.Move(hit.point + (hit.normal * VoxelWorld._blockSize / 2f));
                     }
                 }
             }

@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Scripts.Help.ScriptableObjects.Containers
+namespace ScriptableObjects.Containers
 {
     [Serializable]
     public class FloatReference

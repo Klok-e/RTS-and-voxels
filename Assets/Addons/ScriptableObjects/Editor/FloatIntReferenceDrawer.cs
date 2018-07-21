@@ -5,11 +5,11 @@
 // Date:   10/04/17
 // ----------------------------------------------------------------------------
 
-using Scripts.Help.ScriptableObjects.Containers;
+using ScriptableObjects.Containers;
 using UnityEditor;
 using UnityEngine;
 
-namespace Plugins.ScriptableObjects
+namespace ScriptableObjects
 {
     [CustomPropertyDrawer(typeof(FloatReference)), CustomPropertyDrawer(typeof(IntReference))]
     internal class FloatIntReferenceDrawer : PropertyDrawer

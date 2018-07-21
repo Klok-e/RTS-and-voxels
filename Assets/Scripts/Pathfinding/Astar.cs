@@ -9,8 +9,6 @@ using UnityEngine;
 
 namespace Scripts.Pathfinding
 {
-    [DisallowMultipleComponent]
-    [RequireComponent(typeof(VoxelWorldController))]
     public class Astar : MonoBehaviour
     {
         private static readonly Vector3Int[] neighbPosRelative = new Vector3Int[]
@@ -53,24 +51,27 @@ namespace Scripts.Pathfinding
                 new Vector3Int(1, -1, -1),
         };
 
+        [SerializeField]
+        private VoxelWorld _voxelWorld;
+
         private PathCellPool _pathCellPool;
 
-        private void Start()
+        public void Start()
         {
             _pathCellPool = new PathCellPool();
         }
 
         public Vector3[] ConstructPath(Vector3 start, Vector3 destination)
         {
-            var startInt = VoxelWorldController.WorldPosToVoxelPos(start);
-            var destinationInt = VoxelWorldController.WorldPosToVoxelPos(destination);
+            var startInt = VoxelWorld.WorldPosToVoxelPos(start);
+            var destinationInt = VoxelWorld.WorldPosToVoxelPos(destination);
 
             if (startInt == destinationInt)
                 return null;
 
-            if (!VoxelWorldController.Instance.IsVoxelInBordersOfTheMap(startInt))
+            if (!_voxelWorld.IsVoxelInBordersOfTheMap(startInt))
                 throw new Exception();
-            if (!VoxelWorldController.Instance.IsVoxelInBordersOfTheMap(destinationInt))
+            if (!_voxelWorld.IsVoxelInBordersOfTheMap(destinationInt))
                 throw new Exception();
 
             var closedSet = new HashSet<PathCell>();
@@ -137,7 +138,7 @@ namespace Scripts.Pathfinding
                 {
                     if (dest.Parent == null)
                         break;
-                    path.Add(VoxelWorldController.VoxelPosToWorldPos(dest.Pos));
+                    path.Add(VoxelWorld.VoxelPosToWorldPos(dest.Pos));
                     dest = dest.Parent;
                 }
                 path.Reverse();
@@ -153,18 +154,17 @@ namespace Scripts.Pathfinding
                 for (int i = 0; i < bufferArray.Length; i++)//reset array
                     bufferArray[i] = null;
 
-                var world = VoxelWorldController.Instance;
                 var down = new Vector3Int(0, -1, 0);
 
                 for (int i = 0; i < neighbPosRelative.Length; i++)
                 {
                     var dir = neighbPosRelative[i];
                     var pos = dir + pathCell.Pos;
-                    if (world.IsVoxelInBordersOfTheMap(pos) && world.IsVoxelInBordersOfTheMap(pos + down))
+                    if (_voxelWorld.IsVoxelInBordersOfTheMap(pos) && _voxelWorld.IsVoxelInBordersOfTheMap(pos + down))
                     {
-                        if (world.GetVoxel(pos).type.IsAir())
+                        if (_voxelWorld.GetVoxel(pos).type.IsAir())
                         {
-                            if (!world.GetVoxel(pos + down).type.IsAir()//voxel lower than this vox must be ground
+                            if (!_voxelWorld.GetVoxel(pos + down).type.IsAir()//voxel lower than this vox must be ground
                                 ||
                                 dir == down)//or if dir is down (simulate falling)
                             {

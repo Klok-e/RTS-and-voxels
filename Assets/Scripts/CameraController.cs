@@ -82,40 +82,41 @@ namespace Scripts
                         var chunk = hit.collider.GetComponent<RegularChunk>();
                         if (chunk)
                         {
+                            var world = chunk.Creator;
                             switch (interctionType)
                             {
                                 case InteractionTypes.Place:
-                                    var pos = hit.point + (hit.normal * VoxelWorldController._blockSize / 2);
+                                    var pos = hit.point + (hit.normal * VoxelWorld._blockSize / 2);
                                     switch (objectType)
                                     {
                                         case ObjectTypes.Voxel:
-                                            VoxelWorldController.Instance.QuerySetVoxel(pos, VoxelType.Dirt);
+                                            world.QuerySetVoxel(pos, VoxelType.Dirt);
                                             break;
 
                                         case ObjectTypes.Sphere:
-                                            VoxelWorldController.Instance.QueryInsertSphere(pos, _sphereSize, VoxelType.Dirt);
+                                            world.QueryInsertSphere(pos, _sphereSize, VoxelType.Dirt);
                                             break;
 
                                         case ObjectTypes.Light:
-                                            VoxelWorldController.Instance.QuerySetLight(pos, 15);
+                                            world.QuerySetLight(pos, 15);
                                             break;
                                     }
                                     break;
 
                                 case InteractionTypes.Remove:
-                                    pos = hit.point - (hit.normal * VoxelWorldController._blockSize / 2);
+                                    pos = hit.point - (hit.normal * VoxelWorld._blockSize / 2);
                                     switch (objectType)
                                     {
                                         case ObjectTypes.Voxel:
-                                            VoxelWorldController.Instance.QuerySetVoxel(pos, VoxelType.Air);
+                                            world.QuerySetVoxel(pos, VoxelType.Air);
                                             break;
 
                                         case ObjectTypes.Sphere:
-                                            VoxelWorldController.Instance.QueryInsertSphere(pos, _sphereSize, VoxelType.Air);
+                                            world.QueryInsertSphere(pos, _sphereSize, VoxelType.Air);
                                             break;
 
                                         case ObjectTypes.Light:
-                                            VoxelWorldController.Instance.QuerySetLight(pos, 15);
+                                            world.QuerySetLight(pos, 15);
                                             break;
                                     }
                                     break;
@@ -192,9 +193,9 @@ namespace Scripts
             Ray ray = new Ray(transform.position, transform.forward);
             if (Physics.Raycast(ray, out RaycastHit hit))
             {
-                var pos = hit.point - (hit.normal * VoxelWorldController._blockSize / 2);
+                var pos = hit.point - (hit.normal * VoxelWorld._blockSize / 2);
 
-                VoxelWorldController.ChunkVoxelCoordinates(pos, out var chunk, out var voxel);
+                VoxelWorld.ChunkVoxelCoordinates(pos, out var chunk, out var voxel);
                 voxelCoordinatesLabel.text = voxel.ToString();
             }
         }

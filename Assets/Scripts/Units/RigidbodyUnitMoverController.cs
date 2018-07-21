@@ -19,9 +19,6 @@ namespace Scripts.Units
         private FloatReference _speed;
 
         [SerializeField]
-        private FloatReference _rotationSpeed;
-
-        [SerializeField]
         private float _allowedError;
 
         [SerializeField]

@@ -20,6 +20,7 @@ namespace Scripts
 
         private void Start()
         {
+            RenderSettings.fog = false;
         }
 
         private void Move()

@@ -34,6 +34,14 @@ namespace Scripts.Units
                         selectedUnits.Add(unit);
                         unit.SetSelection(true);
                     }
+                    else
+                    {
+                        foreach (var item in selectedUnits)
+                        {
+                            item.SetSelection(false);
+                        }
+                        selectedUnits.Clear();
+                    }
                 }
             }
 

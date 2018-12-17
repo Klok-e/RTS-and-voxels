@@ -19,7 +19,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 4596637303943618}
-  - component: {fileID: 212618734108957124}
+  - component: {fileID: 212819029783734802}
   m_Layer: 0
   m_Name: UnitSelectedHighlinghter
   m_TagString: Untagged
@@ -88,7 +88,7 @@ Transform:
   m_PrefabInternal: {fileID: 100100000}
   m_GameObject: {fileID: 1328423768804678}
   m_LocalRotation: {x: 0.7071068, y: 0, z: 0, w: 0.7071068}
-  m_LocalPosition: {x: 0, y: -0.4, z: 0}
+  m_LocalPosition: {x: 0, y: -0.9, z: 0}
   m_LocalScale: {x: 3, y: 3, z: 3}
   m_Children: []
   m_Father: {fileID: 4143716698764258}
@@ -217,7 +217,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 50e96cc4096428849b8fd8cdadf8ae49, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _astar: {fileID: 11400000, guid: cd5b99c73b31e14468fec5c2a39f3488, type: 2}
+  _astar: {fileID: 0}
+  _voxelWorld: {fileID: 0}
 --- !u!114 &114428024263074466
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -265,7 +266,7 @@ CapsuleCollider:
   m_Height: 2
   m_Direction: 1
   m_Center: {x: 0, y: 0, z: 0}
---- !u!212 &212618734108957124
+--- !u!212 &212819029783734802
 SpriteRenderer:
   m_ObjectHideFlags: 1
   m_CorrespondingSourceObject: {fileID: 0}
@@ -305,7 +306,7 @@ SpriteRenderer:
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
-  m_Size: {x: 0.2, y: 0.2}
+  m_Size: {x: 1, y: 1}
   m_AdaptiveModeThreshold: 0.5
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1

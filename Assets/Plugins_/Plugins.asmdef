@@ -1,11 +1,6 @@
 {
-    "name": "Scripts",
-    "references": [
-        "Unity.Collections",
-        "Unity.Entities",
-        "Unity.Burst",
-        "Plugins"
-    ],
+    "name": "Plugins",
+    "references": [],
     "optionalUnityReferences": [],
     "includePlatforms": [],
     "excludePlatforms": [],

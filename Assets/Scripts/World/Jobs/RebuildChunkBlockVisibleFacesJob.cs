@@ -1,10 +1,5 @@
 ﻿using Scripts.Help;
 using Scripts.Help.DataContainers;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Jobs;
@@ -26,12 +21,12 @@ namespace Scripts.World.Jobs
             facesVisibleArr.At(index, out int x, out int y, out int z);
 
             DirectionsHelper.BlockDirectionFlag facesVisible = DirectionsHelper.BlockDirectionFlag.None;
-            for (byte i = 0; i < 6; i++)
+            for(byte i = 0; i < 6; i++)
             {
                 var dir = (DirectionsHelper.BlockDirectionFlag)(1 << i);
                 Vector3Int vec = dir.ToVecInt();
 
-                if (boxThatContainsChunkAndAllNeighboursBorders[x + vec.x + 1, y + vec.y + 1, z + vec.z + 1].type.IsAir())
+                if(boxThatContainsChunkAndAllNeighboursBorders[x + vec.x + 1, y + vec.y + 1, z + vec.z + 1].type.IsAir())
                     facesVisible |= dir;
             }
             facesVisibleArr[x, y, z] = facesVisible;

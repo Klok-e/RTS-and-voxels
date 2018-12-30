@@ -1,6 +1,5 @@
 ﻿using Scripts.Help;
 using Scripts.Help.DataContainers;
-using Scripts.World;
 using System;
 using Unity.Burst;
 using Unity.Collections;
@@ -26,13 +25,13 @@ namespace Scripts.World.Jobs
 
         public void Execute()
         {
-            for (int z = 0; z < VoxelWorld._chunkSize; z++)
+            for(int z = 0; z < VoxelWorld._chunkSize; z++)
             {
-                for (int y = 0; y < VoxelWorld._chunkSize; y++)
+                for(int y = 0; y < VoxelWorld._chunkSize; y++)
                 {
-                    for (int x = 0; x < VoxelWorld._chunkSize; x++)
+                    for(int x = 0; x < VoxelWorld._chunkSize; x++)
                     {
-                        if (chunkAndNeighboursVoxels[x + 1, y + 1, z + 1].type != VoxelType.Air)
+                        if(chunkAndNeighboursVoxels[x + 1, y + 1, z + 1].type != VoxelType.Air)
                         {
                             //var faces = CalculateVisibleFaces(x, y, z);
                             var faces = voxelsVisibleFaces[x, y, z];
@@ -46,12 +45,12 @@ namespace Scripts.World.Jobs
         private DirectionsHelper.BlockDirectionFlag CalculateVisibleFaces(int x, int y, int z)
         {
             DirectionsHelper.BlockDirectionFlag facesVisible = DirectionsHelper.BlockDirectionFlag.None;
-            for (byte i = 0; i < 6; i++)
+            for(byte i = 0; i < 6; i++)
             {
                 var dir = (DirectionsHelper.BlockDirectionFlag)(1 << i);
                 Vector3Int vec = dir.ToVecInt();
 
-                if (chunkAndNeighboursVoxels[x + vec.x + 1, y + vec.y + 1, z + vec.z + 1].type.IsAir())
+                if(chunkAndNeighboursVoxels[x + vec.x + 1, y + vec.y + 1, z + vec.z + 1].type.IsAir())
                     facesVisible |= dir;
             }
             return facesVisible;
@@ -61,10 +60,10 @@ namespace Scripts.World.Jobs
 
         private void CreateCube(NativeMeshData mesh, Vector3 pos, DirectionsHelper.BlockDirectionFlag facesVisible, Vector3Int blockPos, VoxelType voxelType)
         {
-            for (int i = 0; i < 6; i++)
+            for(int i = 0; i < 6; i++)
             {
                 var curr = (DirectionsHelper.BlockDirectionFlag)(1 << i);
-                if ((curr & facesVisible) != 0)//0b010 00 & 0b010 00 -> 0b010 00; 0b100 00 & 0b010 00 -> 0b000 00
+                if((curr & facesVisible) != 0)//0b010 00 & 0b010 00 -> 0b010 00; 0b100 00 & 0b010 00 -> 0b000 00
                     CreateFace(mesh, pos, curr, blockPos, voxelType);
             }
         }
@@ -90,7 +89,7 @@ namespace Scripts.World.Jobs
             mesh._uv.Add(new Vector2(0, 1));
             mesh._uv.Add(new Vector2(1, 1));
 
-            switch (voxelType)
+            switch(voxelType)
             {
                 case VoxelType.Dirt:
                     mesh._uv2.Add(new Vector2(1, 0));
@@ -100,7 +99,7 @@ namespace Scripts.World.Jobs
                     break;
 
                 case VoxelType.Grass:
-                    if (dir == DirectionsHelper.BlockDirectionFlag.Up)
+                    if(dir == DirectionsHelper.BlockDirectionFlag.Up)
                     {
                         mesh._uv2.Add(new Vector2(1, 1));
                         mesh._uv2.Add(new Vector2(1, 1));
@@ -129,7 +128,7 @@ namespace Scripts.World.Jobs
             mesh._normals.Add(normal);
             mesh._normals.Add(normal);
 
-            if (isFlipped)
+            if(isFlipped)
             {
                 mesh._triangles.Add(startIndex + 2);
                 mesh._triangles.Add(startIndex + 3);
@@ -226,7 +225,7 @@ namespace Scripts.World.Jobs
             float vert4 = VertexLight(centerVal, rightVal, frontVal, frontRightVal);
 
             //source: https://0fps.net/2013/07/03/ambient-occlusion-for-minecraft-like-worlds/
-            if (vert1 + vert4 > vert2 + vert3)
+            if(vert1 + vert4 > vert2 + vert3)
                 isFlipped = true;
             else
                 isFlipped = false;
@@ -274,21 +273,21 @@ namespace Scripts.World.Jobs
             int backLeft = 0;
             int backRight = 0;
 
-            if (!chunkAndNeighboursVoxels[frontLeftInd.x, frontLeftInd.y, frontLeftInd.z].type.IsAir())
+            if(!chunkAndNeighboursVoxels[frontLeftInd.x, frontLeftInd.y, frontLeftInd.z].type.IsAir())
                 frontLeft = 1;
-            if (!chunkAndNeighboursVoxels[frontInd.x, frontInd.y, frontInd.z].type.IsAir())
+            if(!chunkAndNeighboursVoxels[frontInd.x, frontInd.y, frontInd.z].type.IsAir())
                 front = 1;
-            if (!chunkAndNeighboursVoxels[frontRightInd.x, frontRightInd.y, frontRightInd.z].type.IsAir())
+            if(!chunkAndNeighboursVoxels[frontRightInd.x, frontRightInd.y, frontRightInd.z].type.IsAir())
                 frontRight = 1;
-            if (!chunkAndNeighboursVoxels[rightInd.x, rightInd.y, rightInd.z].type.IsAir())
+            if(!chunkAndNeighboursVoxels[rightInd.x, rightInd.y, rightInd.z].type.IsAir())
                 right = 1;
-            if (!chunkAndNeighboursVoxels[backRightInd.x, backRightInd.y, backRightInd.z].type.IsAir())
+            if(!chunkAndNeighboursVoxels[backRightInd.x, backRightInd.y, backRightInd.z].type.IsAir())
                 backRight = 1;
-            if (!chunkAndNeighboursVoxels[backInd.x, backInd.y, backInd.z].type.IsAir())
+            if(!chunkAndNeighboursVoxels[backInd.x, backInd.y, backInd.z].type.IsAir())
                 back = 1;
-            if (!chunkAndNeighboursVoxels[backLeftInd.x, backLeftInd.y, backLeftInd.z].type.IsAir())
+            if(!chunkAndNeighboursVoxels[backLeftInd.x, backLeftInd.y, backLeftInd.z].type.IsAir())
                 backLeft = 1;
-            if (!chunkAndNeighboursVoxels[leftInd.x, leftInd.y, leftInd.z].type.IsAir())
+            if(!chunkAndNeighboursVoxels[leftInd.x, leftInd.y, leftInd.z].type.IsAir())
                 left = 1;
 
             float vert1 = VertexAO(left, back, backLeft);
@@ -297,7 +296,7 @@ namespace Scripts.World.Jobs
             float vert4 = VertexAO(right, front, frontRight);
 
             //source: https://0fps.net/2013/07/03/ambient-occlusion-for-minecraft-like-worlds/
-            if (vert1 + vert4 > vert2 + vert3)
+            if(vert1 + vert4 > vert2 + vert3)
                 isFlipped = true;
             else
                 isFlipped = false;
@@ -306,7 +305,7 @@ namespace Scripts.World.Jobs
 
             float VertexAO(int side1, int side2, int corner)
             {
-                if (side1 == 1 && side2 == 1)
+                if(side1 == 1 && side2 == 1)
                 {
                     return 0;
                 }

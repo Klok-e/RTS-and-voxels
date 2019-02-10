@@ -1,11 +1,5 @@
 ﻿using Scripts.Pathfinding;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using UnityEngine;
-using UnityEngine.EventSystems;
 
 namespace Scripts.Units
 {
@@ -34,7 +28,7 @@ namespace Scripts.Units
 
         public void Move(Vector3 destination)
         {
-            _pathfinder.MoveTo(destination);
+            //_pathfinder.MoveTo(destination);
         }
     }
 }

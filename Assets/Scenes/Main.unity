@@ -360,7 +360,7 @@ PrefabInstance:
         type: 3}
       propertyPath: _voxelWorld
       value: 
-      objectReference: {fileID: 2059880937}
+      objectReference: {fileID: 0}
     - target: {fileID: 114037699533422302, guid: 9b1e612dcf5e2b842a26eba1e1eb2882,
         type: 3}
       propertyPath: _astar
@@ -1070,7 +1070,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &482090156
 Transform:
   m_ObjectHideFlags: 0
@@ -1132,7 +1132,7 @@ PrefabInstance:
         type: 3}
       propertyPath: _voxelWorld
       value: 
-      objectReference: {fileID: 2059880937}
+      objectReference: {fileID: 0}
     - target: {fileID: 114037699533422302, guid: 9b1e612dcf5e2b842a26eba1e1eb2882,
         type: 3}
       propertyPath: _astar
@@ -2147,7 +2147,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &1481628076
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2220,13 +2220,13 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1481628075}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 37.3, y: 22.6, z: 40.7}
+  m_LocalRotation: {x: 0.5735764, y: 0, z: 0, w: 0.8191521}
+  m_LocalPosition: {x: 43.353065, y: 22.6, z: 47.949356}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
   m_RootOrder: 3
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 70, y: 0, z: 0}
 --- !u!114 &1481628080
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2591,7 +2591,7 @@ PrefabInstance:
         type: 3}
       propertyPath: _voxelWorld
       value: 
-      objectReference: {fileID: 2059880937}
+      objectReference: {fileID: 0}
     - target: {fileID: 114037699533422302, guid: 9b1e612dcf5e2b842a26eba1e1eb2882,
         type: 3}
       propertyPath: _astar
@@ -2621,7 +2621,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &1855857035
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2634,7 +2634,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c5d4b299748914444a6422c4e1847cfe, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _voxelWorld: {fileID: 2059880937}
 --- !u!4 &1855857036
 Transform:
   m_ObjectHideFlags: 0
@@ -2775,7 +2774,7 @@ PrefabInstance:
         type: 3}
       propertyPath: _voxelWorld
       value: 
-      objectReference: {fileID: 2059880937}
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 9b1e612dcf5e2b842a26eba1e1eb2882, type: 3}
 --- !u!4 &1918945268 stripped
@@ -3002,9 +3001,10 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2059880938}
+  - component: {fileID: 2059880939}
   - component: {fileID: 2059880937}
   m_Layer: 0
-  m_Name: VoxelWorldController
+  m_Name: VoxelWorldSpawner
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -3019,17 +3019,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 2059880936}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a1afcd7955cf1c84890bc0098db34590, type: 3}
+  m_Script: {fileID: 11500000, guid: 5bf10cdea1344482e91a4f2b58506b77, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _mapMaxX: 10
-  _mapMaxZ: 10
-  _up: 1
-  _down: 0
-  _material: {fileID: 2100000, guid: bab4c8de5113003479a1e224b6c029e8, type: 2}
-  _textures:
-  - {fileID: 2800000, guid: 6fa51e0dcbd5cbc4396701a9ea9a9d7c, type: 3}
-  - {fileID: 2800000, guid: 93ed68d372bbb6947a5939a54394d9fb, type: 3}
 --- !u!4 &2059880938
 Transform:
   m_ObjectHideFlags: 0
@@ -3044,6 +3036,22 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 5
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2059880939
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2059880936}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2d4647b4c36921246a648f140b9c067a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_SerializedData:
+    _size: {x: 0, y: 0}
+    _chunkMaterial: {fileID: 2100000, guid: bab4c8de5113003479a1e224b6c029e8, type: 2}
+    _textures: []
 --- !u!1 &2138677391
 GameObject:
   m_ObjectHideFlags: 0

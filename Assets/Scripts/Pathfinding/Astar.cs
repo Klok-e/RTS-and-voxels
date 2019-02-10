@@ -1,11 +1,4 @@
-﻿using Scripts.Help;
-using Scripts.Help.DataContainers;
-using Scripts.World;
-using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Threading.Tasks;
-using UnityEngine;
+﻿using UnityEngine;
 
 namespace Scripts.Pathfinding
 {
@@ -51,16 +44,16 @@ namespace Scripts.Pathfinding
                 new Vector3Int(1, -1, -1),
         };
 
-        [SerializeField]
-        private VoxelWorld _voxelWorld;
-
+        //[SerializeField]
+        //private VoxelWorld _voxelWorld;
+        /*
         private PathCellPool _pathCellPool;
 
         public void Start()
         {
             _pathCellPool = new PathCellPool();
         }
-
+        
         public Vector3[] ConstructPath(Vector3 start, Vector3 destination)
         {
             var startInt = VoxelWorld.WorldPosToVoxelPos(start);
@@ -247,6 +240,6 @@ namespace Scripts.Pathfinding
                     mainPool.Enqueue(t);
                 }
             }
-        }
+        }*/
     }
 }

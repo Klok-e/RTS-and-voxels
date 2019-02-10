@@ -1,14 +1,8 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
-using Scripts.Help;
-using System;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
-using Unity.Collections;
-using UnityEngine.AI;
+﻿using Scripts.Help;
 using Scripts.Help.DataContainers;
+using Scripts.World.QueryDataStructures;
+using Unity.Collections;
+using UnityEngine;
 
 namespace Scripts.World
 {
@@ -16,27 +10,29 @@ namespace Scripts.World
     [RequireComponent(typeof(MeshRenderer))]
     public class RegularChunk : MonoBehaviour
     {
-        public static Material _material;
-        public static Transform _chunkParent;
-
-        public VoxelWorld Creator { get; private set; }
-
         public Vector3Int Pos { get; private set; }
 
         public NativeArray3D<DirectionsHelper.BlockDirectionFlag> VoxelsVisibleFaces { get; private set; }
         public NativeArray3D<VoxelLightingLevel> VoxelLightLevels { get; private set; }
         public NativeArray3D<Voxel> Voxels { get; private set; }
         public NativeMeshData MeshData { get; private set; }
+        public NativeQueue<VoxelSetQueryData> VoxelSetQuery { get; private set; }
 
         public bool IsInitialized { get; private set; }
-        public bool IsBeingRebult { get; private set; }
 
         private Mesh _mesh;
         private MeshRenderer _renderer;
         private MeshFilter _filter;
         private MeshCollider _coll;
 
-        public void Initialize(Vector3Int pos)
+        public RegularChunk _left;
+        public RegularChunk _right;
+        public RegularChunk _up;
+        public RegularChunk _down;
+        public RegularChunk _forward;
+        public RegularChunk _backward;
+
+        public void Initialize(Vector3Int pos, Material material)
         {
             Pos = pos;
 
@@ -44,12 +40,13 @@ namespace Scripts.World
             gameObject.SetActive(true);
             name = $"Chunk Active at {pos}";
             IsInitialized = true;
-            IsBeingRebult = false;
+            _renderer.material = material;
 
             MeshData = new NativeMeshData(0, Allocator.Persistent);
             VoxelLightLevels = new NativeArray3D<VoxelLightingLevel>(VoxelWorld._chunkSize, VoxelWorld._chunkSize, VoxelWorld._chunkSize, Allocator.Persistent);
             VoxelsVisibleFaces = new NativeArray3D<DirectionsHelper.BlockDirectionFlag>(VoxelWorld._chunkSize, VoxelWorld._chunkSize, VoxelWorld._chunkSize, Allocator.Persistent);
             Voxels = new NativeArray3D<Voxel>(VoxelWorld._chunkSize, VoxelWorld._chunkSize, VoxelWorld._chunkSize, Allocator.Persistent);
+            VoxelSetQuery = new NativeQueue<VoxelSetQueryData>(Allocator.Persistent);
         }
 
         public void Deinitialize()
@@ -62,18 +59,67 @@ namespace Scripts.World
             Voxels.Dispose();
             MeshData.Dispose();
             VoxelLightLevels.Dispose();
+
+            _left = null;
+            _right = null;
+            _up = null;
+            _down = null;
+            _forward = null;
+            _backward = null;
         }
 
-        public void SetBeingRebuilt()
+        public RegularChunk this[DirectionsHelper.BlockDirectionFlag dir]
         {
-            IsBeingRebult = true;
+            get
+            {
+                switch(dir)
+                {
+                    case DirectionsHelper.BlockDirectionFlag.Up:
+                        return _up;
+                    case DirectionsHelper.BlockDirectionFlag.Down:
+                        return _down;
+                    case DirectionsHelper.BlockDirectionFlag.Left:
+                        return _left;
+                    case DirectionsHelper.BlockDirectionFlag.Right:
+                        return _right;
+                    case DirectionsHelper.BlockDirectionFlag.Backward:
+                        return _backward;
+                    case DirectionsHelper.BlockDirectionFlag.Forward:
+                        return _forward;
+                    case DirectionsHelper.BlockDirectionFlag.None:
+                        return null;
+                    default:
+                        return null;
+                }
+            }
+            set
+            {
+                switch(dir)
+                {
+                    case DirectionsHelper.BlockDirectionFlag.Up:
+                        _up = value;
+                        break;
+                    case DirectionsHelper.BlockDirectionFlag.Down:
+                        _down = value;
+                        break;
+                    case DirectionsHelper.BlockDirectionFlag.Left:
+                        _left = value;
+                        break;
+                    case DirectionsHelper.BlockDirectionFlag.Right:
+                        _right = value;
+                        break;
+                    case DirectionsHelper.BlockDirectionFlag.Backward:
+                        _backward = value;
+                        break;
+                    case DirectionsHelper.BlockDirectionFlag.Forward:
+                        _forward = value;
+                        break;
+                }
+            }
         }
 
         public void ApplyMeshData()
         {
-            if (IsBeingRebult == false)
-                throw new Exception();
-
             _mesh.Clear();
             _mesh.vertices = MeshData._vertices.ToArray();
             _mesh.SetTriangles(MeshData._triangles.ToArray(), 0);
@@ -83,7 +129,6 @@ namespace Scripts.World
             _mesh.uv2 = MeshData._uv2.ToArray();
             _mesh.uv3 = MeshData._uv3.ToArray();
             MeshData.Clear();
-            IsBeingRebult = false;
 
             _filter.sharedMesh = _mesh;
             _coll.sharedMesh = _mesh;
@@ -96,23 +141,18 @@ namespace Scripts.World
             _coll = GetComponent<MeshCollider>();
             _mesh = new Mesh();
             _mesh.MarkDynamic();
-
-            _renderer.material = _material;
         }
 
-        public static RegularChunk CreateNew(VoxelWorld creator)
+        public static RegularChunk CreateNew()
         {
             RegularChunk chunkObj;
             var go = new GameObject("Chunk");
-            go.transform.parent = _chunkParent;
 
             go.AddComponent<MeshFilter>();
             go.AddComponent<MeshRenderer>();
             go.AddComponent<MeshCollider>();
 
             chunkObj = go.AddComponent<RegularChunk>();
-
-            chunkObj.Creator = creator;
 
             return chunkObj;
         }

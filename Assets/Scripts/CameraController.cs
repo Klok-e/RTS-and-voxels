@@ -1,9 +1,4 @@
-﻿using Scripts;
-using Scripts.Help;
-using Scripts.Pathfinding;
-using Scripts.World;
-using System.Collections.Generic;
-using Unity.Jobs;
+﻿using Scripts.World;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -59,6 +54,7 @@ namespace Scripts
 
         private void Update()
         {
+            /*
             if (!isPaused)
             {
                 ChangeVoxelCoord();
@@ -124,12 +120,12 @@ namespace Scripts
                         }
                     }
                 }
-            }
+            }*/
         }
 
         private void LateUpdate()
         {
-            if (!isPaused)
+            if(!isPaused)
             {
                 transform.Rotate(new Vector3(-Input.GetAxis("Mouse Y") * rotationSpeed, Input.GetAxis("Mouse X") * rotationSpeed, 0));
                 X = transform.rotation.eulerAngles.x;
@@ -146,19 +142,19 @@ namespace Scripts
         private void ChangeObjectType()
         {
             var wheel = Input.GetAxis("Mouse ScrollWheel");
-            if (Mathf.Abs(wheel) > 0)
+            if(Mathf.Abs(wheel) > 0)
             {
                 byte next;
-                if (wheel > 0)
+                if(wheel > 0)
                 {
                     next = (byte)(((byte)objectType) + 1);
-                    if (next > 3)
+                    if(next > 3)
                         next = 1;
                 }
                 else
                 {
                     next = (byte)(((byte)objectType) - 1);
-                    if (next < 1)
+                    if(next < 1)
                         next = 3;
                 }
                 objectType = (ObjectTypes)next;
@@ -168,21 +164,21 @@ namespace Scripts
 
         private void ChangeSphereSize()
         {
-            if (Input.GetKeyDown(KeyCode.PageUp))
+            if(Input.GetKeyDown(KeyCode.PageUp))
             {
                 _sphereSize += 1;
             }
-            if (Input.GetKeyDown(KeyCode.PageDown))
+            if(Input.GetKeyDown(KeyCode.PageDown))
             {
                 _sphereSize -= 1;
             }
 
-            if (_sphereSize <= sphereSizeSlider.maxValue && _sphereSize >= sphereSizeSlider.minValue)
+            if(_sphereSize <= sphereSizeSlider.maxValue && _sphereSize >= sphereSizeSlider.minValue)
             {
             }
-            else if (_sphereSize > sphereSizeSlider.maxValue)
+            else if(_sphereSize > sphereSizeSlider.maxValue)
                 _sphereSize = (int)sphereSizeSlider.maxValue;
-            else if (_sphereSize < sphereSizeSlider.minValue)
+            else if(_sphereSize < sphereSizeSlider.minValue)
                 _sphereSize = (int)sphereSizeSlider.minValue;
 
             sphereSizeSlider.value = _sphereSize;
@@ -191,12 +187,12 @@ namespace Scripts
         private void ChangeVoxelCoord()
         {
             Ray ray = new Ray(transform.position, transform.forward);
-            if (Physics.Raycast(ray, out RaycastHit hit))
+            if(Physics.Raycast(ray, out RaycastHit hit))
             {
                 var pos = hit.point - (hit.normal * VoxelWorld._blockSize / 2);
 
-                VoxelWorld.ChunkVoxelCoordinates(pos, out var chunk, out var voxel);
-                voxelCoordinatesLabel.text = voxel.ToString();
+                //VoxelWorld.ChunkVoxelCoordinates(pos, out var chunk, out var voxel);
+                //voxelCoordinatesLabel.text = voxel.ToString();
             }
         }
 

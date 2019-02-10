@@ -14,7 +14,7 @@ namespace Scripts.World
 
     public enum VoxelType : byte
     {
-        Air = 0,
+        Empty = 0,
         Dirt = 1,
         Grass = 2,
     }
@@ -33,7 +33,7 @@ namespace Scripts.World
 
         public static bool IsAir(this VoxelType type)
         {
-            if (type == VoxelType.Air)
+            if (type == VoxelType.Empty)
                 return true;
             else
                 return false;

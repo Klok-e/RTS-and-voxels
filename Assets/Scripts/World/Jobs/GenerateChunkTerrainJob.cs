@@ -51,7 +51,7 @@ namespace Scripts.World.Jobs
                         {
                             voxels[x, y, z] = new Voxel()
                             {
-                                type = VoxelType.Air,
+                                type = VoxelType.Empty,
                             };
                             light[x, y, z] = new VoxelLightingLevel(0, VoxelLightingLevel.maxLight);
                         }

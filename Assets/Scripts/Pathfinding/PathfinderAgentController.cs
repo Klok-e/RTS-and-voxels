@@ -1,11 +1,4 @@
-﻿using Scripts.World;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using UnityEngine;
+﻿using UnityEngine;
 
 namespace Scripts.Pathfinding
 {
@@ -13,6 +6,7 @@ namespace Scripts.Pathfinding
     [RequireComponent(typeof(IMover))]
     public class PathfinderAgentController : MonoBehaviour
     {
+        /*
         [SerializeField]
         private Astar _astar;
 
@@ -135,6 +129,6 @@ namespace Scripts.Pathfinding
                 }
             }
 #endif
-        }
+        }*/
     }
 }

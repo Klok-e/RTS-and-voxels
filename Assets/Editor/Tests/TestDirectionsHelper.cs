@@ -14,7 +14,7 @@ public class TestDirectionsHelper
         Assert.IsTrue(DirectionsHelper.ToVecInt(DirectionsHelper.BlockDirectionFlag.Left) == new Vector3Int(-1, 0, 0));
         Assert.IsTrue(DirectionsHelper.ToVecInt(DirectionsHelper.BlockDirectionFlag.Up) == new Vector3Int(0, 1, 0));
         Assert.IsTrue(DirectionsHelper.ToVecInt(DirectionsHelper.BlockDirectionFlag.Down) == new Vector3Int(0, -1, 0));
-        Assert.IsTrue(DirectionsHelper.ToVecInt(DirectionsHelper.BlockDirectionFlag.Back) == new Vector3Int(0, 0, -1));
-        Assert.IsTrue(DirectionsHelper.ToVecInt(DirectionsHelper.BlockDirectionFlag.Front) == new Vector3Int(0, 0, 1));
+        Assert.IsTrue(DirectionsHelper.ToVecInt(DirectionsHelper.BlockDirectionFlag.Backward) == new Vector3Int(0, 0, -1));
+        Assert.IsTrue(DirectionsHelper.ToVecInt(DirectionsHelper.BlockDirectionFlag.Forward) == new Vector3Int(0, 0, 1));
     }
 }

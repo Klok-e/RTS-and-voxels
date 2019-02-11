@@ -35,3 +35,6 @@ sysinfo.txt
 
 # Snapshots
 MemoryCaptures/
+
+# Packages cache
+Library/PackageCache

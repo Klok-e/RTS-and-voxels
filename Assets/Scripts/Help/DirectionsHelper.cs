@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Scripts.World;
+using System;
 using UnityEngine;
 
 namespace Scripts.Help
@@ -123,6 +124,53 @@ namespace Scripts.Help
         public static Vector3Int ToInt(this Vector3 vec)
         {
             return new Vector3Int(Mathf.RoundToInt(vec.x), Mathf.RoundToInt(vec.y), Mathf.RoundToInt(vec.z));
+        }
+
+        public static BlockDirectionFlag WrapCoordsInChunk(ref int x, ref int y, ref int z)
+        {
+            var dirWrapped = BlockDirectionFlag.None;
+            if(x >= VoxelWorld._chunkSize)
+            {
+                x = 0;
+                dirWrapped |= BlockDirectionFlag.Right;
+            }
+            if(y >= VoxelWorld._chunkSize)
+            {
+                y = 0;
+                dirWrapped |= BlockDirectionFlag.Up;
+            }
+            if(z >= VoxelWorld._chunkSize)
+            {
+                z = 0;
+                dirWrapped |= BlockDirectionFlag.Forward;
+            }
+            if(x < 0)
+            {
+                x = VoxelWorld._chunkSize - 1;
+                dirWrapped |= BlockDirectionFlag.Left;
+            }
+            if(y < 0)
+            {
+                y = VoxelWorld._chunkSize - 1;
+                dirWrapped |= BlockDirectionFlag.Down;
+            }
+            if(z < 0)
+            {
+                z = VoxelWorld._chunkSize - 1;
+                dirWrapped |= BlockDirectionFlag.Backward;
+            }
+            return dirWrapped;
+        }
+
+        public static bool AreCoordsOutOfBordersOfChunk(int x, int y, int z)
+        {
+            if(x >= VoxelWorld._chunkSize || x < 0
+               ||
+               y >= VoxelWorld._chunkSize || y < 0
+               ||
+               z >= VoxelWorld._chunkSize || z < 0)
+                return true;
+            return false;
         }
 
         [Flags]

@@ -1,22 +1,20 @@
-﻿using Scripts.Help;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using Unity.Entities;
 using UnityEngine;
 
 namespace Scripts.World
 {
-    public struct Voxel
+    [InternalBufferCapacity(VoxelWorld._chunkSize * VoxelWorld._chunkSize * VoxelWorld._chunkSize)]
+    public struct Voxel : IBufferElementData
     {
-        public VoxelType type;
+        public VoxelType Type { get; set; }
     }
 
     public enum VoxelType : byte
     {
-        Empty = 0,
-        Dirt = 1,
-        Grass = 2,
+        None = 0,
+        Empty = 1,
+        Dirt = 2,
+        Grass = 3,
     }
 
     public static class VoxelExtensions
@@ -31,12 +29,52 @@ namespace Scripts.World
             return new Color(vec.x, vec.y, vec.z);
         }
 
-        public static bool IsAir(this VoxelType type)
+        public static bool IsEmpty(this VoxelType type)
         {
-            if (type == VoxelType.Empty)
+            if(type == VoxelType.Empty)
                 return true;
             else
                 return false;
+        }
+
+        public static Voxel AtGet(this DynamicBuffer<Voxel> buffer, int x, int y, int z)
+        {
+            const int sz = VoxelWorld._chunkSize;
+            return buffer[z * sz * sz + y * sz + x];
+        }
+
+        public static void AtSet(this DynamicBuffer<Voxel> buffer, int x, int y, int z, Voxel value)
+        {
+            const int sz = VoxelWorld._chunkSize;
+            buffer[z * sz * sz + y * sz + x] = value;
+        }
+
+        public static void AtAt(this DynamicBuffer<Voxel> buffer, int i, out int x, out int y, out int z)
+        {
+            const int sz = VoxelWorld._chunkSize;
+            x = i % sz;
+            y = (i / sz) % sz;
+            z = i / (sz * sz);
+        }
+
+        public static VoxelLightingLevel AtGet(this DynamicBuffer<VoxelLightingLevel> buffer, int x, int y, int z)
+        {
+            const int sz = VoxelWorld._chunkSize;
+            return buffer[z * sz * sz + y * sz + x];
+        }
+
+        public static void AtSet(this DynamicBuffer<VoxelLightingLevel> buffer, int x, int y, int z, VoxelLightingLevel value)
+        {
+            const int sz = VoxelWorld._chunkSize;
+            buffer[z * sz * sz + y * sz + x] = value;
+        }
+
+        public static void AtAt(this DynamicBuffer<VoxelLightingLevel> buffer, int i, out int x, out int y, out int z)
+        {
+            const int sz = VoxelWorld._chunkSize;
+            x = i % sz;
+            y = (i / sz) % sz;
+            z = i / (sz * sz);
         }
     }
 }

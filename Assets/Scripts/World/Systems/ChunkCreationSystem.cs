@@ -19,6 +19,7 @@ namespace Scripts.World.Systems
 
         protected override void OnCreateManager()
         {
+            _chunks = new Dictionary<Vector3Int, RegularChunk>();
             _allChunks = EntityManager.CreateComponentGroup(typeof(RegularChunk));
             _worldSpawners = EntityManager.CreateComponentGroup(typeof(MapParameters));
         }
@@ -48,7 +49,7 @@ namespace Scripts.World.Systems
                     for(int x = 0; x < parameters._size.x; x++)
                         for(int y = 0; y < parameters._size.y; y++)
                         {
-                            CreateChunk(new Vector3Int(x, y, 0));
+                            CreateChunk(new Vector3Int(x, 0, y));
                         }
                 }
 
@@ -62,16 +63,27 @@ namespace Scripts.World.Systems
             var ent = chunk.gameObject.AddComponent<GameObjectEntity>().Entity;
             PostUpdateCommands.AddComponent(ent, new ChunkNeedTerrainGeneration());
 
+            var buf1 = PostUpdateCommands.AddBuffer<Voxel>(ent);
+            buf1.ResizeUninitialized(VoxelWorld._chunkSize * VoxelWorld._chunkSize * VoxelWorld._chunkSize);
+            Debug.Log($"Length of voxel buffer: {buf1.Length}");
+
+            var buf2 = PostUpdateCommands.AddBuffer<VoxelLightingLevel>(ent);
+            buf2.ResizeUninitialized(VoxelWorld._chunkSize * VoxelWorld._chunkSize * VoxelWorld._chunkSize);
+            Debug.Log($"Length of light buffer: {buf2.Length}");
+
+            var neighbs = new ChunkNeighboursComponent();
+
             _chunks.Add(pos, chunk);
             for(int i = 0; i < 6; i++)
             {
-                var dir = (DirectionsHelper.BlockDirectionFlag)i;
+                var dir = (DirectionsHelper.BlockDirectionFlag)(1 << i);
                 var dirVec = dir.ToVecInt();
                 if(_chunks.ContainsKey(pos + dirVec))
                 {
-                    chunk[dir] = _chunks[pos + dirVec];
+                    neighbs[dir] = _chunks[pos + dirVec].GetComponent<GameObjectEntity>().Entity;
                 }
             }
+            PostUpdateCommands.AddComponent(ent, neighbs);
         }
 
         private void SetTextureArray(Texture2D[] textures)

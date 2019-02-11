@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using Unity.Entities;
 using UnityEngine;
 
 namespace Scripts.World
@@ -10,7 +6,8 @@ namespace Scripts.World
     /// <summary>
     /// Levels of light
     /// </summary>
-    public struct VoxelLightingLevel
+    [InternalBufferCapacity(VoxelWorld._chunkSize * VoxelWorld._chunkSize * VoxelWorld._chunkSize)]
+    public struct VoxelLightingLevel : IBufferElementData
     {
         private const int regularLightMask = 0b0000_1111;
         private const int sunLightMask = 0b1111_0000;
@@ -26,7 +23,7 @@ namespace Scripts.World
         {
             get
             {
-                return (byte)((_level & regularLightMask));
+                return (byte)(_level & regularLightMask);
             }
             set
             {

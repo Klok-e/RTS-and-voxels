@@ -7,7 +7,7 @@ namespace Scripts.World
         /// <summary>
         /// Only uneven amount or else SetVoxel won't work at all
         /// </summary>
-        public const int _chunkSize = 33;
+        public const int _chunkSize = 17;
 
         /// <summary>
         /// Size of a voxel

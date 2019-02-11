@@ -14,7 +14,6 @@ namespace Scripts.World
 
         public NativeArray3D<DirectionsHelper.BlockDirectionFlag> VoxelsVisibleFaces { get; private set; }
         public NativeArray3D<VoxelLightingLevel> VoxelLightLevels { get; private set; }
-        public NativeArray3D<Voxel> Voxels { get; private set; }
         public NativeMeshData MeshData { get; private set; }
         public NativeQueue<VoxelSetQueryData> VoxelSetQuery { get; private set; }
 
@@ -24,13 +23,6 @@ namespace Scripts.World
         private MeshRenderer _renderer;
         private MeshFilter _filter;
         private MeshCollider _coll;
-
-        public RegularChunk _left;
-        public RegularChunk _right;
-        public RegularChunk _up;
-        public RegularChunk _down;
-        public RegularChunk _forward;
-        public RegularChunk _backward;
 
         public void Initialize(Vector3Int pos, Material material)
         {
@@ -45,7 +37,6 @@ namespace Scripts.World
             MeshData = new NativeMeshData(0, Allocator.Persistent);
             VoxelLightLevels = new NativeArray3D<VoxelLightingLevel>(VoxelWorld._chunkSize, VoxelWorld._chunkSize, VoxelWorld._chunkSize, Allocator.Persistent);
             VoxelsVisibleFaces = new NativeArray3D<DirectionsHelper.BlockDirectionFlag>(VoxelWorld._chunkSize, VoxelWorld._chunkSize, VoxelWorld._chunkSize, Allocator.Persistent);
-            Voxels = new NativeArray3D<Voxel>(VoxelWorld._chunkSize, VoxelWorld._chunkSize, VoxelWorld._chunkSize, Allocator.Persistent);
             VoxelSetQuery = new NativeQueue<VoxelSetQueryData>(Allocator.Persistent);
         }
 
@@ -56,66 +47,9 @@ namespace Scripts.World
             gameObject.SetActive(false);
 
             VoxelsVisibleFaces.Dispose();
-            Voxels.Dispose();
             MeshData.Dispose();
             VoxelLightLevels.Dispose();
-
-            _left = null;
-            _right = null;
-            _up = null;
-            _down = null;
-            _forward = null;
-            _backward = null;
-        }
-
-        public RegularChunk this[DirectionsHelper.BlockDirectionFlag dir]
-        {
-            get
-            {
-                switch(dir)
-                {
-                    case DirectionsHelper.BlockDirectionFlag.Up:
-                        return _up;
-                    case DirectionsHelper.BlockDirectionFlag.Down:
-                        return _down;
-                    case DirectionsHelper.BlockDirectionFlag.Left:
-                        return _left;
-                    case DirectionsHelper.BlockDirectionFlag.Right:
-                        return _right;
-                    case DirectionsHelper.BlockDirectionFlag.Backward:
-                        return _backward;
-                    case DirectionsHelper.BlockDirectionFlag.Forward:
-                        return _forward;
-                    case DirectionsHelper.BlockDirectionFlag.None:
-                        return null;
-                    default:
-                        return null;
-                }
-            }
-            set
-            {
-                switch(dir)
-                {
-                    case DirectionsHelper.BlockDirectionFlag.Up:
-                        _up = value;
-                        break;
-                    case DirectionsHelper.BlockDirectionFlag.Down:
-                        _down = value;
-                        break;
-                    case DirectionsHelper.BlockDirectionFlag.Left:
-                        _left = value;
-                        break;
-                    case DirectionsHelper.BlockDirectionFlag.Right:
-                        _right = value;
-                        break;
-                    case DirectionsHelper.BlockDirectionFlag.Backward:
-                        _backward = value;
-                        break;
-                    case DirectionsHelper.BlockDirectionFlag.Forward:
-                        _forward = value;
-                        break;
-                }
-            }
+            VoxelSetQuery.Dispose();
         }
 
         public void ApplyMeshData()

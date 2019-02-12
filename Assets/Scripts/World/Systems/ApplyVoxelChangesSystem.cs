@@ -16,22 +16,19 @@ namespace Scripts.World.Systems
         [UpdateAfter(typeof(ApplyVoxelChangesSystem))]
         private class ApplyVoxelsBarrier : BarrierSystem { }
 
-        private struct ApplyChanges : IJob
+        private struct ApplyChanges : IJobParallelFor
         {
             public ComponentArray<RegularChunk> needApply;
             public BufferArray<Voxel> voxelBuffers;
             public EntityArray applEntitties;
 
-            public EntityCommandBuffer commandBuffer;
+            public EntityCommandBuffer.Concurrent commandBuffer;
 
-            public void Execute()
+            public void Execute(int i)
             {
-                for(int i = 0; i < needApply.Length; i++)
-                {
-                    ApplyChangesToChunk(needApply[i], applEntitties[i], voxelBuffers[i]);
-                    commandBuffer.RemoveComponent<ChunkNeedApplyVoxelChanges>(applEntitties[i]);
-                    commandBuffer.AddComponent(applEntitties[i], new ChunkDirtyComponent());
-                }
+                ApplyChangesToChunk(needApply[i], applEntitties[i], voxelBuffers[i]);
+                commandBuffer.RemoveComponent<ChunkNeedApplyVoxelChanges>(i, applEntitties[i]);
+                commandBuffer.AddComponent(i, applEntitties[i], new ChunkDirtyComponent());
             }
 
             private void ApplyChangesToChunk(RegularChunk chunk, Entity entity, DynamicBuffer<Voxel> buffer)
@@ -51,18 +48,19 @@ namespace Scripts.World.Systems
         protected override void OnCreateManager()
         {
             _chunksNeedApplyVoxelChanges = EntityManager.CreateComponentGroup(typeof(RegularChunk), typeof(ChunkNeedApplyVoxelChanges), typeof(Voxel));
+            RequireForUpdate(_chunksNeedApplyVoxelChanges);
         }
 
         protected override JobHandle OnUpdate(JobHandle inputDeps)
         {
-            new ApplyChanges
+            var j = new ApplyChanges
             {
                 needApply = _chunksNeedApplyVoxelChanges.GetComponentArray<RegularChunk>(),
                 voxelBuffers = _chunksNeedApplyVoxelChanges.GetBufferArray<Voxel>(),
                 applEntitties = _chunksNeedApplyVoxelChanges.GetEntityArray(),
-                commandBuffer = _barrier.CreateCommandBuffer(),
-            }.Schedule(inputDeps).Complete();
-            return default;
+                commandBuffer = _barrier.CreateCommandBuffer().ToConcurrent(),
+            };
+            return j.Schedule(j.needApply.Length, 1, inputDeps);
         }
     }
 }

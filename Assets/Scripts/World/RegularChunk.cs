@@ -1,5 +1,4 @@
-﻿using Scripts.Help;
-using Scripts.Help.DataContainers;
+﻿using Scripts.Help.DataContainers;
 using Scripts.World.QueryDataStructures;
 using Unity.Collections;
 using UnityEngine;
@@ -12,7 +11,6 @@ namespace Scripts.World
     {
         public Vector3Int Pos { get; private set; }
 
-        public NativeArray3D<DirectionsHelper.BlockDirectionFlag> VoxelsVisibleFaces { get; private set; }
         public NativeArray3D<VoxelLightingLevel> VoxelLightLevels { get; private set; }
         public NativeMeshData MeshData { get; private set; }
         public NativeQueue<VoxelSetQueryData> VoxelSetQuery { get; private set; }
@@ -36,7 +34,6 @@ namespace Scripts.World
 
             MeshData = new NativeMeshData(0, Allocator.Persistent);
             VoxelLightLevels = new NativeArray3D<VoxelLightingLevel>(VoxelWorld._chunkSize, VoxelWorld._chunkSize, VoxelWorld._chunkSize, Allocator.Persistent);
-            VoxelsVisibleFaces = new NativeArray3D<DirectionsHelper.BlockDirectionFlag>(VoxelWorld._chunkSize, VoxelWorld._chunkSize, VoxelWorld._chunkSize, Allocator.Persistent);
             VoxelSetQuery = new NativeQueue<VoxelSetQueryData>(Allocator.Persistent);
         }
 
@@ -46,7 +43,6 @@ namespace Scripts.World
             IsInitialized = false;
             gameObject.SetActive(false);
 
-            VoxelsVisibleFaces.Dispose();
             MeshData.Dispose();
             VoxelLightLevels.Dispose();
             VoxelSetQuery.Dispose();
@@ -75,6 +71,11 @@ namespace Scripts.World
             _coll = GetComponent<MeshCollider>();
             _mesh = new Mesh();
             _mesh.MarkDynamic();
+        }
+
+        private void OnDestroy()
+        {
+            Deinitialize();
         }
 
         public static RegularChunk CreateNew()

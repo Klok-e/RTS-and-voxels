@@ -16,7 +16,7 @@ namespace Scripts.World.Systems
         private TerrainGenerationBarrier _barrier;
 
         //[BurstCompile]
-        public struct GenerateChunkTerrainJob : IJob
+        public struct GenerateChunkTerrainJob : IJobParallelFor
         {
             [WriteOnly]
             public BufferArray<Voxel> voxelBuffers;
@@ -26,56 +26,55 @@ namespace Scripts.World.Systems
             public ComponentArray<RegularChunk> chunks;
             public EntityArray entities;
 
-            public EntityCommandBuffer commandBuffer;
+            public EntityCommandBuffer.Concurrent commandBuffer;
 
-            public void Execute()
+            public void Execute(int i)
             {
                 const int chunkSize = VoxelWorld._chunkSize;
-                for(int i = 0; i < chunks.Length; i++)
+
+                commandBuffer.AddComponent(i, entities[i], new ChunkDirtyComponent());
+                commandBuffer.RemoveComponent<ChunkNeedTerrainGeneration>(i, entities[i]);
+
+                var offset = chunks[i].Pos;
+                var voxelsBuffer = voxelBuffers[i];
+                var lightBuffer = lightBuffers[i];
+                for(int z = 0; z < chunkSize; z++)
                 {
-                    commandBuffer.AddComponent(entities[i], new ChunkDirtyComponent());
-                    commandBuffer.RemoveComponent<ChunkNeedTerrainGeneration>(entities[i]);
-
-                    var offset = chunks[i].Pos;
-                    var voxelsBuffer = voxelBuffers[i];
-                    var lightBuffer = lightBuffers[i];
-                    for(int z = 0; z < chunkSize; z++)
+                    for(int x = 0; x < chunkSize; x++)
                     {
-                        for(int x = 0; x < chunkSize; x++)
-                        {
-                            float fx = x / (chunkSize - 1f);
-                            float fz = z / (chunkSize - 1f);
-                            float sample = Perlin(fx, fz, offset);
+                        float fx = x / (chunkSize - 1f);
+                        float fz = z / (chunkSize - 1f);
+                        float sample = Perlin(fx, fz, offset);
 
-                            for(int y = 0; y < chunkSize; y++)
+                        for(int y = 0; y < chunkSize; y++)
+                        {
+                            float fy = y / (chunkSize - 1f) + offset.y;
+                            if(fy < sample)
                             {
-                                float fy = y / (chunkSize - 1f) + offset.y;
-                                if(fy < sample)
-                                {
-                                    if(((y + 1) / (chunkSize - 1f) + offset.y) > sample)
-                                        voxelsBuffer.AtSet(x, y, z,
-                                            new Voxel()
-                                            {
-                                                Type = VoxelType.Grass,
-                                            });
-                                    else
-                                        voxelsBuffer.AtSet(x, y, z,
-                                            new Voxel()
-                                            {
-                                                Type = VoxelType.Dirt,
-                                            });
-                                }
-                                else
-                                {
+                                if(((y + 1) / (chunkSize - 1f) + offset.y) > sample)
                                     voxelsBuffer.AtSet(x, y, z,
                                         new Voxel()
                                         {
-                                            Type = VoxelType.Empty,
+                                            Type = VoxelType.Grass,
                                         });
-                                    lightBuffer.AtSet(x, y, z, new VoxelLightingLevel(0, VoxelLightingLevel.maxLight));
-                                }
+                                else
+                                    voxelsBuffer.AtSet(x, y, z,
+                                        new Voxel()
+                                        {
+                                            Type = VoxelType.Dirt,
+                                        });
+                            }
+                            else
+                            {
+                                voxelsBuffer.AtSet(x, y, z,
+                                    new Voxel()
+                                    {
+                                        Type = VoxelType.Empty,
+                                    });
+                                lightBuffer.AtSet(x, y, z, new VoxelLightingLevel(0, VoxelLightingLevel.maxLight));
                             }
                         }
+
                     }
                 }
             }
@@ -90,19 +89,20 @@ namespace Scripts.World.Systems
         {
             base.OnCreateManager();
             _needGeneration = EntityManager.CreateComponentGroup(typeof(ChunkNeedTerrainGeneration), typeof(RegularChunk), typeof(VoxelLightingLevel), typeof(Voxel));
+            RequireForUpdate(_needGeneration);
         }
 
         protected override JobHandle OnUpdate(JobHandle inputDeps)
         {
-            new GenerateChunkTerrainJob
+            var t = new GenerateChunkTerrainJob
             {
                 chunks = _needGeneration.GetComponentArray<RegularChunk>(),
                 lightBuffers = _needGeneration.GetBufferArray<VoxelLightingLevel>(),
                 voxelBuffers = _needGeneration.GetBufferArray<Voxel>(),
                 entities = _needGeneration.GetEntityArray(),
-                commandBuffer = _barrier.CreateCommandBuffer(),
-            }.Schedule(inputDeps).Complete();
-            return default;
+                commandBuffer = _barrier.CreateCommandBuffer().ToConcurrent(),
+            };
+            return t.Schedule(t.chunks.Length, 1, inputDeps);
         }
     }
 }

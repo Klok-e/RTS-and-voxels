@@ -11,4 +11,7 @@ namespace Scripts.World.Components
     public struct ChunkNeedTerrainGeneration : IComponentData
     {
     }
+    public struct ChunkNeedMeshApply : IComponentData
+    {
+    }
 }

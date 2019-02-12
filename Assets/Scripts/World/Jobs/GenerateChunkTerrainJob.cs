@@ -1,4 +1,0 @@
-﻿namespace Scripts.World.Jobs
-{
-
-}

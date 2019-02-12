@@ -86,8 +86,8 @@ namespace Scripts.Units
 
         private IEnumerator MoveCoroutine(Vector3 pos, Vector3 nextPos, Action onMoveComplete, uint id)
         {
-            pos += new Vector3(0, _distanceToFloatAboveGround - VoxelWorld._blockSize, 0);
-            nextPos += new Vector3(0, _distanceToFloatAboveGround - VoxelWorld._blockSize, 0);
+            pos += new Vector3(0, _distanceToFloatAboveGround - VoxConsts._blockSize, 0);
+            nextPos += new Vector3(0, _distanceToFloatAboveGround - VoxConsts._blockSize, 0);
 
             var errSqr = _allowedError * _allowedError;
             while ((pos - _rigidbody.position).sqrMagnitude > errSqr)

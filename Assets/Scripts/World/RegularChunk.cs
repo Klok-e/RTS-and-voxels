@@ -1,6 +1,7 @@
 ﻿using Scripts.Help.DataContainers;
 using Scripts.World.QueryDataStructures;
 using Unity.Collections;
+using Unity.Mathematics;
 using UnityEngine;
 
 namespace Scripts.World
@@ -9,8 +10,6 @@ namespace Scripts.World
     [RequireComponent(typeof(MeshRenderer))]
     public class RegularChunk : MonoBehaviour
     {
-        public Vector3Int Pos { get; private set; }
-
         public NativeArray3D<VoxelLightingLevel> VoxelLightLevels { get; private set; }
         public NativeMeshData MeshData { get; private set; }
         public NativeQueue<VoxelSetQueryData> VoxelSetQuery { get; private set; }
@@ -22,18 +21,17 @@ namespace Scripts.World
         private MeshFilter _filter;
         private MeshCollider _coll;
 
-        public void Initialize(Vector3Int pos, Material material)
+        public void Initialize(int3 pos, Material material)
         {
-            Pos = pos;
-
-            transform.position = (Vector3)Pos * VoxelWorld._chunkSize * VoxelWorld._blockSize;
+            var newpos = math.float3(pos) * VoxConsts._chunkSize * VoxConsts._blockSize;
+            transform.position = newpos;
             gameObject.SetActive(true);
             name = $"Chunk Active at {pos}";
             IsInitialized = true;
             _renderer.material = material;
 
             MeshData = new NativeMeshData(0, Allocator.Persistent);
-            VoxelLightLevels = new NativeArray3D<VoxelLightingLevel>(VoxelWorld._chunkSize, VoxelWorld._chunkSize, VoxelWorld._chunkSize, Allocator.Persistent);
+            VoxelLightLevels = new NativeArray3D<VoxelLightingLevel>(VoxConsts._chunkSize, VoxConsts._chunkSize, VoxConsts._chunkSize, Allocator.Persistent);
             VoxelSetQuery = new NativeQueue<VoxelSetQueryData>(Allocator.Persistent);
         }
 

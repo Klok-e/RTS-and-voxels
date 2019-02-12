@@ -1,5 +1,6 @@
 ﻿using Scripts.World;
 using System;
+using Unity.Mathematics;
 using UnityEngine;
 
 namespace Scripts.Help
@@ -65,6 +66,7 @@ namespace Scripts.Help
             throw new Exception();
         }
 
+        //[Obsolete("Use ToInt3")]
         public static Vector3Int ToVecInt(this BlockDirectionFlag en)
         {
             var vec = new Vector3Int();
@@ -80,6 +82,24 @@ namespace Scripts.Help
                 vec += new Vector3Int(0, 0, -1);
             if((en & BlockDirectionFlag.Forward) != 0)
                 vec += new Vector3Int(0, 0, 1);
+            return vec;
+        }
+
+        public static int3 ToInt3(this BlockDirectionFlag en)
+        {
+            var vec = new int3();
+            if((en & BlockDirectionFlag.Up) != 0)
+                vec += new int3(0, 1, 0);
+            if((en & BlockDirectionFlag.Down) != 0)
+                vec += new int3(0, -1, 0);
+            if((en & BlockDirectionFlag.Left) != 0)
+                vec += new int3(-1, 0, 0);
+            if((en & BlockDirectionFlag.Right) != 0)
+                vec += new int3(1, 0, 0);
+            if((en & BlockDirectionFlag.Backward) != 0)
+                vec += new int3(0, 0, -1);
+            if((en & BlockDirectionFlag.Forward) != 0)
+                vec += new int3(0, 0, 1);
             return vec;
         }
 
@@ -129,34 +149,34 @@ namespace Scripts.Help
         public static BlockDirectionFlag WrapCoordsInChunk(ref int x, ref int y, ref int z)
         {
             var dirWrapped = BlockDirectionFlag.None;
-            if(x >= VoxelWorld._chunkSize)
+            if(x >= VoxConsts._chunkSize)
             {
                 x = 0;
                 dirWrapped |= BlockDirectionFlag.Right;
             }
-            if(y >= VoxelWorld._chunkSize)
+            if(y >= VoxConsts._chunkSize)
             {
                 y = 0;
                 dirWrapped |= BlockDirectionFlag.Up;
             }
-            if(z >= VoxelWorld._chunkSize)
+            if(z >= VoxConsts._chunkSize)
             {
                 z = 0;
                 dirWrapped |= BlockDirectionFlag.Forward;
             }
             if(x < 0)
             {
-                x = VoxelWorld._chunkSize - 1;
+                x = VoxConsts._chunkSize - 1;
                 dirWrapped |= BlockDirectionFlag.Left;
             }
             if(y < 0)
             {
-                y = VoxelWorld._chunkSize - 1;
+                y = VoxConsts._chunkSize - 1;
                 dirWrapped |= BlockDirectionFlag.Down;
             }
             if(z < 0)
             {
-                z = VoxelWorld._chunkSize - 1;
+                z = VoxConsts._chunkSize - 1;
                 dirWrapped |= BlockDirectionFlag.Backward;
             }
             return dirWrapped;
@@ -164,11 +184,11 @@ namespace Scripts.Help
 
         public static bool AreCoordsOutOfBordersOfChunk(int x, int y, int z)
         {
-            if(x >= VoxelWorld._chunkSize || x < 0
+            if(x >= VoxConsts._chunkSize || x < 0
                ||
-               y >= VoxelWorld._chunkSize || y < 0
+               y >= VoxConsts._chunkSize || y < 0
                ||
-               z >= VoxelWorld._chunkSize || z < 0)
+               z >= VoxConsts._chunkSize || z < 0)
                 return true;
             return false;
         }

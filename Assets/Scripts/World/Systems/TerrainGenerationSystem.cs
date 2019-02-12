@@ -1,7 +1,9 @@
 ﻿using Scripts.World.Components;
+using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
+using Unity.Mathematics;
 using UnityEngine;
 
 namespace Scripts.World.Systems
@@ -15,29 +17,21 @@ namespace Scripts.World.Systems
         [Inject]
         private TerrainGenerationBarrier _barrier;
 
-        //[BurstCompile]
-        public struct GenerateChunkTerrainJob : IJobParallelFor
+        [BurstCompile]
+        public struct GenerateChunkTerrainJob : IJobProcessComponentDataWithEntity<ChunkPosComponent>
         {
             [WriteOnly]
             public BufferArray<Voxel> voxelBuffers;
             [WriteOnly]
             public BufferArray<VoxelLightingLevel> lightBuffers;
-            [ReadOnly]
-            public ComponentArray<RegularChunk> chunks;
-            public EntityArray entities;
 
-            public EntityCommandBuffer.Concurrent commandBuffer;
-
-            public void Execute(int i)
+            public void Execute(Entity entity, int index, [ReadOnly] ref ChunkPosComponent c0)
             {
-                const int chunkSize = VoxelWorld._chunkSize;
+                const int chunkSize = VoxConsts._chunkSize;
 
-                commandBuffer.AddComponent(i, entities[i], new ChunkDirtyComponent());
-                commandBuffer.RemoveComponent<ChunkNeedTerrainGeneration>(i, entities[i]);
-
-                var offset = chunks[i].Pos;
-                var voxelsBuffer = voxelBuffers[i];
-                var lightBuffer = lightBuffers[i];
+                var offset = c0.Pos;
+                var voxelsBuffer = voxelBuffers[index];
+                var lightBuffer = lightBuffers[index];
                 for(int z = 0; z < chunkSize; z++)
                 {
                     for(int x = 0; x < chunkSize; x++)
@@ -79,30 +73,46 @@ namespace Scripts.World.Systems
                 }
             }
 
-            private float Perlin(float fx, float fz, Vector3Int offset)
+            private float Perlin(float fx, float fz, int3 offset)
             {
                 return 0.5f * Mathf.PerlinNoise((fx + offset.x) * 1.2f, (fz + offset.z) * 1.2f);
+            }
+        }
+
+        public struct ChangeTagsJob : IJobProcessComponentDataWithEntity<ChunkNeedTerrainGeneration>
+        {
+            public EntityCommandBuffer.Concurrent commandBuffer;
+
+            public void Execute(Entity entity, int index, ref ChunkNeedTerrainGeneration c0)
+            {
+                commandBuffer.AddComponent(index, entity, new ChunkDirtyComponent());
+                commandBuffer.RemoveComponent<ChunkNeedTerrainGeneration>(index, entity);
             }
         }
 
         protected override void OnCreateManager()
         {
             base.OnCreateManager();
-            _needGeneration = EntityManager.CreateComponentGroup(typeof(ChunkNeedTerrainGeneration), typeof(RegularChunk), typeof(VoxelLightingLevel), typeof(Voxel));
+            _needGeneration = EntityManager.CreateComponentGroup(
+                ComponentType.Create<ChunkNeedTerrainGeneration>(),
+                ComponentType.Create<VoxelLightingLevel>(),
+                ComponentType.Create<Voxel>());
             RequireForUpdate(_needGeneration);
         }
 
         protected override JobHandle OnUpdate(JobHandle inputDeps)
         {
-            var t = new GenerateChunkTerrainJob
+            var t1 = new GenerateChunkTerrainJob
             {
-                chunks = _needGeneration.GetComponentArray<RegularChunk>(),
                 lightBuffers = _needGeneration.GetBufferArray<VoxelLightingLevel>(),
                 voxelBuffers = _needGeneration.GetBufferArray<Voxel>(),
-                entities = _needGeneration.GetEntityArray(),
+
+            };
+            var t2 = new ChangeTagsJob()
+            {
                 commandBuffer = _barrier.CreateCommandBuffer().ToConcurrent(),
             };
-            return t.Schedule(t.chunks.Length, 1, inputDeps);
+            return t2.Schedule(this, t1.Schedule(this, inputDeps));
         }
     }
 }

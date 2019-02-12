@@ -6,7 +6,7 @@ namespace Scripts.World
     /// <summary>
     /// Levels of light
     /// </summary>
-    [InternalBufferCapacity(VoxelWorld._chunkSize * VoxelWorld._chunkSize * VoxelWorld._chunkSize)]
+    [InternalBufferCapacity(VoxConsts._chunkSize * VoxConsts._chunkSize * VoxConsts._chunkSize)]
     public struct VoxelLightingLevel : IBufferElementData
     {
         private const int regularLightMask = 0b0000_1111;

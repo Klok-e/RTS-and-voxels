@@ -5,12 +5,12 @@ namespace Scripts.World.Components
 {
     public struct ChunkNeighboursComponent : IComponentData
     {
-        public Entity Left { get; set; }
-        public Entity Right { get; set; }
-        public Entity Up { get; set; }
-        public Entity Down { get; set; }
-        public Entity Forward { get; set; }
-        public Entity Backward { get; set; }
+        public Entity Left;
+        public Entity Right;
+        public Entity Up;
+        public Entity Down;
+        public Entity Forward;
+        public Entity Backward;
 
         public Entity this[DirectionsHelper.BlockDirectionFlag dir]
         {

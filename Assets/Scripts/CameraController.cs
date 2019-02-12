@@ -189,7 +189,7 @@ namespace Scripts
             Ray ray = new Ray(transform.position, transform.forward);
             if(Physics.Raycast(ray, out RaycastHit hit))
             {
-                var pos = hit.point - (hit.normal * VoxelWorld._blockSize / 2);
+                var pos = hit.point - (hit.normal * VoxConsts._blockSize / 2);
 
                 //VoxelWorld.ChunkVoxelCoordinates(pos, out var chunk, out var voxel);
                 //voxelCoordinatesLabel.text = voxel.ToString();

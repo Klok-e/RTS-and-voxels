@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace Scripts.World
 {
-    [InternalBufferCapacity(VoxelWorld._chunkSize * VoxelWorld._chunkSize * VoxelWorld._chunkSize)]
+    [InternalBufferCapacity(VoxConsts._chunkSize * VoxConsts._chunkSize * VoxConsts._chunkSize)]
     public struct Voxel : IBufferElementData
     {
         public VoxelType Type { get; set; }
@@ -39,19 +39,19 @@ namespace Scripts.World
 
         public static Voxel AtGet(this DynamicBuffer<Voxel> buffer, int x, int y, int z)
         {
-            const int sz = VoxelWorld._chunkSize;
+            const int sz = VoxConsts._chunkSize;
             return buffer[z * sz * sz + y * sz + x];
         }
 
         public static void AtSet(this DynamicBuffer<Voxel> buffer, int x, int y, int z, Voxel value)
         {
-            const int sz = VoxelWorld._chunkSize;
+            const int sz = VoxConsts._chunkSize;
             buffer[z * sz * sz + y * sz + x] = value;
         }
 
         public static void AtAt(this DynamicBuffer<Voxel> buffer, int i, out int x, out int y, out int z)
         {
-            const int sz = VoxelWorld._chunkSize;
+            const int sz = VoxConsts._chunkSize;
             x = i % sz;
             y = (i / sz) % sz;
             z = i / (sz * sz);
@@ -59,19 +59,19 @@ namespace Scripts.World
 
         public static VoxelLightingLevel AtGet(this DynamicBuffer<VoxelLightingLevel> buffer, int x, int y, int z)
         {
-            const int sz = VoxelWorld._chunkSize;
+            const int sz = VoxConsts._chunkSize;
             return buffer[z * sz * sz + y * sz + x];
         }
 
         public static void AtSet(this DynamicBuffer<VoxelLightingLevel> buffer, int x, int y, int z, VoxelLightingLevel value)
         {
-            const int sz = VoxelWorld._chunkSize;
+            const int sz = VoxConsts._chunkSize;
             buffer[z * sz * sz + y * sz + x] = value;
         }
 
         public static void AtAt(this DynamicBuffer<VoxelLightingLevel> buffer, int i, out int x, out int y, out int z)
         {
-            const int sz = VoxelWorld._chunkSize;
+            const int sz = VoxConsts._chunkSize;
             x = i % sz;
             y = (i / sz) % sz;
             z = i / (sz * sz);

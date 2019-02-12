@@ -2,7 +2,7 @@
 
 namespace Scripts.World
 {
-    public class VoxelWorld : MonoBehaviour
+    public class VoxConsts : MonoBehaviour
     {
         /// <summary>
         /// Only uneven amount or else SetVoxel won't work at all

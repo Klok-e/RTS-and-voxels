@@ -3,6 +3,7 @@ using Scripts.World.Components;
 using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Entities;
+using Unity.Mathematics;
 using UnityEngine;
 
 namespace Scripts.World.Systems
@@ -15,11 +16,11 @@ namespace Scripts.World.Systems
 
         private Material _chunkMaterial;
         private Vector2Int _mapSize;
-        private Dictionary<Vector3Int, Entity> _chunks;
+        private Dictionary<int3, Entity> _chunks;
 
         protected override void OnCreateManager()
         {
-            _chunks = new Dictionary<Vector3Int, Entity>();
+            _chunks = new Dictionary<int3, Entity>();
             _allChunks = EntityManager.CreateComponentGroup(typeof(RegularChunk));
             _worldSpawners = EntityManager.CreateComponentGroup(typeof(MapParameters));
             RequireForUpdate(_worldSpawners);
@@ -46,26 +47,27 @@ namespace Scripts.World.Systems
                     for(int x = 0; x < parameters._size.x; x++)
                         for(int y = 0; y < parameters._size.y; y++)
                         {
-                            CreateChunk(new Vector3Int(x, 0, y));
+                            CreateChunk(new int3(x, 0, y));
                         }
                 }
 
             }
         }
 
-        private void CreateChunk(Vector3Int pos)
+        private void CreateChunk(int3 pos)
         {
             var chunk = RegularChunk.CreateNew();
             chunk.Initialize(pos, _chunkMaterial);
             var ent = chunk.gameObject.AddComponent<GameObjectEntity>().Entity;
-            EntityManager.AddComponent(ent, typeof(ChunkNeedTerrainGeneration));
+            EntityManager.AddComponentData(ent, new ChunkNeedTerrainGeneration());
+            EntityManager.AddComponentData(ent, new ChunkPosComponent { Pos = new int3(pos) });
 
             var buf1 = EntityManager.AddBuffer<Voxel>(ent);
-            buf1.ResizeUninitialized(VoxelWorld._chunkSize * VoxelWorld._chunkSize * VoxelWorld._chunkSize);
+            buf1.ResizeUninitialized(VoxConsts._chunkSize * VoxConsts._chunkSize * VoxConsts._chunkSize);
             //Debug.Log($"Length of voxel buffer: {buf1.Length}");
 
             var buf2 = EntityManager.AddBuffer<VoxelLightingLevel>(ent);
-            buf2.ResizeUninitialized(VoxelWorld._chunkSize * VoxelWorld._chunkSize * VoxelWorld._chunkSize);
+            buf2.ResizeUninitialized(VoxConsts._chunkSize * VoxConsts._chunkSize * VoxConsts._chunkSize);
             //Debug.Log($"Length of light buffer: {buf2.Length}");
 
             var neighbs = new ChunkNeighboursComponent();
@@ -74,7 +76,7 @@ namespace Scripts.World.Systems
             for(int i = 0; i < 6; i++)
             {
                 var dir = (DirectionsHelper.BlockDirectionFlag)(1 << i);
-                var dirVec = dir.ToVecInt();
+                var dirVec = dir.ToInt3();
                 if(_chunks.ContainsKey(pos + dirVec))
                 {
                     var nextEnt = _chunks[pos + dirVec];
@@ -84,8 +86,7 @@ namespace Scripts.World.Systems
                     EntityManager.SetComponentData(nextEnt, nextNeighb);
                 }
             }
-            EntityManager.AddComponent(ent, typeof(ChunkNeighboursComponent));
-            EntityManager.SetComponentData(ent, neighbs);
+            EntityManager.AddComponentData(ent, neighbs);
         }
 
         private void SetTextureArray(Texture2D[] textures)

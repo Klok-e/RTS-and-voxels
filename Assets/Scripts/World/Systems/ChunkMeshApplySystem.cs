@@ -7,21 +7,25 @@ namespace Scripts.World.Systems
     {
         private ComponentGroup _needApply;
 
+        [Inject]
+        private EndFrameBarrier _barrier;
+
         protected override void OnCreateManager()
         {
             base.OnCreateManager();
-            _needApply = EntityManager.CreateComponentGroup(typeof(ChunkNeedMeshApply), typeof(RegularChunk));
-            RequireForUpdate(_needApply);
+            _needApply = GetComponentGroup(typeof(ChunkNeedMeshApply), typeof(RegularChunk));
         }
 
         protected override void OnUpdate()
         {
+            var commands = _barrier.CreateCommandBuffer();
+
             var ents = _needApply.GetEntityArray();
             var chunks = _needApply.GetComponentArray<RegularChunk>();
             for(int i = 0; i < ents.Length; i++)
             {
                 chunks[i].ApplyMeshData();
-                PostUpdateCommands.RemoveComponent<ChunkNeedMeshApply>(ents[i]);
+                commands.RemoveComponent<ChunkNeedMeshApply>(ents[i]);
             }
         }
     }

@@ -4,11 +4,11 @@
         "Unity.Collections",
         "Unity.Entities",
         "Unity.Burst",
-        "Plugins",
         "Unity.Entities.Hybrid",
         "Unity.Transforms",
         "Unity.Jobs",
-        "Unity.Mathematics"
+        "Unity.Mathematics",
+        "ScriptableObjects"
     ],
     "optionalUnityReferences": [],
     "includePlatforms": [],

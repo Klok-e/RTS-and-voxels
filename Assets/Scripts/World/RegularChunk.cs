@@ -1,5 +1,4 @@
 ﻿using Scripts.Help.DataContainers;
-using Scripts.World.QueryDataStructures;
 using Unity.Collections;
 using Unity.Mathematics;
 using UnityEngine;
@@ -10,9 +9,7 @@ namespace Scripts.World
     [RequireComponent(typeof(MeshRenderer))]
     public class RegularChunk : MonoBehaviour
     {
-        public NativeArray3D<VoxelLightingLevel> VoxelLightLevels { get; private set; }
         public NativeMeshData MeshData { get; private set; }
-        public NativeQueue<VoxelSetQueryData> VoxelSetQuery { get; private set; }
 
         public bool IsInitialized { get; private set; }
 
@@ -31,8 +28,6 @@ namespace Scripts.World
             _renderer.material = material;
 
             MeshData = new NativeMeshData(0, Allocator.Persistent);
-            VoxelLightLevels = new NativeArray3D<VoxelLightingLevel>(VoxConsts._chunkSize, VoxConsts._chunkSize, VoxConsts._chunkSize, Allocator.Persistent);
-            VoxelSetQuery = new NativeQueue<VoxelSetQueryData>(Allocator.Persistent);
         }
 
         public void Deinitialize()
@@ -42,8 +37,6 @@ namespace Scripts.World
             gameObject.SetActive(false);
 
             MeshData.Dispose();
-            VoxelLightLevels.Dispose();
-            VoxelSetQuery.Dispose();
         }
 
         public void ApplyMeshData()

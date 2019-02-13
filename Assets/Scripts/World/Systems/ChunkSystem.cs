@@ -1,6 +1,7 @@
 ﻿using Scripts.Help;
 using Scripts.Help.DataContainers;
 using Scripts.World.Components;
+using Scripts.World.DynamicBuffers;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
@@ -14,10 +15,9 @@ namespace Scripts.World.Systems
     {
         private ComponentGroup _chunksDirty;
 
-        [UpdateAfter(typeof(ChunkSystem))]
         private class ChunkSystemBarrier : BarrierSystem { }
         [Inject]
-        private ChunkSystemBarrier _barrier;
+        private EndFrameBarrier _barrier;
 
         [BurstCompile]
         private struct CopyLightJob : IJob
@@ -320,7 +320,10 @@ namespace Scripts.World.Systems
             public NativeMeshData MeshData;
 
             [ReadOnly]
-            public DynamicBuffer<Voxel> ChunkBuffer;
+            public BufferFromEntity<Voxel> ChunkBufferEnt;
+
+            [ReadOnly]
+            public Entity Entity;
 
             [DeallocateOnJobCompletion]
             [ReadOnly]
@@ -332,13 +335,14 @@ namespace Scripts.World.Systems
 
             public void Execute()
             {
+                var chunkBuffer = ChunkBufferEnt[Entity];
                 for(int z = 0; z < VoxConsts._chunkSize; z++)
                 {
                     for(int y = 0; y < VoxConsts._chunkSize; y++)
                     {
                         for(int x = 0; x < VoxConsts._chunkSize; x++)
                         {
-                            var vox = ChunkBuffer.AtGet(x, y, z).Type;
+                            var vox = chunkBuffer.AtGet(x, y, z).Type;
                             if(vox != VoxelType.Empty)
                             {
                                 var faces = VoxelsVisibleFaces[x, y, z];
@@ -568,13 +572,12 @@ namespace Scripts.World.Systems
 
         protected override void OnCreateManager()
         {
-            _chunksDirty = EntityManager.CreateComponentGroup(
-                typeof(RegularChunk),
-                typeof(ChunkDirtyComponent),
-                typeof(ChunkNeighboursComponent),
-                typeof(Voxel),
-                typeof(VoxelLightingLevel));
-            RequireForUpdate(_chunksDirty);
+            _chunksDirty = GetComponentGroup(
+                ComponentType.Create<RegularChunk>(),
+                ComponentType.Create<ChunkDirtyComponent>(),
+                ComponentType.Create<ChunkNeighboursComponent>(),
+                ComponentType.Create<Voxel>(),
+                ComponentType.Create<VoxelLightingLevel>());
         }
 
         protected override JobHandle OnUpdate(JobHandle inputDeps)
@@ -621,8 +624,9 @@ namespace Scripts.World.Systems
             {
                 MeshData = chunk.MeshData,
                 VoxelsVisibleFaces = j1.facesVisibleArr,
-                ChunkBuffer = GetBufferFromEntity<Voxel>(true)[entity],
+                ChunkBufferEnt = GetBufferFromEntity<Voxel>(true),
                 LightingData = j2.LightingData,
+                Entity = entity,
             };
 
             return j3.Schedule(JobHandle.CombineDependencies(

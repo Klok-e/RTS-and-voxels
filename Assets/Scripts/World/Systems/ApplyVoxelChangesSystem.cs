@@ -1,4 +1,6 @@
 ﻿using Scripts.World.Components;
+using Scripts.World.DynamicBuffers;
+using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
@@ -11,31 +13,28 @@ namespace Scripts.World.Systems
         private ComponentGroup _chunksNeedApplyVoxelChanges;
 
         [Inject]
-        private ApplyVoxelsBarrier _barrier;
+        private EndFrameBarrier _barrier;
 
-        [UpdateAfter(typeof(ApplyVoxelChangesSystem))]
         private class ApplyVoxelsBarrier : BarrierSystem { }
 
+        [BurstCompile]
         private struct ApplyChanges : IJobParallelFor
         {
-            public ComponentArray<RegularChunk> needApply;
-            public BufferArray<Voxel> voxelBuffers;
-            public EntityArray applEntitties;
+            [WriteOnly]
+            public BufferArray<Voxel> VoxelBuffers;
 
-            public EntityCommandBuffer.Concurrent commandBuffer;
+            public BufferArray<VoxelSetQueryData> VoxelSetQuery;
 
-            public void Execute(int i)
+            public void Execute(int index)
             {
-                ApplyChangesToChunk(needApply[i], applEntitties[i], voxelBuffers[i]);
-                commandBuffer.RemoveComponent<ChunkNeedApplyVoxelChanges>(i, applEntitties[i]);
-                commandBuffer.AddComponent(i, applEntitties[i], new ChunkDirtyComponent());
+                ApplyChangesToChunk(VoxelBuffers[index], VoxelSetQuery[index]);
             }
 
-            private void ApplyChangesToChunk(RegularChunk chunk, Entity entity, DynamicBuffer<Voxel> buffer)
+            private void ApplyChangesToChunk(DynamicBuffer<Voxel> buffer, DynamicBuffer<VoxelSetQueryData> query)
             {
-                while(chunk.VoxelSetQuery.Count > 0)
+                for(int i = 0; i < query.Length; i++)
                 {
-                    var x = chunk.VoxelSetQuery.Dequeue();
+                    var x = query[i];
 
                     buffer.AtSet(x.Pos.x, x.Pos.y, x.Pos.z,
                         new Voxel
@@ -43,24 +42,54 @@ namespace Scripts.World.Systems
                             Type = x.NewVoxelType,
                         });
                 }
+                query.Clear();
             }
         }
+
+        private struct ChangeTagsJob : IJob
+        {
+            public EntityCommandBuffer CommandBuffer;
+            [ReadOnly]
+            public ComponentDataFromEntity<ChunkDirtyComponent> AlreadyDirty;
+            public EntityArray Entities;
+
+            public void Execute()
+            {
+                for(int index = 0; index < Entities.Length; index++)
+                {
+                    CommandBuffer.RemoveComponent<ChunkNeedApplyVoxelChanges>(Entities[index]);
+                    if(!AlreadyDirty.Exists(Entities[index]))
+                        CommandBuffer.AddComponent(Entities[index], new ChunkDirtyComponent());
+                }
+            }
+        }
+
         protected override void OnCreateManager()
         {
-            _chunksNeedApplyVoxelChanges = EntityManager.CreateComponentGroup(typeof(RegularChunk), typeof(ChunkNeedApplyVoxelChanges), typeof(Voxel));
-            RequireForUpdate(_chunksNeedApplyVoxelChanges);
+            _chunksNeedApplyVoxelChanges = GetComponentGroup(
+                ComponentType.Create<ChunkNeedApplyVoxelChanges>(),
+                ComponentType.Create<Voxel>(),
+                ComponentType.Create<VoxelSetQueryData>());
         }
 
         protected override JobHandle OnUpdate(JobHandle inputDeps)
         {
-            var j = new ApplyChanges
+            var ents = _chunksNeedApplyVoxelChanges.GetEntityArray();
+            var j1 = new ApplyChanges
             {
-                needApply = _chunksNeedApplyVoxelChanges.GetComponentArray<RegularChunk>(),
-                voxelBuffers = _chunksNeedApplyVoxelChanges.GetBufferArray<Voxel>(),
-                applEntitties = _chunksNeedApplyVoxelChanges.GetEntityArray(),
-                commandBuffer = _barrier.CreateCommandBuffer().ToConcurrent(),
+                VoxelBuffers = _chunksNeedApplyVoxelChanges.GetBufferArray<Voxel>(),
+                VoxelSetQuery = _chunksNeedApplyVoxelChanges.GetBufferArray<VoxelSetQueryData>(),
             };
-            return j.Schedule(j.needApply.Length, 1, inputDeps);
+            var j2 = new ChangeTagsJob
+            {
+                CommandBuffer = _barrier.CreateCommandBuffer(),
+                Entities = ents,
+                AlreadyDirty = GetComponentDataFromEntity<ChunkDirtyComponent>(true),
+            };
+
+            return JobHandle.CombineDependencies(
+                j2.Schedule(inputDeps),
+                j1.Schedule(ents.Length, 1, inputDeps));
         }
     }
 }

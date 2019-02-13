@@ -1,5 +1,6 @@
 ﻿using Scripts.Help;
 using Scripts.World.Components;
+using Scripts.World.DynamicBuffers;
 using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Entities;
@@ -11,8 +12,8 @@ namespace Scripts.World.Systems
     public class ChunkCreationSystem : ComponentSystem
     {
         private ComponentGroup _worldSpawners;
-        private ComponentGroup _allChunks;
-        private ComponentGroup _needToLoadNeighboursChunks;
+        //private ComponentGroup _allChunks;
+        //private ComponentGroup _needToLoadNeighboursChunks;
 
         private Material _chunkMaterial;
         private Vector2Int _mapSize;
@@ -21,8 +22,8 @@ namespace Scripts.World.Systems
         protected override void OnCreateManager()
         {
             _chunks = new Dictionary<int3, Entity>();
-            _allChunks = EntityManager.CreateComponentGroup(typeof(RegularChunk));
-            _worldSpawners = EntityManager.CreateComponentGroup(typeof(MapParameters));
+            //_allChunks = GetComponentGroup(typeof(RegularChunk));
+            _worldSpawners = GetComponentGroup(typeof(MapParameters));
             RequireForUpdate(_worldSpawners);
         }
 
@@ -63,12 +64,16 @@ namespace Scripts.World.Systems
             EntityManager.AddComponentData(ent, new ChunkPosComponent { Pos = new int3(pos) });
 
             var buf1 = EntityManager.AddBuffer<Voxel>(ent);
+            //Debug.Log($"Length of voxel buffer: {buf1.Length} Capacity of voxel buffer: {buf1.Capacity}");
             buf1.ResizeUninitialized(VoxConsts._chunkSize * VoxConsts._chunkSize * VoxConsts._chunkSize);
-            //Debug.Log($"Length of voxel buffer: {buf1.Length}");
+            //Debug.Log($"Length of voxel buffer: {buf1.Length} Capacity of voxel buffer: {buf1.Capacity}");
 
             var buf2 = EntityManager.AddBuffer<VoxelLightingLevel>(ent);
+            //Debug.Log($"Length of light buffer: {buf2.Length} Capacity of light buffer: {buf2.Capacity}");
             buf2.ResizeUninitialized(VoxConsts._chunkSize * VoxConsts._chunkSize * VoxConsts._chunkSize);
-            //Debug.Log($"Length of light buffer: {buf2.Length}");
+            //Debug.Log($"Length of light buffer: {buf2.Length} Capacity of light buffer: {buf2.Capacity}");
+
+            EntityManager.AddBuffer<VoxelSetQueryData>(ent); // now voxels can be changed
 
             var neighbs = new ChunkNeighboursComponent();
 

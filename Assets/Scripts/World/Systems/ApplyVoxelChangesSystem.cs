@@ -7,7 +7,7 @@ using Unity.Jobs;
 
 namespace Scripts.World.Systems
 {
-    [UpdateBefore(typeof(ChunkSystem))]
+    [UpdateBefore(typeof(ChunkMeshSystem))]
     public class ApplyVoxelChangesSystem : JobComponentSystem
     {
         private ComponentGroup _chunksNeedApplyVoxelChanges;

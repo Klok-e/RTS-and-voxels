@@ -11,7 +11,7 @@ using UnityEngine;
 
 namespace Scripts.World.Systems
 {
-    public class ChunkSystem : JobComponentSystem
+    public class ChunkMeshSystem : JobComponentSystem
     {
         private ComponentGroup _chunksDirty;
 

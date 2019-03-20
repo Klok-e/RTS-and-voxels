@@ -9,7 +9,7 @@ using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
 
-namespace Assets.Scripts.World.Systems
+namespace Scripts.World.Systems
 {
     public class RemeshPerformanceTestSystem : JobComponentSystem
     {
@@ -36,7 +36,7 @@ namespace Assets.Scripts.World.Systems
             public void Execute(int index)
             {
                 var buf = Buffers[index];
-                if(Rand.NextFloat(0f, 1f) > 0.9f)
+                if(Rand.NextFloat(0f, 1f) > 1f)
                 {
                     buf.Add(new VoxelSetQueryData
                     {

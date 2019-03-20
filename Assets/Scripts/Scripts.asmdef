@@ -8,7 +8,9 @@
         "Unity.Transforms",
         "Unity.Jobs",
         "Unity.Mathematics",
-        "ScriptableObjects"
+        "ScriptableObjects",
+        "Unity.Entities.Properties",
+        "Unity.Rendering.Hybrid"
     ],
     "optionalUnityReferences": [],
     "includePlatforms": [],

@@ -141,7 +141,7 @@ namespace Scripts.Help
             public static readonly Vector3Int Forward = new Vector3Int(0, 0, 1);
         }
 
-        public static Vector3Int ToInt(this Vector3 vec)
+        public static Vector3Int ToVecInt(this Vector3 vec)
         {
             return new Vector3Int(Mathf.RoundToInt(vec.x), Mathf.RoundToInt(vec.y), Mathf.RoundToInt(vec.z));
         }
@@ -184,13 +184,29 @@ namespace Scripts.Help
 
         public static bool AreCoordsOutOfBordersOfChunk(int x, int y, int z)
         {
-            if(x >= VoxConsts._chunkSize || x < 0
-               ||
-               y >= VoxConsts._chunkSize || y < 0
-               ||
-               z >= VoxConsts._chunkSize || z < 0)
-                return true;
-            return false;
+            return x >= VoxConsts._chunkSize || x < 0
+                   ||
+                   y >= VoxConsts._chunkSize || y < 0
+                   ||
+                   z >= VoxConsts._chunkSize || z < 0;
+        }
+
+        public static BlockDirectionFlag AreCoordsOnBordersOfChunk(int3 coords)
+        {
+            var res = BlockDirectionFlag.None;
+            if(coords.x == VoxConsts._chunkSize - 1)
+                res |= BlockDirectionFlag.Right;
+            if(coords.x == 0)
+                res |= BlockDirectionFlag.Left;
+            if(coords.y == VoxConsts._chunkSize - 1)
+                res |= BlockDirectionFlag.Up;
+            if(coords.y == 0)
+                res |= BlockDirectionFlag.Down;
+            if(coords.z == VoxConsts._chunkSize - 1)
+                res |= BlockDirectionFlag.Forward;
+            if(coords.z == 0)
+                res |= BlockDirectionFlag.Backward;
+            return res;
         }
 
         [Flags]

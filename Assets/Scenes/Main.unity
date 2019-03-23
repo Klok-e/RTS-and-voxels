@@ -3026,8 +3026,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2059880938}
-  - component: {fileID: 2059880937}
   - component: {fileID: 2059880939}
+  - component: {fileID: 2059880937}
   m_Layer: 0
   m_Name: VoxelWorldSpawner
   m_TagString: Untagged
@@ -3073,11 +3073,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 06ed14c09af925c44aca3d7ed0f086b4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _size: {x: 10, y: 10}
-  _chunkMaterial: {fileID: 2100000, guid: bab4c8de5113003479a1e224b6c029e8, type: 2}
-  _textures:
-  - {fileID: 2800000, guid: 6fa51e0dcbd5cbc4396701a9ea9a9d7c, type: 3}
-  - {fileID: 2800000, guid: 93ed68d372bbb6947a5939a54394d9fb, type: 3}
+  m_SerializedData:
+    _size: {x: 10, y: 10}
+    _chunkMaterial: {fileID: 2100000, guid: bab4c8de5113003479a1e224b6c029e8, type: 2}
+    _textures:
+    - {fileID: 2800000, guid: 6fa51e0dcbd5cbc4396701a9ea9a9d7c, type: 3}
+    - {fileID: 2800000, guid: 93ed68d372bbb6947a5939a54394d9fb, type: 3}
 --- !u!1 &2138677391
 GameObject:
   m_ObjectHideFlags: 0

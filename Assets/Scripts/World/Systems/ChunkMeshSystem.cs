@@ -462,15 +462,15 @@ namespace Scripts.World.Systems
                 var rotationToDir = Quaternion.LookRotation(normal);
 
                 //set occluders
-                var centerInd = (rotationToDir * new Vector3(0, 0, 1)).ToInt();
-                var leftInd = (rotationToDir * new Vector3(-1, 0, 1)).ToInt();
-                var rightInd = (rotationToDir * new Vector3(1, 0, 1)).ToInt();
-                var forwardInd = (rotationToDir * new Vector3(0, -1, 1)).ToInt();
-                var backwardInd = (rotationToDir * new Vector3(0, 1, 1)).ToInt();
-                var forwardLeftInd = (rotationToDir * new Vector3(-1, -1, 1)).ToInt();
-                var forwardRightInd = (rotationToDir * new Vector3(1, -1, 1)).ToInt();
-                var backwardLeftInd = (rotationToDir * new Vector3(-1, 1, 1)).ToInt();
-                var backwardRightInd = (rotationToDir * new Vector3(1, 1, 1)).ToInt();
+                var centerInd = (rotationToDir * new Vector3(0, 0, 1)).ToVecInt();
+                var leftInd = (rotationToDir * new Vector3(-1, 0, 1)).ToVecInt();
+                var rightInd = (rotationToDir * new Vector3(1, 0, 1)).ToVecInt();
+                var forwardInd = (rotationToDir * new Vector3(0, -1, 1)).ToVecInt();
+                var backwardInd = (rotationToDir * new Vector3(0, 1, 1)).ToVecInt();
+                var forwardLeftInd = (rotationToDir * new Vector3(-1, -1, 1)).ToVecInt();
+                var forwardRightInd = (rotationToDir * new Vector3(1, -1, 1)).ToVecInt();
+                var backwardLeftInd = (rotationToDir * new Vector3(-1, 1, 1)).ToVecInt();
+                var backwardRightInd = (rotationToDir * new Vector3(1, 1, 1)).ToVecInt();
 
                 centerInd += blockPos;
                 leftInd += blockPos;
@@ -641,19 +641,19 @@ namespace Scripts.World.Systems
         public static void ChunkVoxelCoordinates(Vector3 worldPos, out Vector3Int chunkPos, out Vector3Int voxelPos)
         {
             worldPos /= VoxConsts._chunkSize;
-            chunkPos = ((worldPos - (Vector3.one * (VoxConsts._chunkSize / 2))) / VoxConsts._chunkSize).ToInt();
-            voxelPos = (worldPos - chunkPos * VoxConsts._chunkSize).ToInt();
+            chunkPos = ((worldPos - (Vector3.one * (VoxConsts._chunkSize / 2))) / VoxConsts._chunkSize).ToVecInt();
+            voxelPos = (worldPos - chunkPos * VoxConsts._chunkSize).ToVecInt();
         }
 
         public static void ChunkVoxelCoordinates(Vector3Int voxelWorldPos, out Vector3Int chunkPos, out Vector3Int voxelPos)
         {
-            chunkPos = ((voxelWorldPos - (Vector3.one * (VoxConsts._chunkSize / 2))) / VoxConsts._chunkSize).ToInt();
+            chunkPos = ((voxelWorldPos - (Vector3.one * (VoxConsts._chunkSize / 2))) / VoxConsts._chunkSize).ToVecInt();
             voxelPos = (voxelWorldPos - chunkPos * VoxConsts._chunkSize);
         }
 
         public static Vector3Int WorldPosToVoxelPos(Vector3 pos)
         {
-            return (pos / VoxConsts._chunkSize).ToInt();
+            return (pos / VoxConsts._chunkSize).ToVecInt();
         }
 
         public static Vector3 VoxelPosToWorldPos(Vector3Int pos)

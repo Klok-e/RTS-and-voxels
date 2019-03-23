@@ -1,9 +1,11 @@
-﻿using Scripts.World.Components;
+﻿using Scripts.Help;
+using Scripts.World.Components;
 using Scripts.World.DynamicBuffers;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
+using dirFlags = Scripts.Help.DirectionsHelper.BlockDirectionFlag;
 
 namespace Scripts.World.Systems
 {
@@ -25,12 +27,19 @@ namespace Scripts.World.Systems
 
             public BufferArray<VoxelSetQueryData> VoxelSetQuery;
 
+            public NativeQueue<Entity>.Concurrent ToBeRemeshed;
+
+            public EntityArray Entities;
+
+            public ComponentDataArray<ChunkNeighboursComponent> Neighbours;
+
             public void Execute(int index)
             {
-                ApplyChangesToChunk(VoxelBuffers[index], VoxelSetQuery[index]);
+                ApplyChangesToChunk(VoxelBuffers[index], VoxelSetQuery[index], Neighbours[index]);
+                ToBeRemeshed.Enqueue(Entities[index]);
             }
 
-            private void ApplyChangesToChunk(DynamicBuffer<Voxel> buffer, DynamicBuffer<VoxelSetQueryData> query)
+            private void ApplyChangesToChunk(DynamicBuffer<Voxel> buffer, DynamicBuffer<VoxelSetQueryData> query, ChunkNeighboursComponent neighbs)
             {
                 for(int i = 0; i < query.Length; i++)
                 {
@@ -41,6 +50,16 @@ namespace Scripts.World.Systems
                         {
                             Type = x.NewVoxelType,
                         });
+
+                    var dir = DirectionsHelper.AreCoordsOnBordersOfChunk(x.Pos);
+                    if(dir != dirFlags.None)
+                        for(int k = 0; k < 6; k++)
+                        {
+                            var diriter = (dirFlags)(1 << k);
+                            var ent = neighbs[diriter];
+                            if(ent != Entity.Null)
+                                ToBeRemeshed.Enqueue(ent);
+                        }
                 }
                 query.Clear();
             }
@@ -51,15 +70,16 @@ namespace Scripts.World.Systems
             public EntityCommandBuffer CommandBuffer;
             [ReadOnly]
             public ComponentDataFromEntity<ChunkDirtyComponent> AlreadyDirty;
-            public EntityArray Entities;
+
+            public NativeQueue<Entity> ToBeRemeshed;
 
             public void Execute()
             {
-                for(int index = 0; index < Entities.Length; index++)
+                while(ToBeRemeshed.TryDequeue(out var ent))
                 {
-                    CommandBuffer.RemoveComponent<ChunkNeedApplyVoxelChanges>(Entities[index]);
-                    if(!AlreadyDirty.Exists(Entities[index]))
-                        CommandBuffer.AddComponent(Entities[index], new ChunkDirtyComponent());
+                    CommandBuffer.RemoveComponent<ChunkNeedApplyVoxelChanges>(ent);
+                    if(!AlreadyDirty.Exists(ent))
+                        CommandBuffer.AddComponent(ent, new ChunkDirtyComponent());
                 }
             }
         }
@@ -69,27 +89,30 @@ namespace Scripts.World.Systems
             _chunksNeedApplyVoxelChanges = GetComponentGroup(
                 ComponentType.Create<ChunkNeedApplyVoxelChanges>(),
                 ComponentType.Create<Voxel>(),
-                ComponentType.Create<VoxelSetQueryData>());
+                ComponentType.Create<VoxelSetQueryData>(),
+                ComponentType.Create<ChunkNeighboursComponent>());
         }
 
         protected override JobHandle OnUpdate(JobHandle inputDeps)
         {
-            var ents = _chunksNeedApplyVoxelChanges.GetEntityArray();
+            var entities = _chunksNeedApplyVoxelChanges.GetEntityArray();
+            var entitiesToBeRemeshed = new NativeQueue<Entity>(Allocator.TempJob);
             var j1 = new ApplyChanges
             {
                 VoxelBuffers = _chunksNeedApplyVoxelChanges.GetBufferArray<Voxel>(),
                 VoxelSetQuery = _chunksNeedApplyVoxelChanges.GetBufferArray<VoxelSetQueryData>(),
+                ToBeRemeshed = entitiesToBeRemeshed.ToConcurrent(),
+                Entities = entities,
+                Neighbours = _chunksNeedApplyVoxelChanges.GetComponentDataArray<ChunkNeighboursComponent>(),
             };
             var j2 = new ChangeTagsJob
             {
                 CommandBuffer = _barrier.CreateCommandBuffer(),
-                Entities = ents,
                 AlreadyDirty = GetComponentDataFromEntity<ChunkDirtyComponent>(true),
+                ToBeRemeshed = entitiesToBeRemeshed,
             };
 
-            return JobHandle.CombineDependencies(
-                j2.Schedule(inputDeps),
-                j1.Schedule(ents.Length, 1, inputDeps));
+            return j2.Schedule(j1.Schedule(entities.Length, 1, inputDeps));
         }
     }
 }

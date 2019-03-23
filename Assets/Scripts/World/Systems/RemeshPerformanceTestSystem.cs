@@ -11,6 +11,7 @@ using UnityEngine;
 
 namespace Scripts.World.Systems
 {
+    [DisableAutoCreation]
     public class RemeshPerformanceTestSystem : JobComponentSystem
     {
         private ComponentGroup _readyChunks;
@@ -36,7 +37,7 @@ namespace Scripts.World.Systems
             public void Execute(int index)
             {
                 var buf = Buffers[index];
-                if(Rand.NextFloat(0f, 1f) > 1f)
+                if(Rand.NextFloat(0f, 1f) > 0.9f)
                 {
                     buf.Add(new VoxelSetQueryData
                     {

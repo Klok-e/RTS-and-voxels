@@ -492,25 +492,25 @@ namespace Scripts.World.Systems
                 var backLeft = LightingData[backwardLeftInd.x, backwardLeftInd.y, backwardLeftInd.z];
                 var backRight = LightingData[backwardRightInd.x, backwardRightInd.y, backwardRightInd.z];
 
-                //int centerVal =     math.max(center.RegularLight, center.Sunlight);
-                //int leftVal =       math.max(left.RegularLight, left.Sunlight);
-                //int rightVal =      math.max(right.RegularLight, right.Sunlight);
-                //int frontVal =      math.max(front.RegularLight, front.Sunlight);
-                //int backVal =       math.max(back.RegularLight, back.Sunlight);
-                //int frontLeftVal =  math.max(frontLeft.RegularLight, frontLeft.Sunlight);
-                //int frontRightVal = math.max(frontRight.RegularLight, frontRight.Sunlight);
-                //int backLeftVal =   math.max(backLeft.RegularLight, backLeft.Sunlight);
-                //int backRightVal =  math.max(backRight.RegularLight, backRight.Sunlight);
+                int centerVal = math.max(center.RegularLight, center.Sunlight);
+                int leftVal = math.max(left.RegularLight, left.Sunlight);
+                int rightVal = math.max(right.RegularLight, right.Sunlight);
+                int frontVal = math.max(front.RegularLight, front.Sunlight);
+                int backVal = math.max(back.RegularLight, back.Sunlight);
+                int frontLeftVal = math.max(frontLeft.RegularLight, frontLeft.Sunlight);
+                int frontRightVal = math.max(frontRight.RegularLight, frontRight.Sunlight);
+                int backLeftVal = math.max(backLeft.RegularLight, backLeft.Sunlight);
+                int backRightVal = math.max(backRight.RegularLight, backRight.Sunlight);
 
-                int centerVal = center.RegularLight;
-                int leftVal = left.RegularLight;
-                int rightVal = right.RegularLight;
-                int frontVal = front.RegularLight;
-                int backVal = back.RegularLight;
-                int frontLeftVal = frontLeft.RegularLight;
-                int frontRightVal = frontRight.RegularLight;
-                int backLeftVal = backLeft.RegularLight;
-                int backRightVal = backRight.RegularLight;
+                //int centerVal = center.RegularLight;
+                //int leftVal = left.RegularLight;
+                //int rightVal = right.RegularLight;
+                //int frontVal = front.RegularLight;
+                //int backVal = back.RegularLight;
+                //int frontLeftVal = frontLeft.RegularLight;
+                //int frontRightVal = frontRight.RegularLight;
+                //int backLeftVal = backLeft.RegularLight;
+                //int backRightVal = backRight.RegularLight;
 
                 float vert1 = VertexLight(centerVal, leftVal, backVal, backLeftVal);
                 float vert2 = VertexLight(centerVal, rightVal, backVal, backRightVal);

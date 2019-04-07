@@ -281,6 +281,123 @@ namespace Scripts.World.Systems
                             }
                         }
                     }
+
+                    // Depropagate sun light
+                    while(ToDepSunLight.Count > 0)
+                    {
+                        var depr = ToDepSunLight.Dequeue();
+
+                        var lightAtPos = currLight.AtGet(depr.x, depr.y, depr.z);
+
+                        currLight.AtSet(depr.x, depr.y, depr.z, new VoxelLightingLevel(lightAtPos.RegularLight, 0));
+
+                        // add neighbours to toDepReg
+                        for(int i = 0; i < 6; i++)
+                        {
+                            var dir = (dirFlags)(1 << i);
+                            var vec = dir.ToInt3();
+
+                            var nextBlock = depr + vec;
+
+                            var dirWrp = DirectionsHelper.WrapCoordsInChunk(ref nextBlock.x, ref nextBlock.y, ref nextBlock.z);
+                            if(dirWrp == dirFlags.None)
+                            {
+                                if(currLight.AtGet(nextBlock.x, nextBlock.y, nextBlock.z).Sunlight < lightAtPos.Sunlight) // less than supposed to be
+                                    ToDepSunLight.Enqueue(nextBlock);
+                                else
+                                    ToPropSunLight.Enqueue(nextBlock);
+                            }
+                            else // not in this chunk
+                            {
+                                var nextEnt = Neighbours[ent][dir];
+                                if(nextEnt != Entity.Null)
+                                {
+                                    var nextLight = LightBuffers[nextEnt].AtGet(nextBlock.x, nextBlock.y, nextBlock.z);
+                                    if(nextLight.Sunlight > 0)
+                                    {
+                                        PropagationType pr;
+                                        if(nextLight.Sunlight < lightAtPos.Sunlight)
+                                            pr = PropagationType.Depropagate; // depropagate
+                                        else
+                                            pr = PropagationType.Propagate; // propagate
+
+                                        LightSetQuery[nextEnt].Add(new LightSetQueryData
+                                        {
+                                            LightType = SetLightType.Sunlight,
+                                            Pos = nextBlock,
+                                            Propagation = pr,
+                                        });
+                                        ToChangeLight.Enqueue(nextEnt);
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Propagate sun light
+                    while(ToPropSunLight.Count > 0)
+                    {
+                        var prop = ToPropSunLight.Dequeue();
+
+                        var lightAtPos = currLight.AtGet(prop.x, prop.y, prop.z);
+
+                        if(lightAtPos.Sunlight > 0)
+                        {
+                            // propagate to neighbours
+                            for(int i = 0; i < 6; i++)
+                            {
+                                var dir = (dirFlags)(1 << i);
+                                var vec = dir.ToInt3();
+
+                                var nextBlock = prop + vec;
+
+                                var dirWrp = DirectionsHelper.WrapCoordsInChunk(ref nextBlock.x, ref nextBlock.y, ref nextBlock.z);
+                                if(dirWrp == dirFlags.None)
+                                {
+                                    var nLight = currLight.AtGet(nextBlock.x, nextBlock.y, nextBlock.z);
+                                    if(nLight.Sunlight < lightAtPos.Sunlight - 1 // less than current
+                                        &&
+                                        currVox.AtGet(nextBlock.x, nextBlock.y, nextBlock.z).Type.IsEmpty()) // and empty
+                                    {
+                                        int nxtVal;
+                                        if(dirWrp == dirFlags.Down && lightAtPos.Sunlight == VoxelLightingLevel.MaxLight)
+                                            nxtVal = lightAtPos.Sunlight; // if down and max then set below to this light
+                                        else
+                                            nxtVal = lightAtPos.Sunlight - 1; // else propagate normally
+                                        ToPropSunLight.Enqueue(nextBlock);
+                                        currLight.AtSet(nextBlock.x, nextBlock.y, nextBlock.z, new VoxelLightingLevel(nLight.RegularLight, nxtVal));
+                                    }
+                                }
+                                else // not in this chunk
+                                {
+                                    var nextEnt = Neighbours[ent][dir];
+                                    if(nextEnt != Entity.Null)
+                                    {
+                                        var nLight = LightBuffers[nextEnt].AtGet(nextBlock.x, nextBlock.y, nextBlock.z);
+                                        if(nLight.Sunlight < lightAtPos.Sunlight - 1 // less than current
+                                            &&
+                                            VoxelBuffers[nextEnt].AtGet(nextBlock.x, nextBlock.y, nextBlock.z).Type.IsEmpty()) // and empty
+                                        {
+                                            LightSetQuery[nextEnt].Add(new LightSetQueryData
+                                            {
+                                                LightType = SetLightType.Sunlight,
+                                                Pos = nextBlock,
+                                                Propagation = PropagationType.Propagate,
+                                            });
+
+                                            int nxtVal;
+                                            if(dirWrp == dirFlags.Down && lightAtPos.Sunlight == VoxelLightingLevel.MaxLight)
+                                                nxtVal = lightAtPos.Sunlight; // if down and max then set below to this light
+                                            else
+                                                nxtVal = lightAtPos.Sunlight - 1; // else propagate normally
+                                            ToChangeLight.Enqueue(nextEnt);
+                                            LightBuffers[nextEnt].AtSet(nextBlock.x, nextBlock.y, nextBlock.z, new VoxelLightingLevel(nLight.RegularLight, nxtVal));
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }

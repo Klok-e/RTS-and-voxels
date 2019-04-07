@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
+using Unity.Transforms;
 using UnityEngine;
 
 namespace Scripts.World.Systems
@@ -12,19 +13,24 @@ namespace Scripts.World.Systems
     public class ChunkCreationSystem : ComponentSystem
     {
         private ComponentGroup _worldSpawners;
-        //private ComponentGroup _allChunks;
-        //private ComponentGroup _needToLoadNeighboursChunks;
+        private ComponentGroup _worldLoaders;
 
         private Material _chunkMaterial;
         private Vector2Int _mapSize;
         private Dictionary<int3, Entity> _chunks;
 
+        private int3 _loaderChunkInPrev;
+
+        private bool _first = true;
+
         protected override void OnCreateManager()
         {
             _chunks = new Dictionary<int3, Entity>();
-            //_allChunks = GetComponentGroup(typeof(RegularChunk));
             _worldSpawners = GetComponentGroup(typeof(MapParameters));
-            RequireForUpdate(_worldSpawners);
+
+            _worldLoaders = GetComponentGroup(
+                ComponentType.Create<MapLoader>(),
+                ComponentType.Create<Position>());
         }
 
         protected override void OnDestroyManager()
@@ -34,24 +40,90 @@ namespace Scripts.World.Systems
 
         protected override void OnUpdate()
         {
-            using(var spawners = _worldSpawners.ToEntityArray(Allocator.TempJob))
+            if(_first)
             {
-                if(spawners.Length > 0)
+                _first = false;
+                // init
+                using(var spawners = _worldSpawners.ToEntityArray(Allocator.TempJob))
                 {
-                    var parameters = EntityManager.GetSharedComponentData<MapParameters>(spawners[0]);
-                    PostUpdateCommands.DestroyEntity(spawners[0]);
+                    if(spawners.Length > 0)
+                    {
+                        var parameters = EntityManager.GetSharedComponentData<MapParameters>(spawners[0]);
+                        PostUpdateCommands.DestroyEntity(spawners[0]);
 
-                    _chunkMaterial = parameters._chunkMaterial;
+                        _chunkMaterial = parameters._chunkMaterial;
 
-                    SetTextureArray(parameters._textures);
-
-                    for(int x = 0; x < parameters._size.x; x++)
-                        for(int y = 0; y < parameters._size.y; y++)
-                        {
-                            CreateChunk(new int3(x, 0, y));
-                        }
+                        SetTextureArray(parameters._textures);
+                    }
                 }
 
+                var loaderpos1 = _worldLoaders.GetComponentDataArray<Position>();
+                var worldPos = loaderpos1[0].Value / VoxConsts._blockSize;
+                var loaderChunkInf = (worldPos - (math.float3(1f) * (VoxConsts._chunkSize / 2))) / VoxConsts._chunkSize;
+                var loaderChunkIn = new int3((int)math.round(loaderChunkInf.x), (int)math.round(loaderChunkInf.y), (int)math.round(loaderChunkInf.z));
+
+                _loaderChunkInPrev = loaderChunkIn - new int3(10, 10, 10);
+            }
+
+            // do the job
+            var loaders = _worldLoaders.GetComponentDataArray<MapLoader>();
+            var loaderpos = _worldLoaders.GetComponentDataArray<Position>();
+            for(int i = 0; i < loaders.Length; i++)
+            {
+                var loader = loaders[i];
+
+                var worldPos = loaderpos[i].Value / VoxConsts._blockSize;
+                var loaderChunkInf = (worldPos - (math.float3(1f) * (VoxConsts._chunkSize / 2))) / VoxConsts._chunkSize;
+                var loaderChunkIn = new int3((int)math.round(loaderChunkInf.x), (int)math.round(loaderChunkInf.y), (int)math.round(loaderChunkInf.z));
+
+                if(math.any(_loaderChunkInPrev != loaderChunkIn))
+                {
+                    _loaderChunkInPrev = loaderChunkIn;
+                    // gen new
+                    for(int x = -loader.ChunkDistance; x <= loader.ChunkDistance; x++)
+                        for(int y = -loader.ChunkDistance / 2; y <= loader.ChunkDistance / 2; y++)
+                            for(int z = -loader.ChunkDistance; z <= loader.ChunkDistance; z++)
+                            {
+                                var chPos = new int3(x, y, z) + loaderChunkIn;
+                                if(!_chunks.ContainsKey(chPos))
+                                    CreateChunk(chPos);
+                            }
+
+                    var remove = new List<int3>();
+                    // prune old
+                    foreach(var key in _chunks.Keys)
+                    {
+                        if(math.distance(loaderChunkIn, key) > loader.ChunkDistance * 2)
+                        {
+                            RemoveChunk(key);
+                            remove.Add(key);
+                        }
+                    }
+                    foreach(var item in remove)
+                    {
+                        _chunks.Remove(item);
+                    }
+                }
+            }
+        }
+
+        private void RemoveChunk(int3 pos)
+        {
+            var ent = _chunks[pos];
+            Object.Destroy(EntityManager.GetComponentObject<RegularChunk>(ent).gameObject, 1f);
+            PostUpdateCommands.DestroyEntity(ent);
+
+            for(int i = 0; i < 6; i++)
+            {
+                var dir = (DirectionsHelper.BlockDirectionFlag)(1 << i);
+                var dirVec = dir.ToInt3();
+                if(_chunks.ContainsKey(pos + dirVec))
+                {
+                    var nextEnt = _chunks[pos + dirVec];
+                    var nextNeighb = EntityManager.GetComponentData<ChunkNeighboursComponent>(nextEnt);
+                    nextNeighb[dir.Opposite()] = Entity.Null;
+                    EntityManager.SetComponentData(nextEnt, nextNeighb);
+                }
             }
         }
 
@@ -90,6 +162,8 @@ namespace Scripts.World.Systems
                     nextNeighb[dir.Opposite()] = ent;
                     neighbs[dir] = nextEnt;
                     EntityManager.SetComponentData(nextEnt, nextNeighb);
+                    if(!EntityManager.HasComponent<ChunkDirtyComponent>(nextEnt) && !EntityManager.HasComponent<ChunkNeedTerrainGeneration>(nextEnt))
+                        EntityManager.AddComponentData(nextEnt, new ChunkDirtyComponent());
                 }
             }
             EntityManager.AddComponentData(ent, neighbs);

@@ -14,11 +14,19 @@ namespace Scripts.World.DynamicBuffers
         RegularLight = 1,
     }
 
+    public enum PropagationType : byte
+    {
+        Propagate = 2,
+        Depropagate = 1,
+        Regular = 0,
+    }
+
     [InternalBufferCapacity(0)]
     public struct LightSetQueryData : IBufferElementData
     {
         public int3 Pos;
         public byte NewLight;
         public SetLightType LightType;
+        public PropagationType Propagation;
     }
 }

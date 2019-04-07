@@ -191,7 +191,7 @@ namespace Scripts.Help
                    z >= VoxConsts._chunkSize || z < 0;
         }
 
-        public static BlockDirectionFlag AreCoordsOnBordersOfChunk(int3 coords)
+        public static BlockDirectionFlag AreCoordsAtBordersOfChunk(int3 coords)
         {
             var res = BlockDirectionFlag.None;
             if(coords.x == VoxConsts._chunkSize - 1)

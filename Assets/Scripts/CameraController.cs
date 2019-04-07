@@ -93,14 +93,26 @@ namespace Scripts
                                 var pos = (hit.point + (hit.normal * VoxConsts._blockSize / 2f)) / VoxConsts._blockSize;
                                 // to index
                                 var index = (pos - chunkPos.Pos.ToVec() * VoxConsts._chunkSize).ToVecInt().ToInt();
+
+                                var ent = gameEntity.Entity;
+                                var dir = DirectionsHelper.WrapCoordsInChunk(ref index.x, ref index.y, ref index.z);
+                                if(dir != DirectionsHelper.BlockDirectionFlag.None)
+                                {
+                                    var neighb = gameEntity.EntityManager.GetComponentData<ChunkNeighboursComponent>(gameEntity.Entity);
+                                    var next = neighb[dir];
+                                    if(next != Entity.Null)
+                                        ent = next;
+                                    else
+                                        return;
+                                }
                                 switch(objectType)
                                 {
                                     case ObjectTypes.Voxel:
-                                        VoxelInteractionUtils.SetQuerySphere(gameEntity.Entity, gameEntity.EntityManager, index, 1, VoxelType.Dirt);
+                                        VoxelInteractionUtils.SetQuerySphere(ent, gameEntity.EntityManager, index, 1, VoxelType.Dirt);
                                         break;
 
                                     case ObjectTypes.Sphere:
-                                        VoxelInteractionUtils.SetQuerySphere(gameEntity.Entity, gameEntity.EntityManager, index, _sphereSize, VoxelType.Dirt);
+                                        VoxelInteractionUtils.SetQuerySphere(ent, gameEntity.EntityManager, index, _sphereSize, VoxelType.Dirt);
                                         break;
                                 }
                             }

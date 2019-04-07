@@ -20,9 +20,9 @@ namespace Scripts.World.Utils
 
             setVox.Add(new VoxelSetQueryData { NewVoxelType = voxType, Pos = index });
             if(voxType.IsEmpty())
-                setLight.Add(new LightSetQueryData { LightType = SetLightType.RegularLight, NewLight = 0, Pos = index });
+                setLight.Add(new LightSetQueryData { LightType = SetLightType.RegularLight, NewLight = 0, Pos = index, Propagation = PropagationType.Regular, });
             else
-                setLight.Add(new LightSetQueryData { LightType = SetLightType.RegularLight, NewLight = 15, Pos = index });
+                setLight.Add(new LightSetQueryData { LightType = SetLightType.RegularLight, NewLight = 15, Pos = index, Propagation = PropagationType.Regular, });
 
             manager.AddComponentData(entity, new ChunkNeedApplyVoxelChanges());
         }

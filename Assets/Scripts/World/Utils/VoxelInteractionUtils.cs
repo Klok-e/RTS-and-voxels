@@ -19,16 +19,9 @@ namespace Scripts.World.Utils
             var setLight = manager.GetBuffer<LightSetQueryData>(entity);
 
             setVox.Add(new VoxelSetQueryData { NewVoxelType = voxType, Pos = index });
-            if(voxType.IsEmpty())
-            {
-                setLight.Add(new LightSetQueryData { LightType = SetLightType.RegularLight, NewLight = 0, Pos = index, });
-                setLight.Add(new LightSetQueryData { LightType = SetLightType.Sunlight, NewLight = 0, Pos = index, });
-            }
-            else
-            {
-                setLight.Add(new LightSetQueryData { LightType = SetLightType.RegularLight, NewLight = 15, Pos = index, });
-                setLight.Add(new LightSetQueryData { LightType = SetLightType.Sunlight, NewLight = 0, Pos = index, });
-            }
+
+            setLight.Add(new LightSetQueryData { LightType = SetLightType.RegularLight, NewLight = voxType.GetLight(), Pos = index, });
+            setLight.Add(new LightSetQueryData { LightType = SetLightType.Sunlight, NewLight = 0, Pos = index, });
 
             manager.AddComponentData(entity, new ChunkNeedApplyVoxelChanges());
         }

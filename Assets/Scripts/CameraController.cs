@@ -27,6 +27,9 @@ namespace Scripts
         private Text objectTypeLabel;
 
         [SerializeField]
+        private Text voxelTypeLabel;
+
+        [SerializeField]
         private Text voxelCoordinatesLabel;
 
         [SerializeField]
@@ -40,6 +43,7 @@ namespace Scripts
         private float Y;
 
         private ObjectTypes objectType = ObjectTypes.Voxel;
+        private VoxelType voxType = VoxelType.Dirt;
 
         #region MonoBehaviour implementation
 
@@ -56,6 +60,7 @@ namespace Scripts
                 ChangeVoxelCoord();
                 ChangeObjectType();
                 ChangeSphereSize();
+                ChangeVoxelType();
 
                 var removeBlock = Input.GetMouseButtonDown(0);
                 var placeBlock = Input.GetMouseButtonDown(1);
@@ -108,11 +113,11 @@ namespace Scripts
                                 switch(objectType)
                                 {
                                     case ObjectTypes.Voxel:
-                                        VoxelInteractionUtils.SetQuerySphere(ent, gameEntity.EntityManager, index, 1, VoxelType.Dirt);
+                                        VoxelInteractionUtils.SetQuerySphere(ent, gameEntity.EntityManager, index, 1, voxType);
                                         break;
 
                                     case ObjectTypes.Sphere:
-                                        VoxelInteractionUtils.SetQuerySphere(ent, gameEntity.EntityManager, index, _sphereSize, VoxelType.Dirt);
+                                        VoxelInteractionUtils.SetQuerySphere(ent, gameEntity.EntityManager, index, _sphereSize, voxType);
                                         break;
                                 }
                             }
@@ -159,6 +164,19 @@ namespace Scripts
                 objectType = (ObjectTypes)next;
                 objectTypeLabel.text = objectType.ToString();
             }
+        }
+
+        private void ChangeVoxelType()
+        {
+            if(Input.GetKey(KeyCode.Alpha1))
+            {
+                voxType = VoxelType.Dirt;
+            }
+            else if(Input.GetKey(KeyCode.Alpha2))
+            {
+                voxType = VoxelType.Lamp;
+            }
+            voxelTypeLabel.text = voxType.ToString();
         }
 
         private void ChangeSphereSize()

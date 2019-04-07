@@ -7,6 +7,7 @@ using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
+using UnityEngine;
 using dirFlags = Scripts.Help.DirectionsHelper.BlockDirectionFlag;
 
 namespace Scripts.World.Systems
@@ -219,8 +220,8 @@ namespace Scripts.World.Systems
                                             Pos = nextBlock,
                                             Propagation = pr,
                                         });
-                                        ToChangeLight.Enqueue(nextEnt);
                                     }
+                                    ToChangeLight.Enqueue(nextEnt);
                                 }
                             }
                         }
@@ -271,9 +272,9 @@ namespace Scripts.World.Systems
                                                 Pos = nextBlock,
                                                 Propagation = PropagationType.Propagate,
                                             });
-                                            ToChangeLight.Enqueue(nextEnt);
                                             LightBuffers[nextEnt].AtSet(nextBlock.x, nextBlock.y, nextBlock.z, new VoxelLightingLevel(lightAtPos.RegularLight - 1, nLight.Sunlight));
                                         }
+                                        ToChangeLight.Enqueue(nextEnt);
                                     }
                                 }
                             }
@@ -300,7 +301,13 @@ namespace Scripts.World.Systems
                             var dirWrp = DirectionsHelper.WrapCoordsInChunk(ref nextBlock.x, ref nextBlock.y, ref nextBlock.z);
                             if(dirWrp == dirFlags.None)
                             {
-                                if(currLight.AtGet(nextBlock.x, nextBlock.y, nextBlock.z).Sunlight < lightAtPos.Sunlight) // less than supposed to be
+                                int nxtVal;
+                                if(dir == dirFlags.Down && lightAtPos.Sunlight == VoxelLightingLevel.MaxLight)
+                                    nxtVal = lightAtPos.Sunlight; // if down and max then set below to this light
+                                else
+                                    nxtVal = lightAtPos.Sunlight - 1; // else propagate normally
+
+                                if(currLight.AtGet(nextBlock.x, nextBlock.y, nextBlock.z).Sunlight <= nxtVal) // less than supposed to be
                                     ToDepSunLight.Enqueue(nextBlock);
                                 else
                                     ToPropSunLight.Enqueue(nextBlock);
@@ -313,8 +320,14 @@ namespace Scripts.World.Systems
                                     var nextLight = LightBuffers[nextEnt].AtGet(nextBlock.x, nextBlock.y, nextBlock.z);
                                     if(nextLight.Sunlight > 0)
                                     {
+                                        int nxtVal;
+                                        if(dir == dirFlags.Down && lightAtPos.Sunlight == VoxelLightingLevel.MaxLight)
+                                            nxtVal = lightAtPos.Sunlight; // if down and max then set below to this light
+                                        else
+                                            nxtVal = lightAtPos.Sunlight - 1; // else propagate normally
+
                                         PropagationType pr;
-                                        if(nextLight.Sunlight < lightAtPos.Sunlight)
+                                        if(nextLight.Sunlight <= nxtVal)
                                             pr = PropagationType.Depropagate; // depropagate
                                         else
                                             pr = PropagationType.Propagate; // propagate
@@ -325,8 +338,8 @@ namespace Scripts.World.Systems
                                             Pos = nextBlock,
                                             Propagation = pr,
                                         });
-                                        ToChangeLight.Enqueue(nextEnt);
                                     }
+                                    ToChangeLight.Enqueue(nextEnt);
                                 }
                             }
                         }
@@ -388,9 +401,9 @@ namespace Scripts.World.Systems
                                                 nxtVal = lightAtPos.Sunlight; // if down and max then set below to this light
                                             else
                                                 nxtVal = lightAtPos.Sunlight - 1; // else propagate normally
-                                            ToChangeLight.Enqueue(nextEnt);
                                             LightBuffers[nextEnt].AtSet(nextBlock.x, nextBlock.y, nextBlock.z, new VoxelLightingLevel(nLight.RegularLight, nxtVal));
                                         }
+                                        ToChangeLight.Enqueue(nextEnt);
                                     }
                                 }
                             }

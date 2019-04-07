@@ -58,4 +58,18 @@ namespace Scripts.World.DynamicBuffers
             }
         }
     }
+
+    public static class VoxelLightVals
+    {
+        public static byte GetLight(this VoxelType voxel)
+        {
+            switch(voxel)
+            {
+                case VoxelType.Lamp:
+                    return VoxelLightingLevel.MaxLight;
+                default:
+                    return 0;
+            }
+        }
+    }
 }

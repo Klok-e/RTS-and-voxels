@@ -1,5 +1,6 @@
 ﻿using Scripts.World.Components;
 using Scripts.World.DynamicBuffers;
+using Scripts.World.Utils;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
@@ -72,7 +73,6 @@ namespace Scripts.World.Systems
                                 lightBuffer.AtSet(x, y, z, new VoxelLightingLevel(0, VoxelLightingLevel.MaxLight));
                             }
                         }
-
                     }
                 }
             }

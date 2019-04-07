@@ -1,6 +1,7 @@
 ﻿using Scripts.Help;
 using Scripts.World.Components;
 using Scripts.World.DynamicBuffers;
+using Scripts.World.Utils;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
@@ -148,29 +149,26 @@ namespace Scripts.World.Systems
                                     ToDepSunLight.Enqueue(curr.Pos);
                             }
                         }
-                        else
+                        else if(curr.Propagation == PropagationType.Depropagate)
                         {
-                            if(curr.Propagation == PropagationType.Depropagate)
+                            if(curr.LightType == SetLightType.RegularLight)
                             {
-                                if(curr.LightType == SetLightType.RegularLight)
-                                {
-                                    ToDepRegLight.Enqueue(curr.Pos);
-                                }
-                                else
-                                {
-                                    ToDepSunLight.Enqueue(curr.Pos);
-                                }
+                                ToDepRegLight.Enqueue(curr.Pos);
                             }
                             else
                             {
-                                if(curr.LightType == SetLightType.RegularLight)
-                                {
-                                    ToPropRegLight.Enqueue(curr.Pos);
-                                }
-                                else
-                                {
-                                    ToPropSunLight.Enqueue(curr.Pos);
-                                }
+                                ToDepSunLight.Enqueue(curr.Pos);
+                            }
+                        }
+                        else
+                        {
+                            if(curr.LightType == SetLightType.RegularLight)
+                            {
+                                ToPropRegLight.Enqueue(curr.Pos);
+                            }
+                            else
+                            {
+                                ToPropSunLight.Enqueue(curr.Pos);
                             }
                         }
                     }
@@ -360,7 +358,7 @@ namespace Scripts.World.Systems
                                         currVox.AtGet(nextBlock.x, nextBlock.y, nextBlock.z).Type.IsEmpty()) // and empty
                                     {
                                         int nxtVal;
-                                        if(dirWrp == dirFlags.Down && lightAtPos.Sunlight == VoxelLightingLevel.MaxLight)
+                                        if(dir == dirFlags.Down && lightAtPos.Sunlight == VoxelLightingLevel.MaxLight)
                                             nxtVal = lightAtPos.Sunlight; // if down and max then set below to this light
                                         else
                                             nxtVal = lightAtPos.Sunlight - 1; // else propagate normally
@@ -386,7 +384,7 @@ namespace Scripts.World.Systems
                                             });
 
                                             int nxtVal;
-                                            if(dirWrp == dirFlags.Down && lightAtPos.Sunlight == VoxelLightingLevel.MaxLight)
+                                            if(dir == dirFlags.Down && lightAtPos.Sunlight == VoxelLightingLevel.MaxLight)
                                                 nxtVal = lightAtPos.Sunlight; // if down and max then set below to this light
                                             else
                                                 nxtVal = lightAtPos.Sunlight - 1; // else propagate normally

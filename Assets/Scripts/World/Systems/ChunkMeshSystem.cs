@@ -2,6 +2,7 @@
 using Scripts.Help.DataContainers;
 using Scripts.World.Components;
 using Scripts.World.DynamicBuffers;
+using Scripts.World.Utils;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
@@ -386,32 +387,7 @@ namespace Scripts.World.Systems
                 mesh._uv.Add(new Vector2(0, 1));
                 mesh._uv.Add(new Vector2(1, 1));
 
-                switch(voxelType)
-                {
-                    case VoxelType.Dirt:
-                        mesh._uv2.Add(new Vector2(1, 0));
-                        mesh._uv2.Add(new Vector2(1, 0));
-                        mesh._uv2.Add(new Vector2(1, 0));
-                        mesh._uv2.Add(new Vector2(1, 0));
-                        break;
-
-                    case VoxelType.Grass:
-                        if(dir == DirectionsHelper.BlockDirectionFlag.Up)
-                        {
-                            mesh._uv2.Add(new Vector2(1, 1));
-                            mesh._uv2.Add(new Vector2(1, 1));
-                            mesh._uv2.Add(new Vector2(1, 1));
-                            mesh._uv2.Add(new Vector2(1, 1));
-                        }
-                        else
-                        {
-                            mesh._uv2.Add(new Vector2(1, 0));
-                            mesh._uv2.Add(new Vector2(1, 0));
-                            mesh._uv2.Add(new Vector2(1, 0));
-                            mesh._uv2.Add(new Vector2(1, 0));
-                        }
-                        break;
-                }
+                voxelType.Mesh(dir, mesh);
 
                 mesh._vertices.Add((rotation * (new Vector3(-.5f, .5f, .5f) * VoxConsts._blockSize)) + vertOffset);
                 mesh._vertices.Add((rotation * (new Vector3(.5f, .5f, .5f) * VoxConsts._blockSize)) + vertOffset);

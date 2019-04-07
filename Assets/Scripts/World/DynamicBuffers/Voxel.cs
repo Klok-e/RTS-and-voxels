@@ -1,4 +1,6 @@
-﻿using Unity.Entities;
+﻿using Scripts.Help;
+using Scripts.Help.DataContainers;
+using Unity.Entities;
 using UnityEngine;
 
 namespace Scripts.World.DynamicBuffers
@@ -14,66 +16,46 @@ namespace Scripts.World.DynamicBuffers
         Empty = 0,
         Dirt = 1,
         Grass = 2,
+        Lamp = 3,
     }
 
-    public static class VoxelExtensions
+    public static class VoxelMeshing
     {
-        public static Vector3 ToVector3(this Color col)
+        public static void Mesh(this VoxelType type, DirectionsHelper.BlockDirectionFlag dir, NativeMeshData mesh)
         {
-            return new Vector3(col.r, col.g, col.b);
-        }
+            switch(type)
+            {
+                case VoxelType.Dirt:
+                    mesh._uv2.Add(new Vector2(1, 0));
+                    mesh._uv2.Add(new Vector2(1, 0));
+                    mesh._uv2.Add(new Vector2(1, 0));
+                    mesh._uv2.Add(new Vector2(1, 0));
+                    break;
 
-        public static Color ToColor(this Vector3 vec)
-        {
-            return new Color(vec.x, vec.y, vec.z);
-        }
+                case VoxelType.Grass:
+                    if(dir == DirectionsHelper.BlockDirectionFlag.Up)
+                    {
+                        mesh._uv2.Add(new Vector2(1, 1));
+                        mesh._uv2.Add(new Vector2(1, 1));
+                        mesh._uv2.Add(new Vector2(1, 1));
+                        mesh._uv2.Add(new Vector2(1, 1));
+                    }
+                    else
+                    {
+                        mesh._uv2.Add(new Vector2(1, 0));
+                        mesh._uv2.Add(new Vector2(1, 0));
+                        mesh._uv2.Add(new Vector2(1, 0));
+                        mesh._uv2.Add(new Vector2(1, 0));
+                    }
+                    break;
 
-        public static bool IsEmpty(this VoxelType type)
-        {
-            if(type == VoxelType.Empty)
-                return true;
-            else
-                return false;
-        }
-
-        public static Voxel AtGet(this DynamicBuffer<Voxel> buffer, int x, int y, int z)
-        {
-            const int sz = VoxConsts._chunkSize;
-            return buffer[z * sz * sz + y * sz + x];
-        }
-
-        public static void AtSet(this DynamicBuffer<Voxel> buffer, int x, int y, int z, Voxel value)
-        {
-            const int sz = VoxConsts._chunkSize;
-            buffer[z * sz * sz + y * sz + x] = value;
-        }
-
-        public static void AtAt(this DynamicBuffer<Voxel> buffer, int i, out int x, out int y, out int z)
-        {
-            const int sz = VoxConsts._chunkSize;
-            x = i % sz;
-            y = (i / sz) % sz;
-            z = i / (sz * sz);
-        }
-
-        public static VoxelLightingLevel AtGet(this DynamicBuffer<VoxelLightingLevel> buffer, int x, int y, int z)
-        {
-            const int sz = VoxConsts._chunkSize;
-            return buffer[z * sz * sz + y * sz + x];
-        }
-
-        public static void AtSet(this DynamicBuffer<VoxelLightingLevel> buffer, int x, int y, int z, VoxelLightingLevel value)
-        {
-            const int sz = VoxConsts._chunkSize;
-            buffer[z * sz * sz + y * sz + x] = value;
-        }
-
-        public static void AtAt(this DynamicBuffer<VoxelLightingLevel> buffer, int i, out int x, out int y, out int z)
-        {
-            const int sz = VoxConsts._chunkSize;
-            x = i % sz;
-            y = (i / sz) % sz;
-            z = i / (sz * sz);
+                case VoxelType.Lamp:
+                    mesh._uv2.Add(new Vector2(1, 2));
+                    mesh._uv2.Add(new Vector2(1, 2));
+                    mesh._uv2.Add(new Vector2(1, 2));
+                    mesh._uv2.Add(new Vector2(1, 2));
+                    break;
+            }
         }
     }
 }

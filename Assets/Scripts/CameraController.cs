@@ -63,9 +63,9 @@ namespace Scripts
                 // if one of them but not both
                 if(removeBlock ^ placeBlock)
                 {
-                    Ray ray = new Ray(transform.position, transform.forward);
+                    var ray = new Ray(transform.position, transform.forward);
 
-                    if(Physics.Raycast(ray, out RaycastHit hit))
+                    if(Physics.Raycast(ray, out var hit))
                     {
                         var gameEntity = hit.collider.GetComponent<GameObjectEntity>();
                         if(gameEntity.EntityManager.HasComponent<Voxel>(gameEntity.Entity))
@@ -173,8 +173,8 @@ namespace Scripts
 
         private void ChangeVoxelCoord()
         {
-            Ray ray = new Ray(transform.position, transform.forward);
-            if(Physics.Raycast(ray, out RaycastHit hit))
+            var ray = new Ray(transform.position, transform.forward);
+            if(Physics.Raycast(ray, out var hit))
             {
                 var gameEntity = hit.collider.GetComponent<GameObjectEntity>();
                 if(gameEntity.EntityManager.HasComponent<Voxel>(gameEntity.Entity))
@@ -185,7 +185,10 @@ namespace Scripts
                     // to index
                     var index = (pos - chunkPos.Pos.ToVec() * VoxConsts._chunkSize).ToVecInt().ToInt();
 
-                    voxelCoordinatesLabel.text = index.ToString();
+                    var light = gameEntity.EntityManager.GetBuffer<VoxelLightingLevel>(gameEntity.Entity);
+                    var lAt = light.AtGet(index.x, index.y, index.z);
+
+                    voxelCoordinatesLabel.text = index.ToString() + " " + lAt.RegularLight + " " + lAt.Sunlight;
                 }
             }
         }

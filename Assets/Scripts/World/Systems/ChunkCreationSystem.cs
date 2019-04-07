@@ -74,6 +74,7 @@ namespace Scripts.World.Systems
             //Debug.Log($"Length of light buffer: {buf2.Length} Capacity of light buffer: {buf2.Capacity}");
 
             EntityManager.AddBuffer<VoxelSetQueryData>(ent); // now voxels can be changed
+            EntityManager.AddBuffer<LightSetQueryData>(ent); // now light can be changed
 
             var neighbs = new ChunkNeighboursComponent();
 

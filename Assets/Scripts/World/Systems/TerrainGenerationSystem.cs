@@ -60,6 +60,7 @@ namespace Scripts.World.Systems
                                         {
                                             Type = VoxelType.Dirt,
                                         });
+                                lightBuffer.AtSet(x, y, z, new VoxelLightingLevel(0, 0));
                             }
                             else
                             {

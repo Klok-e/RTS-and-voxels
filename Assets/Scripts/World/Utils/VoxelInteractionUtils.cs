@@ -15,13 +15,14 @@ namespace Scripts.World.Utils
     {
         public static void SetQuerySphere(Entity entity, EntityManager manager, int3 index, uint radius, VoxelType voxType)
         {
-            DynamicBuffer<VoxelSetQueryData> buffer;
-            if(manager.HasComponent<VoxelSetQueryData>(entity))
-                buffer = manager.GetBuffer<VoxelSetQueryData>(entity);
-            else
-                buffer = manager.AddBuffer<VoxelSetQueryData>(entity);
+            var setVox = manager.GetBuffer<VoxelSetQueryData>(entity);
+            var setLight = manager.GetBuffer<LightSetQueryData>(entity);
 
-            buffer.Add(new VoxelSetQueryData { NewVoxelType = voxType, Pos = index });
+            setVox.Add(new VoxelSetQueryData { NewVoxelType = voxType, Pos = index });
+            if(voxType.IsEmpty())
+                setLight.Add(new LightSetQueryData { LightType = SetLightType.RegularLight, NewLight = 0, Pos = index });
+            else
+                setLight.Add(new LightSetQueryData { LightType = SetLightType.RegularLight, NewLight = 15, Pos = index });
 
             manager.AddComponentData(entity, new ChunkNeedApplyVoxelChanges());
         }

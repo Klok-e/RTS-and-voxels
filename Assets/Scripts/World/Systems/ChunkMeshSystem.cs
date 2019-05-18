@@ -559,21 +559,23 @@ namespace Scripts.World.Systems
         protected override void OnCreateManager()
         {
             _chunksDirty = GetEntityQuery(
-                ComponentType.Create<RegularChunk>(),
-                ComponentType.Create<ChunkDirtyComponent>(),
-                ComponentType.Create<ChunkNeighboursComponent>(),
-                ComponentType.Create<Voxel>(),
-                ComponentType.Create<VoxelLightingLevel>());
+                ComponentType.ReadOnly<RegularChunk>(),
+                ComponentType.ReadOnly<ChunkDirtyComponent>(),
+                ComponentType.ReadOnly<ChunkNeighboursComponent>(),
+                ComponentType.ReadOnly<Voxel>(),
+                ComponentType.ReadOnly<VoxelLightingLevel>());
             _barrier = World.GetOrCreateSystem<EndSimulationEntityCommandBufferSystem>();
         }
 
         protected override JobHandle OnUpdate(JobHandle inputDeps)
         {
             var commandBuffer = _barrier.CreateCommandBuffer();
-            var dirty = _chunksDirty.GetComponentArray<RegularChunk>();
-            var entities = _chunksDirty.GetEntityArray();
-            var neig = _chunksDirty.GetComponentDataArray<ChunkNeighboursComponent>();
+
             JobHandle handle;
+
+            var dirty = _chunksDirty.ToComponentArray<RegularChunk>();
+            using(var entities = _chunksDirty.ToEntityArray(Allocator.TempJob))
+            using(var neig = _chunksDirty.ToComponentDataArray<ChunkNeighboursComponent>(Allocator.TempJob))
             using(var handles = new NativeList<JobHandle>(dirty.Length, Allocator.Temp))
             {
                 for(int i = 0; i < dirty.Length; i++)

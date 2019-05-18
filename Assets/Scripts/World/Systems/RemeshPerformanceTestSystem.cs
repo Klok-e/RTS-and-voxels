@@ -14,12 +14,9 @@ namespace Scripts.World.Systems
     [DisableAutoCreation]
     public class RemeshPerformanceTestSystem : JobComponentSystem
     {
-        private EntityQuery _readyChunks;
-
-        private class RemeshPerformanceTestBarrier : EntityCommandBufferSystem { }
-
         private EntityCommandBufferSystem _barrier;
 
+        [BurstCompile]
         private struct RandomlySetVoxelsJob : IJobForEachWithEntity_EB<VoxelSetQueryData>
         {
             public EntityCommandBuffer.Concurrent CommandBuffer;
@@ -36,7 +33,7 @@ namespace Scripts.World.Systems
                     buf.Add(new VoxelSetQueryData
                     {
                         NewVoxelType = Rand.NextBool() ? VoxelType.Empty : VoxelType.Dirt,
-                        Pos = Rand.NextInt3(new int3(0), new int3(VoxConsts._chunkSize))
+                        Pos = Rand.NextInt3(new int3(0), new int3(VoxConsts._chunkSize)),
                     });
                     if(!NeedApplChanges.Exists(entity))
                         CommandBuffer.AddComponent(index, entity, new ChunkNeedApplyVoxelChanges());
@@ -46,10 +43,6 @@ namespace Scripts.World.Systems
 
         protected override void OnCreateManager()
         {
-            base.OnCreateManager();
-            _readyChunks = GetEntityQuery(
-                ComponentType.ReadWrite<VoxelSetQueryData>());
-
             _barrier = World.GetOrCreateSystem<EndSimulationEntityCommandBufferSystem>();
         }
 

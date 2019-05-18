@@ -27,26 +27,14 @@ namespace Scripts.World.Systems
 
         private EntityCommandBufferSystem _barrier;
 
-        private class ApplyVoxelsBarrier : EntityCommandBufferSystem { }
-
         [BurstCompile]
-        private struct ApplyChangesVoxel : IJobParallelFor
+        private struct ApplyChangesVoxel : IJobForEach_BBC<Voxel, VoxelSetQueryData, ChunkNeighboursComponent>
         {
-            [WriteOnly]
-            public BufferArray<Voxel> VoxelBuffers;
-
-            public BufferArray<VoxelSetQueryData> VoxelSetQuery;
-
             public NativeQueue<Entity>.Concurrent ToBeRemeshedNeighbs;
 
-            public EntityArray Entities;
-
-            [ReadOnly]
-            public ComponentDataArray<ChunkNeighboursComponent> Neighbours;
-
-            public void Execute(int index)
+            public void Execute(DynamicBuffer<Voxel> b0, DynamicBuffer<VoxelSetQueryData> b1, [ReadOnly] ref ChunkNeighboursComponent c2)
             {
-                ApplyChangesToChunk(VoxelBuffers[index], VoxelSetQuery[index], Neighbours[index]);
+                ApplyChangesToChunk(b0, b1, c2);
             }
 
             private void ApplyChangesToChunk(DynamicBuffer<Voxel> buffer, DynamicBuffer<VoxelSetQueryData> query, ChunkNeighboursComponent neighbs)
@@ -96,7 +84,7 @@ namespace Scripts.World.Systems
             public BufferFromEntity<LightSetQueryData> LightSetQuery;
 
             [ReadOnly]
-            public EntityArray Entities;
+            public NativeArray<Entity> Entities;
 
             [ReadOnly]
             public ComponentDataFromEntity<ChunkNeighboursComponent> Neighbours;
@@ -420,7 +408,7 @@ namespace Scripts.World.Systems
 
             public NativeQueue<Entity> ToBeRemeshedNeighb;
 
-            public EntityArray ToBeRemeshed;
+            public NativeArray<Entity> ToBeRemeshed;
 
             public void Execute()
             {
@@ -452,11 +440,12 @@ namespace Scripts.World.Systems
         {
             base.OnCreateManager();
             _chunksNeedApplyVoxelChanges = GetEntityQuery(
-                ComponentType.Create<ChunkNeedApplyVoxelChanges>(),
-                ComponentType.Create<Voxel>(),
-                ComponentType.Create<VoxelSetQueryData>(),
-                ComponentType.Create<ChunkNeighboursComponent>(),
-                ComponentType.Create<LightSetQueryData>());
+                ComponentType.ReadWrite<ChunkNeedApplyVoxelChanges>(),
+                ComponentType.ReadWrite<Voxel>(),
+                ComponentType.ReadWrite<VoxelSetQueryData>(),
+                ComponentType.ReadWrite<ChunkNeighboursComponent>(),
+                ComponentType.ReadWrite<LightSetQueryData>());
+
             _toBeRemeshedCached = new NativeQueue<Entity>(Allocator.Persistent);
             _toPropRegLightCached = new NativeQueue<int3>(Allocator.Persistent);
             _toPropSunLightCached = new NativeQueue<int3>(Allocator.Persistent);
@@ -481,19 +470,17 @@ namespace Scripts.World.Systems
         protected override JobHandle OnUpdate(JobHandle inputDeps)
         {
             _toBeRemeshedCached.Clear();
-            var entities = _chunksNeedApplyVoxelChanges.GetEntityArray();
-            var neighb = _chunksNeedApplyVoxelChanges.GetComponentDataArray<ChunkNeighboursComponent>();
+            var ents = _chunksNeedApplyVoxelChanges.ToEntityArray(Allocator.TempJob, out var collectEntities);
+
             var j1 = new ApplyChangesVoxel
             {
-                VoxelBuffers = _chunksNeedApplyVoxelChanges.GetBufferArray<Voxel>(),
-                VoxelSetQuery = _chunksNeedApplyVoxelChanges.GetBufferArray<VoxelSetQueryData>(),
                 ToBeRemeshedNeighbs = _toBeRemeshedCached.ToConcurrent(),
-                Entities = entities,
-                Neighbours = neighb,
             };
+            var h1 = j1.Schedule(this, inputDeps);
+
             var j2 = new ApplyChangesLight
             {
-                Entities = entities,
+                Entities = ents,
                 Neighbours = GetComponentDataFromEntity<ChunkNeighboursComponent>(true),
                 LightBuffers = GetBufferFromEntity<VoxelLightingLevel>(),
                 LightSetQuery = GetBufferFromEntity<LightSetQueryData>(),
@@ -505,17 +492,20 @@ namespace Scripts.World.Systems
                 ToPropRegLight = _toPropRegLightCached,
                 ToPropSunLight = _toPropSunLightCached,
             };
+            var h2 = j2.Schedule(JobHandle.CombineDependencies(collectEntities, h1));
+
             var j3 = new ChangeTagsJob
             {
                 CommandBuffer = _barrier.CreateCommandBuffer(),
                 AlreadyDirty = GetComponentDataFromEntity<ChunkDirtyComponent>(true),
                 ToBeRemeshedNeighb = _toBeRemeshedCached,
-                ToBeRemeshed = entities,
-            }.Schedule(j2.Schedule(j1.Schedule(entities.Length, 1, inputDeps)));
+                ToBeRemeshed = ents,
+            };
+            var h3 = j3.Schedule(h2);
 
-            _barrier.AddJobHandleForProducer(j3);
+            _barrier.AddJobHandleForProducer(h3);
 
-            return j3;
+            return h3;
         }
     }
 }

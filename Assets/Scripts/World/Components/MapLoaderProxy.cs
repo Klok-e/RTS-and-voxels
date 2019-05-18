@@ -13,7 +13,7 @@ namespace Scripts.World.Components
         public int ChunkDistance;
     }
 
-    public class MapLoaderProxy : ComponentDataWrapper<MapLoader>
+    public class MapLoaderProxy : ComponentDataProxy<MapLoader>
     {
     }
 }

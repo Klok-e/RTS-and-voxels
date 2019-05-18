@@ -13,11 +13,11 @@ namespace Scripts.World.Systems
     [UpdateBefore(typeof(ApplyVoxelChangesSystem))]
     public class TerrainGenerationSystem : JobComponentSystem
     {
-        private ComponentGroup _needGeneration;
+        private EntityQuery _needGeneration;
 
-        private class TerrainGenerationBarrier : BarrierSystem { }
-        [Inject]
-        private EndFrameBarrier _barrier;
+        private class TerrainGenerationBarrier : EntityCommandBufferSystem { }
+
+        private EntityCommandBufferSystem _barrier;
 
         [BurstCompile]
         public struct GenerateChunkTerrainJob : IJobParallelFor
@@ -101,11 +101,13 @@ namespace Scripts.World.Systems
         protected override void OnCreateManager()
         {
             base.OnCreateManager();
-            _needGeneration = GetComponentGroup(
+            _needGeneration = GetEntityQuery(
                 ComponentType.Create<ChunkNeedTerrainGeneration>(),
                 ComponentType.Create<VoxelLightingLevel>(),
                 ComponentType.Create<Voxel>(),
                 ComponentType.ReadOnly<ChunkPosComponent>());
+
+            _barrier = World.GetOrCreateSystem<EndSimulationEntityCommandBufferSystem>();
         }
 
         protected override JobHandle OnUpdate(JobHandle inputDeps)

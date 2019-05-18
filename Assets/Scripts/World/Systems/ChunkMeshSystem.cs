@@ -14,11 +14,11 @@ namespace Scripts.World.Systems
 {
     public class ChunkMeshSystem : JobComponentSystem
     {
-        private ComponentGroup _chunksDirty;
+        private EntityQuery _chunksDirty;
 
-        private class ChunkSystemBarrier : BarrierSystem { }
-        [Inject]
-        private EndFrameBarrier _barrier;
+        private class ChunkSystemBarrier : EntityCommandBufferSystem { }
+
+        private EntityCommandBufferSystem _barrier;
 
         [BurstCompile]
         private struct CopyLightJob : IJob
@@ -558,12 +558,13 @@ namespace Scripts.World.Systems
 
         protected override void OnCreateManager()
         {
-            _chunksDirty = GetComponentGroup(
+            _chunksDirty = GetEntityQuery(
                 ComponentType.Create<RegularChunk>(),
                 ComponentType.Create<ChunkDirtyComponent>(),
                 ComponentType.Create<ChunkNeighboursComponent>(),
                 ComponentType.Create<Voxel>(),
                 ComponentType.Create<VoxelLightingLevel>());
+            _barrier = World.GetOrCreateSystem<EndSimulationEntityCommandBufferSystem>();
         }
 
         protected override JobHandle OnUpdate(JobHandle inputDeps)

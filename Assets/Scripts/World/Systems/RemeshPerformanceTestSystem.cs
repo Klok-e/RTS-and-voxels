@@ -14,22 +14,21 @@ namespace Scripts.World.Systems
     [DisableAutoCreation]
     public class RemeshPerformanceTestSystem : JobComponentSystem
     {
-        private ComponentGroup _readyChunks;
+        private EntityQuery _readyChunks;
 
-        private class RemeshPerformanceTestBarrier : BarrierSystem { }
+        private class RemeshPerformanceTestBarrier : EntityCommandBufferSystem { }
 
-        [Inject]
-        private EndFrameBarrier _barrier;
+        private EntityCommandBufferSystem _barrier;
 
         private struct RandomlySetVoxelsJob : IJobParallelFor
         {
             public EntityCommandBuffer.Concurrent CommandBuffer;
 
-            public BufferArray<VoxelSetQueryData> Buffers;
+            //public BufferArray<VoxelSetQueryData> Buffers;
 
             public Unity.Mathematics.Random Rand;
 
-            public EntityArray Entities;
+            //public EntityArray Entities;
 
             [ReadOnly]
             public ComponentDataFromEntity<ChunkNeedApplyVoxelChanges> NeedApplChanges;
@@ -53,8 +52,10 @@ namespace Scripts.World.Systems
         protected override void OnCreateManager()
         {
             base.OnCreateManager();
-            _readyChunks = GetComponentGroup(
+            _readyChunks = GetEntityQuery(
                 ComponentType.Create<VoxelSetQueryData>());
+
+            _barrier = World.GetOrCreateSystem<EndSimulationEntityCommandBufferSystem>();
         }
 
         protected override JobHandle OnUpdate(JobHandle inputDeps)

@@ -29,7 +29,7 @@ namespace Scripts.World.Components
     //    }
     //}
 
-    public class MapParametersProxy : SharedComponentDataWrapper<MapParameters>
+    public class MapParametersProxy : SharedComponentDataProxy<MapParameters>
     {
     }
 }

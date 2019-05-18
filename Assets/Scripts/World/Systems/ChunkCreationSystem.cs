@@ -12,8 +12,8 @@ namespace Scripts.World.Systems
 {
     public class ChunkCreationSystem : ComponentSystem
     {
-        private ComponentGroup _worldSpawners;
-        private ComponentGroup _worldLoaders;
+        private EntityQuery _worldSpawners;
+        private EntityQuery _worldLoaders;
 
         private Material _chunkMaterial;
         private Vector2Int _mapSize;
@@ -26,11 +26,11 @@ namespace Scripts.World.Systems
         protected override void OnCreateManager()
         {
             _chunks = new Dictionary<int3, Entity>();
-            _worldSpawners = GetComponentGroup(typeof(MapParameters));
+            _worldSpawners = GetEntityQuery(typeof(MapParameters));
 
-            _worldLoaders = GetComponentGroup(
+            _worldLoaders = GetEntityQuery(
                 ComponentType.Create<MapLoader>(),
-                ComponentType.Create<Position>());
+                ComponentType.Create<Translation>());
         }
 
         protected override void OnDestroyManager()
@@ -57,7 +57,7 @@ namespace Scripts.World.Systems
                     }
                 }
 
-                var loaderpos1 = _worldLoaders.GetComponentDataArray<Position>();
+                var loaderpos1 = _worldLoaders.GetComponentDataArray<Translation>();
                 var worldPos = loaderpos1[0].Value / VoxConsts._blockSize;
                 var loaderChunkInf = (worldPos - (math.float3(1f) * (VoxConsts._chunkSize / 2))) / VoxConsts._chunkSize;
                 var loaderChunkIn = new int3((int)math.round(loaderChunkInf.x), (int)math.round(loaderChunkInf.y), (int)math.round(loaderChunkInf.z));
@@ -67,7 +67,7 @@ namespace Scripts.World.Systems
 
             // do the job
             var loaders = _worldLoaders.GetComponentDataArray<MapLoader>();
-            var loaderpos = _worldLoaders.GetComponentDataArray<Position>();
+            var loaderpos = _worldLoaders.GetComponentDataArray<Translation>();
             for(int i = 0; i < loaders.Length; i++)
             {
                 var loader = loaders[i];

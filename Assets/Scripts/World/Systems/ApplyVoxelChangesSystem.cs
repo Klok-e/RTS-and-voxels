@@ -15,7 +15,7 @@ namespace Scripts.World.Systems
     [UpdateBefore(typeof(ChunkMeshSystem))]
     public class ApplyVoxelChangesSystem : JobComponentSystem
     {
-        private ComponentGroup _chunksNeedApplyVoxelChanges;
+        private EntityQuery _chunksNeedApplyVoxelChanges;
 
         private NativeQueue<Entity> _toBeRemeshedCached;
 
@@ -25,10 +25,9 @@ namespace Scripts.World.Systems
         private NativeQueue<int3> _toDepSunLightCached;
         private NativeQueue<Entity> _toChangeLightCached;
 
-        [Inject]
-        private EndFrameBarrier _barrier;
+        private EntityCommandBufferSystem _barrier;
 
-        private class ApplyVoxelsBarrier : BarrierSystem { }
+        private class ApplyVoxelsBarrier : EntityCommandBufferSystem { }
 
         [BurstCompile]
         private struct ApplyChangesVoxel : IJobParallelFor
@@ -452,7 +451,7 @@ namespace Scripts.World.Systems
         protected override void OnCreateManager()
         {
             base.OnCreateManager();
-            _chunksNeedApplyVoxelChanges = GetComponentGroup(
+            _chunksNeedApplyVoxelChanges = GetEntityQuery(
                 ComponentType.Create<ChunkNeedApplyVoxelChanges>(),
                 ComponentType.Create<Voxel>(),
                 ComponentType.Create<VoxelSetQueryData>(),
@@ -464,6 +463,8 @@ namespace Scripts.World.Systems
             _toDepRegLightCached = new NativeQueue<int3>(Allocator.Persistent);
             _toDepSunLightCached = new NativeQueue<int3>(Allocator.Persistent);
             _toChangeLightCached = new NativeQueue<Entity>(Allocator.Persistent);
+
+            _barrier = World.GetOrCreateSystem<EndSimulationEntityCommandBufferSystem>();
         }
 
         protected override void OnDestroyManager()
@@ -510,9 +511,11 @@ namespace Scripts.World.Systems
                 AlreadyDirty = GetComponentDataFromEntity<ChunkDirtyComponent>(true),
                 ToBeRemeshedNeighb = _toBeRemeshedCached,
                 ToBeRemeshed = entities,
-            };
+            }.Schedule(j2.Schedule(j1.Schedule(entities.Length, 1, inputDeps)));
 
-            return j3.Schedule(j2.Schedule(j1.Schedule(entities.Length, 1, inputDeps)));
+            _barrier.AddJobHandleForProducer(j3);
+
+            return j3;
         }
     }
 }

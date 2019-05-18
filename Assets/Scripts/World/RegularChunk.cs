@@ -67,6 +67,7 @@ namespace Scripts.World
         private void OnDestroy()
         {
             Deinitialize();
+            Destroy(_mesh);
         }
 
         public static RegularChunk CreateNew()

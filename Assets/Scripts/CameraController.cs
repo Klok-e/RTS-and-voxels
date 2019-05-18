@@ -70,7 +70,7 @@ namespace Scripts
                 {
                     var ray = new Ray(transform.position, transform.forward);
 
-                    if(Physics.Raycast(ray, out var hit))
+                    if(Physics.Raycast(ray, out var hit, VoxConsts._blockSize * 10))
                     {
                         var gameEntity = hit.collider.GetComponent<GameObjectEntity>();
                         if(gameEntity.EntityManager.HasComponent<Voxel>(gameEntity.Entity))

@@ -5,20 +5,19 @@ namespace Scripts.World.Systems
 {
     public class ChunkMeshApplySystem : ComponentSystem
     {
-        private ComponentGroup _needApply;
+        private EntityQuery _needApply;
 
-        [Inject]
-        private EndFrameBarrier _barrier;
+        private EntityCommandBufferSystem _commandBufferSys;
 
-        protected override void OnCreateManager()
+        protected override void OnCreate()
         {
-            base.OnCreateManager();
-            _needApply = GetComponentGroup(typeof(ChunkNeedMeshApply), typeof(RegularChunk));
+            _needApply = GetEntityQuery(typeof(ChunkNeedMeshApply), typeof(RegularChunk));
+            _commandBufferSys = World.GetOrCreateSystem<EndSimulationEntityCommandBufferSystem>();
         }
 
         protected override void OnUpdate()
         {
-            var commands = _barrier.CreateCommandBuffer();
+            var commands = _commandBufferSys.CreateCommandBuffer();
 
             var ents = _needApply.GetEntityArray();
             var chunks = _needApply.GetComponentArray<RegularChunk>();

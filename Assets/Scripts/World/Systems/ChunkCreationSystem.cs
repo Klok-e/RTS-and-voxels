@@ -58,9 +58,7 @@ namespace Scripts.World.Systems
                         }
                     }
                     foreach(var item in remove)
-                    {
                         _chunks.Remove(item);
-                    }
                 }
             });
         }
@@ -98,21 +96,21 @@ namespace Scripts.World.Systems
             var chunk = RegularChunk.CreateNew();
             chunk.Initialize(pos, _materials._chunkMaterial);
             var ent = chunk.gameObject.AddComponent<GameObjectEntity>().Entity;
-            EntityManager.AddComponentData(ent, new ChunkNeedTerrainGeneration());
-            EntityManager.AddComponentData(ent, new ChunkPosComponent { Pos = new int3(pos) });
+            PostUpdateCommands.AddComponent(ent, new ChunkNeedTerrainGeneration());
+            PostUpdateCommands.AddComponent(ent, new ChunkPosComponent { Pos = new int3(pos) });
 
-            var buf1 = EntityManager.AddBuffer<Voxel>(ent);
+            var buf1 = PostUpdateCommands.AddBuffer<Voxel>(ent);
             //Debug.Log($"Length of voxel buffer: {buf1.Length} Capacity of voxel buffer: {buf1.Capacity}");
             buf1.ResizeUninitialized(VoxConsts._chunkSize * VoxConsts._chunkSize * VoxConsts._chunkSize);
             //Debug.Log($"Length of voxel buffer: {buf1.Length} Capacity of voxel buffer: {buf1.Capacity}");
 
-            var buf2 = EntityManager.AddBuffer<VoxelLightingLevel>(ent);
+            var buf2 = PostUpdateCommands.AddBuffer<VoxelLightingLevel>(ent);
             //Debug.Log($"Length of light buffer: {buf2.Length} Capacity of light buffer: {buf2.Capacity}");
             buf2.ResizeUninitialized(VoxConsts._chunkSize * VoxConsts._chunkSize * VoxConsts._chunkSize);
             //Debug.Log($"Length of light buffer: {buf2.Length} Capacity of light buffer: {buf2.Capacity}");
 
-            EntityManager.AddBuffer<VoxelSetQueryData>(ent); // now voxels can be changed
-            EntityManager.AddBuffer<LightSetQueryData>(ent); // now light can be changed
+            PostUpdateCommands.AddBuffer<VoxelSetQueryData>(ent); // now voxels can be changed
+            PostUpdateCommands.AddBuffer<LightSetQueryData>(ent); // now light can be changed
 
             var neighbs = new ChunkNeighboursComponent();
 
@@ -129,10 +127,10 @@ namespace Scripts.World.Systems
                     neighbs[dir] = nextEnt;
                     EntityManager.SetComponentData(nextEnt, nextNeighb);
                     if(!EntityManager.HasComponent<ChunkDirtyComponent>(nextEnt) && !EntityManager.HasComponent<ChunkNeedTerrainGeneration>(nextEnt))
-                        EntityManager.AddComponentData(nextEnt, new ChunkDirtyComponent());
+                        PostUpdateCommands.AddComponent(nextEnt, new ChunkDirtyComponent());
                 }
             }
-            EntityManager.AddComponentData(ent, neighbs);
+            PostUpdateCommands.AddComponent(ent, neighbs);
         }
     }
 }

@@ -12,70 +12,28 @@ namespace Scripts.World.Systems
 {
     public class ChunkCreationSystem : ComponentSystem
     {
-        private EntityQuery _worldSpawners;
-        private EntityQuery _worldLoaders;
-
-        private Material _chunkMaterial;
-        private Vector2Int _mapSize;
         private Dictionary<int3, Entity> _chunks;
 
         private int3 _loaderChunkInPrev;
 
-        private bool _first = true;
+        private InitChunkTexturesMaterialsSystem _materials;
 
         protected override void OnCreateManager()
         {
             _chunks = new Dictionary<int3, Entity>();
-            _worldSpawners = GetEntityQuery(typeof(MapParameters));
 
-            _worldLoaders = GetEntityQuery(
-                ComponentType.Create<MapLoader>(),
-                ComponentType.Create<Translation>());
+            _materials = World.GetOrCreateSystem<InitChunkTexturesMaterialsSystem>();
         }
 
         protected override void OnDestroyManager()
         {
-
         }
 
         protected override void OnUpdate()
         {
-            if(_first)
+            Entities.ForEach((ref MapLoader loader, ref Translation pos) =>
             {
-                _first = false;
-                // init
-                using(var spawners = _worldSpawners.ToEntityArray(Allocator.TempJob))
-                {
-                    if(spawners.Length > 0)
-                    {
-                        var parameters = EntityManager.GetSharedComponentData<MapParameters>(spawners[0]);
-                        PostUpdateCommands.DestroyEntity(spawners[0]);
-
-                        _chunkMaterial = parameters._chunkMaterial;
-
-                        SetTextureArray(parameters._textures);
-                    }
-                }
-
-                var loaderpos1 = _worldLoaders.GetComponentDataArray<Translation>();
-                var worldPos = loaderpos1[0].Value / VoxConsts._blockSize;
-                var loaderChunkInf = (worldPos - (math.float3(1f) * (VoxConsts._chunkSize / 2))) / VoxConsts._chunkSize;
-                var loaderChunkIn = new int3((int)math.round(loaderChunkInf.x), (int)math.round(loaderChunkInf.y), (int)math.round(loaderChunkInf.z));
-
-                _loaderChunkInPrev = loaderChunkIn - new int3(10, 10, 10);
-            }
-
-            // do the job
-            var loaders = _worldLoaders.GetComponentDataArray<MapLoader>();
-            var loaderpos = _worldLoaders.GetComponentDataArray<Translation>();
-            for(int i = 0; i < loaders.Length; i++)
-            {
-                var loader = loaders[i];
-
-                var worldPos = loaderpos[i].Value / VoxConsts._blockSize;
-                var loaderChunkInf = (worldPos - (math.float3(1f) * (VoxConsts._chunkSize / 2))) / VoxConsts._chunkSize;
-                var loaderChunkIn = new int3((int)math.round(loaderChunkInf.x), (int)math.round(loaderChunkInf.y), (int)math.round(loaderChunkInf.z));
-
+                var loaderChunkIn = ChunkIn(pos);
                 if(math.any(_loaderChunkInPrev != loaderChunkIn))
                 {
                     _loaderChunkInPrev = loaderChunkIn;
@@ -104,7 +62,15 @@ namespace Scripts.World.Systems
                         _chunks.Remove(item);
                     }
                 }
-            }
+            });
+        }
+
+        private int3 ChunkIn(Translation pos)
+        {
+            var worldPos = pos.Value / VoxConsts._blockSize;
+            var loaderChunkInf = (worldPos - (math.float3(1f) * (VoxConsts._chunkSize / 2))) / VoxConsts._chunkSize;
+            var loaderChunkIn = new int3((int)math.round(loaderChunkInf.x), (int)math.round(loaderChunkInf.y), (int)math.round(loaderChunkInf.z));
+            return loaderChunkIn;
         }
 
         private void RemoveChunk(int3 pos)
@@ -130,7 +96,7 @@ namespace Scripts.World.Systems
         private void CreateChunk(int3 pos)
         {
             var chunk = RegularChunk.CreateNew();
-            chunk.Initialize(pos, _chunkMaterial);
+            chunk.Initialize(pos, _materials._chunkMaterial);
             var ent = chunk.gameObject.AddComponent<GameObjectEntity>().Entity;
             EntityManager.AddComponentData(ent, new ChunkNeedTerrainGeneration());
             EntityManager.AddComponentData(ent, new ChunkPosComponent { Pos = new int3(pos) });
@@ -167,21 +133,6 @@ namespace Scripts.World.Systems
                 }
             }
             EntityManager.AddComponentData(ent, neighbs);
-        }
-
-        private void SetTextureArray(Texture2D[] textures)
-        {
-            var textureArray = new Texture2DArray(16, 16, textures.Length, TextureFormat.RGBA32, true);
-            for(int i = 0; i < textures.Length; i++)
-            {
-                var pix = textures[i].GetPixels();
-                textureArray.SetPixels(pix, i);
-            }
-            textureArray.Apply();
-
-            textureArray.filterMode = FilterMode.Point;
-
-            _chunkMaterial.SetTexture("_VoxelTextureArray", textureArray);
         }
     }
 }

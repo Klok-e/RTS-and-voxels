@@ -20,22 +20,17 @@ namespace Scripts.World.Systems
 
         private EntityCommandBufferSystem _barrier;
 
-        private struct RandomlySetVoxelsJob : IJobParallelFor
+        private struct RandomlySetVoxelsJob : IJobForEachWithEntity_EB<VoxelSetQueryData>
         {
             public EntityCommandBuffer.Concurrent CommandBuffer;
 
-            //public BufferArray<VoxelSetQueryData> Buffers;
-
             public Unity.Mathematics.Random Rand;
-
-            //public EntityArray Entities;
 
             [ReadOnly]
             public ComponentDataFromEntity<ChunkNeedApplyVoxelChanges> NeedApplChanges;
 
-            public void Execute(int index)
+            public void Execute(Entity entity, int index, DynamicBuffer<VoxelSetQueryData> buf)
             {
-                var buf = Buffers[index];
                 if(Rand.NextFloat(0f, 1f) > 0.9f)
                 {
                     buf.Add(new VoxelSetQueryData
@@ -43,8 +38,8 @@ namespace Scripts.World.Systems
                         NewVoxelType = Rand.NextBool() ? VoxelType.Empty : VoxelType.Dirt,
                         Pos = Rand.NextInt3(new int3(0), new int3(VoxConsts._chunkSize))
                     });
-                    if(!NeedApplChanges.Exists(Entities[index]))
-                        CommandBuffer.AddComponent(index, Entities[index], new ChunkNeedApplyVoxelChanges());
+                    if(!NeedApplChanges.Exists(entity))
+                        CommandBuffer.AddComponent(index, entity, new ChunkNeedApplyVoxelChanges());
                 }
             }
         }
@@ -53,7 +48,7 @@ namespace Scripts.World.Systems
         {
             base.OnCreateManager();
             _readyChunks = GetEntityQuery(
-                ComponentType.Create<VoxelSetQueryData>());
+                ComponentType.ReadWrite<VoxelSetQueryData>());
 
             _barrier = World.GetOrCreateSystem<EndSimulationEntityCommandBufferSystem>();
         }
@@ -62,14 +57,15 @@ namespace Scripts.World.Systems
         {
             var j1 = new RandomlySetVoxelsJob
             {
-                Buffers = _readyChunks.GetBufferArray<VoxelSetQueryData>(),
                 Rand = new Unity.Mathematics.Random(math.asuint(Time.time)),
                 CommandBuffer = _barrier.CreateCommandBuffer().ToConcurrent(),
-                Entities = _readyChunks.GetEntityArray(),
                 NeedApplChanges = GetComponentDataFromEntity<ChunkNeedApplyVoxelChanges>(true),
             };
+            var h1 = j1.Schedule(this, inputDeps);
 
-            return j1.Schedule(j1.Buffers.Length, 1, inputDeps);
+            _barrier.AddJobHandleForProducer(h1);
+
+            return h1;
         }
     }
 }

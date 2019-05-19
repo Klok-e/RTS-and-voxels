@@ -31,6 +31,7 @@ namespace Scripts.World.Systems
 
         protected override void OnUpdate()
         {
+            var chunksCreated = new List<(RegularChunk, Entity)>();
             Entities.ForEach((ref MapLoader loader, ref Translation pos) =>
             {
                 var loaderChunkIn = ChunkIn(pos);
@@ -44,7 +45,7 @@ namespace Scripts.World.Systems
                             {
                                 var chPos = new int3(x, y, z) + loaderChunkIn;
                                 if(!_chunks.ContainsKey(chPos))
-                                    CreateChunk(chPos);
+                                    chunksCreated.Add(CreateChunk(chPos));
                             }
 
                     var remove = new List<int3>();
@@ -61,6 +62,9 @@ namespace Scripts.World.Systems
                         _chunks.Remove(item);
                 }
             });
+
+            foreach(var (chunk, ent) in chunksCreated)
+                EntityManager.AddComponentObject(ent, chunk);
         }
 
         private int3 ChunkIn(Translation pos)
@@ -91,13 +95,15 @@ namespace Scripts.World.Systems
             }
         }
 
-        private void CreateChunk(int3 pos)
+        private (RegularChunk, Entity) CreateChunk(int3 pos)
         {
             var chunk = RegularChunk.CreateNew();
             chunk.Initialize(pos, _materials._chunkMaterial);
-            var ent = chunk.gameObject.AddComponent<GameObjectEntity>().Entity;
+
+            var ent = PostUpdateCommands.CreateEntity();
+
             PostUpdateCommands.AddComponent(ent, new ChunkNeedTerrainGeneration());
-            PostUpdateCommands.AddComponent(ent, new ChunkPosComponent { Pos = new int3(pos) });
+            PostUpdateCommands.AddComponent(ent, new ChunkPosComponent { Pos = pos, });
 
             var buf1 = PostUpdateCommands.AddBuffer<Voxel>(ent);
             //Debug.Log($"Length of voxel buffer: {buf1.Length} Capacity of voxel buffer: {buf1.Capacity}");
@@ -131,6 +137,8 @@ namespace Scripts.World.Systems
                 }
             }
             PostUpdateCommands.AddComponent(ent, neighbs);
+
+            return (chunk, ent);
         }
     }
 }

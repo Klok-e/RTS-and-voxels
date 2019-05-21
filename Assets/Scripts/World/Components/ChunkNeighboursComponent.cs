@@ -1,8 +1,10 @@
 ﻿using Scripts.Help;
+using System;
 using Unity.Entities;
 
 namespace Scripts.World.Components
 {
+    [Obsolete()]
     public struct ChunkNeighboursComponent : IComponentData
     {
         public Entity Left;

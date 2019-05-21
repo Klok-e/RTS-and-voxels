@@ -39,8 +39,8 @@ namespace Scripts
 
         private uint _sphereSize = 3;
 
-        private float X;
-        private float Y;
+        private float _x;
+        private float _y;
 
         private ObjectTypes objectType = ObjectTypes.Voxel;
         private VoxelType voxType = VoxelType.Dirt;
@@ -69,59 +69,59 @@ namespace Scripts
                 if(removeBlock ^ placeBlock)
                 {
                     var ray = new Ray(transform.position, transform.forward);
-
                     if(Physics.Raycast(ray, out var hit, VoxConsts._blockSize * 10))
                     {
                         var gameEntity = hit.collider.GetComponent<GameObjectEntity>();
-                        if(gameEntity.EntityManager.HasComponent<Voxel>(gameEntity.Entity))
-                        {
-                            var chunkPos = gameEntity.EntityManager.GetComponentData<ChunkPosComponent>(gameEntity.Entity);
-                            if(removeBlock)
+                        if(gameEntity != null)
+                            if(gameEntity.EntityManager.HasComponent<Voxel>(gameEntity.Entity))
                             {
-                                var pos = (hit.point - (hit.normal * VoxConsts._blockSize / 2f)) / VoxConsts._blockSize;
-                                // to index
-                                var index = (pos - chunkPos.Pos.ToVec() * VoxConsts._chunkSize).ToVecInt().ToInt();
-
-                                switch(objectType)
+                                var chunkPos = gameEntity.EntityManager.GetComponentData<ChunkPosComponent>(gameEntity.Entity);
+                                if(removeBlock)
                                 {
-                                    case ObjectTypes.Voxel:
-                                        VoxelInteractionUtils.SetQuerySphere(gameEntity.Entity, gameEntity.EntityManager, index, 1, VoxelType.Empty);
-                                        break;
+                                    var pos = (hit.point - (hit.normal * VoxConsts._blockSize / 2f)) / VoxConsts._blockSize;
+                                    // to index
+                                    var index = (pos - chunkPos.Pos.ToVec() * VoxConsts._chunkSize).ToVecInt().ToInt();
 
-                                    case ObjectTypes.Sphere:
-                                        VoxelInteractionUtils.SetQuerySphere(gameEntity.Entity, gameEntity.EntityManager, index, _sphereSize, VoxelType.Empty);
-                                        break;
+                                    switch(objectType)
+                                    {
+                                        case ObjectTypes.Voxel:
+                                            VoxelInteractionUtils.SetQuerySphere(gameEntity.Entity, gameEntity.EntityManager, index, 1, VoxelType.Empty);
+                                            break;
+
+                                        case ObjectTypes.Sphere:
+                                            VoxelInteractionUtils.SetQuerySphere(gameEntity.Entity, gameEntity.EntityManager, index, _sphereSize, VoxelType.Empty);
+                                            break;
+                                    }
+                                }
+                                else if(placeBlock)
+                                {
+                                    var pos = (hit.point + (hit.normal * VoxConsts._blockSize / 2f)) / VoxConsts._blockSize;
+                                    // to index
+                                    var index = (pos - chunkPos.Pos.ToVec() * VoxConsts._chunkSize).ToVecInt().ToInt();
+
+                                    var ent = gameEntity.Entity;
+                                    var dir = DirectionsHelper.WrapCoordsInChunk(ref index.x, ref index.y, ref index.z);
+                                    if(dir != DirectionsHelper.BlockDirectionFlag.None)
+                                    {
+                                        var neighb = gameEntity.EntityManager.GetComponentData<ChunkNeighboursComponent>(gameEntity.Entity);
+                                        var next = neighb[dir];
+                                        if(next != Entity.Null)
+                                            ent = next;
+                                        else
+                                            return;
+                                    }
+                                    switch(objectType)
+                                    {
+                                        case ObjectTypes.Voxel:
+                                            VoxelInteractionUtils.SetQuerySphere(ent, gameEntity.EntityManager, index, 1, voxType);
+                                            break;
+
+                                        case ObjectTypes.Sphere:
+                                            VoxelInteractionUtils.SetQuerySphere(ent, gameEntity.EntityManager, index, _sphereSize, voxType);
+                                            break;
+                                    }
                                 }
                             }
-                            else if(placeBlock)
-                            {
-                                var pos = (hit.point + (hit.normal * VoxConsts._blockSize / 2f)) / VoxConsts._blockSize;
-                                // to index
-                                var index = (pos - chunkPos.Pos.ToVec() * VoxConsts._chunkSize).ToVecInt().ToInt();
-
-                                var ent = gameEntity.Entity;
-                                var dir = DirectionsHelper.WrapCoordsInChunk(ref index.x, ref index.y, ref index.z);
-                                if(dir != DirectionsHelper.BlockDirectionFlag.None)
-                                {
-                                    var neighb = gameEntity.EntityManager.GetComponentData<ChunkNeighboursComponent>(gameEntity.Entity);
-                                    var next = neighb[dir];
-                                    if(next != Entity.Null)
-                                        ent = next;
-                                    else
-                                        return;
-                                }
-                                switch(objectType)
-                                {
-                                    case ObjectTypes.Voxel:
-                                        VoxelInteractionUtils.SetQuerySphere(ent, gameEntity.EntityManager, index, 1, voxType);
-                                        break;
-
-                                    case ObjectTypes.Sphere:
-                                        VoxelInteractionUtils.SetQuerySphere(ent, gameEntity.EntityManager, index, _sphereSize, voxType);
-                                        break;
-                                }
-                            }
-                        }
                     }
                 }
             }
@@ -132,9 +132,9 @@ namespace Scripts
             if(!isPaused)
             {
                 transform.Rotate(new Vector3(-Input.GetAxis("Mouse Y") * rotationSpeed, Input.GetAxis("Mouse X") * rotationSpeed, 0));
-                X = transform.rotation.eulerAngles.x;
-                Y = transform.rotation.eulerAngles.y;
-                transform.rotation = Quaternion.Euler(X, Y, 0);
+                _x = transform.rotation.eulerAngles.x;
+                _y = transform.rotation.eulerAngles.y;
+                transform.rotation = Quaternion.Euler(_x, _y, 0);
 
                 var move = new Vector3(Input.GetAxis("Horizontal"), 0, Input.GetAxis("Vertical")) * moveSpeed;
                 transform.Translate(move);
@@ -207,19 +207,20 @@ namespace Scripts
             if(Physics.Raycast(ray, out var hit))
             {
                 var gameEntity = hit.collider.GetComponent<GameObjectEntity>();
-                if(gameEntity.EntityManager.HasComponent<Voxel>(gameEntity.Entity))
-                {
-                    var chunkPos = gameEntity.EntityManager.GetComponentData<ChunkPosComponent>(gameEntity.Entity);
+                if(gameEntity != null)
+                    if(gameEntity.EntityManager.HasComponent<Voxel>(gameEntity.Entity))
+                    {
+                        var chunkPos = gameEntity.EntityManager.GetComponentData<ChunkPosComponent>(gameEntity.Entity);
 
-                    var pos = (hit.point - (hit.normal * VoxConsts._blockSize / 2f)) / VoxConsts._blockSize;
-                    // to index
-                    var index = (pos - chunkPos.Pos.ToVec() * VoxConsts._chunkSize).ToVecInt().ToInt();
+                        var pos = (hit.point - (hit.normal * VoxConsts._blockSize / 2f)) / VoxConsts._blockSize;
+                        // to index
+                        var index = (pos - chunkPos.Pos.ToVec() * VoxConsts._chunkSize).ToVecInt().ToInt();
 
-                    var light = gameEntity.EntityManager.GetBuffer<VoxelLightingLevel>(gameEntity.Entity);
-                    var lAt = light.AtGet(index.x, index.y, index.z);
+                        var light = gameEntity.EntityManager.GetBuffer<VoxelLightingLevel>(gameEntity.Entity);
+                        var lAt = light.AtGet(index.x, index.y, index.z);
 
-                    voxelCoordinatesLabel.text = index.ToString() + " " + lAt.RegularLight + " " + lAt.Sunlight;
-                }
+                        voxelCoordinatesLabel.text = index.ToString() + " " + lAt.RegularLight + " " + lAt.Sunlight;
+                    }
             }
         }
 

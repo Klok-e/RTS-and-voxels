@@ -7,15 +7,19 @@ namespace Scripts.World.Systems
 {
     public class ChunkMeshApplySystem : ComponentSystem
     {
+        private ChunkCreationSystem _chunkCreationSystem;
+
         protected override void OnCreate()
         {
+            _chunkCreationSystem = World.GetOrCreateSystem<ChunkCreationSystem>();
         }
 
         protected override void OnUpdate()
         {
-            Entities.WithAll<ChunkNeedMeshApply>().ForEach((Entity ent, RegularChunk chunk) =>
+            var dict = _chunkCreationSystem.PosToChunk;
+            Entities.WithAll<ChunkNeedMeshApply>().ForEach((Entity ent, ref ChunkPosComponent pos) =>
             {
-                chunk.ApplyMeshData();
+                dict[pos.Pos].ApplyMeshData();
                 PostUpdateCommands.RemoveComponent<ChunkNeedMeshApply>(ent);
             });
         }

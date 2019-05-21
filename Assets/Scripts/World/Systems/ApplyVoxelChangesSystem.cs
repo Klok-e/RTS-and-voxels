@@ -27,17 +27,22 @@ namespace Scripts.World.Systems
 
         private EntityCommandBufferSystem _barrier;
 
+        private ChunkCreationSystem _chunkCreationSystem;
+
         [BurstCompile]
-        private struct ApplyChangesVoxel : IJobForEach_BBC<Voxel, VoxelSetQueryData, ChunkNeighboursComponent>
+        private struct ApplyChangesVoxel : IJobForEach_BBC<Voxel, VoxelSetQueryData, ChunkPosComponent>
         {
             public NativeQueue<Entity>.Concurrent ToBeRemeshedNeighbs;
 
-            public void Execute(DynamicBuffer<Voxel> b0, DynamicBuffer<VoxelSetQueryData> b1, [ReadOnly] ref ChunkNeighboursComponent c2)
+            [ReadOnly]
+            public NativeHashMap<int3, Entity> PosToEntity;
+
+            public void Execute(DynamicBuffer<Voxel> b0, DynamicBuffer<VoxelSetQueryData> b1, [ReadOnly] ref ChunkPosComponent pos)
             {
-                ApplyChangesToChunk(b0, b1, c2);
+                ApplyChangesToChunk(b0, b1, pos);
             }
 
-            private void ApplyChangesToChunk(DynamicBuffer<Voxel> buffer, DynamicBuffer<VoxelSetQueryData> query, ChunkNeighboursComponent neighbs)
+            private void ApplyChangesToChunk(DynamicBuffer<Voxel> buffer, DynamicBuffer<VoxelSetQueryData> query, ChunkPosComponent pos)
             {
                 for(int i = 0; i < query.Length; i++)
                 {
@@ -51,21 +56,16 @@ namespace Scripts.World.Systems
 
                     var dir = DirectionsHelper.AreCoordsAtBordersOfChunk(x.Pos);
                     if(dir != dirFlags.None)
-                        for(int k = 0; k < 6; k++)
-                        {
-                            var diriter = (dirFlags)(1 << k);
-                            if((diriter & dir) != dirFlags.None)
-                            {
-                                var ent = neighbs[diriter];
-                                if(ent != Entity.Null)
-                                    ToBeRemeshedNeighbs.Enqueue(ent);
-                            }
-                        }
+                    {
+                        if(PosToEntity.TryGetValue(pos.Pos + dir.ToInt3(), out var ent))
+                            ToBeRemeshedNeighbs.Enqueue(ent);
+                    }
                 }
                 query.Clear();
             }
         }
 
+        // TODO: Fix this abomination (user of light does not need to know propagation type)
         [BurstCompile]
         private struct ApplyChangesLight : IJob
         {
@@ -87,7 +87,10 @@ namespace Scripts.World.Systems
             public NativeArray<Entity> Entities;
 
             [ReadOnly]
-            public ComponentDataFromEntity<ChunkNeighboursComponent> Neighbours;
+            public ComponentDataFromEntity<ChunkPosComponent> Positions;
+
+            [ReadOnly]
+            public NativeHashMap<int3, Entity> PosToChunk;
 
             public void Execute()
             {
@@ -103,6 +106,7 @@ namespace Scripts.World.Systems
                     var ent = ToChangeLight.Dequeue();
                     ToBeRemeshed.Enqueue(ent);
 
+                    var currPos = Positions[ent];
                     var currLight = LightBuffers[ent];
                     var currSet = LightSetQuery[ent];
                     var currVox = VoxelBuffers[ent];
@@ -189,8 +193,8 @@ namespace Scripts.World.Systems
                             }
                             else // not in this chunk
                             {
-                                var nextEnt = Neighbours[ent][dir];
-                                if(nextEnt != Entity.Null)
+                                //var nextEnt = Neighbours[ent][dir];
+                                if(PosToChunk.TryGetValue(currPos.Pos + dir.ToInt3(), out var nextEnt))//nextEnt != Entity.Null)
                                 {
                                     var nextLight = LightBuffers[nextEnt].AtGet(nextBlock.x, nextBlock.y, nextBlock.z);
                                     if(nextLight.RegularLight > 0)
@@ -245,8 +249,7 @@ namespace Scripts.World.Systems
                                 }
                                 else // not in this chunk
                                 {
-                                    var nextEnt = Neighbours[ent][dir];
-                                    if(nextEnt != Entity.Null)
+                                    if(PosToChunk.TryGetValue(currPos.Pos + dir.ToInt3(), out var nextEnt))
                                     {
                                         var nLight = LightBuffers[nextEnt].AtGet(nextBlock.x, nextBlock.y, nextBlock.z);
                                         if(nLight.RegularLight < lightAtPos.RegularLight - 1 // less than current
@@ -301,8 +304,7 @@ namespace Scripts.World.Systems
                             }
                             else // not in this chunk
                             {
-                                var nextEnt = Neighbours[ent][dir];
-                                if(nextEnt != Entity.Null)
+                                if(PosToChunk.TryGetValue(currPos.Pos + dir.ToInt3(), out var nextEnt))
                                 {
                                     var nextLight = LightBuffers[nextEnt].AtGet(nextBlock.x, nextBlock.y, nextBlock.z);
                                     if(nextLight.Sunlight > 0)
@@ -368,8 +370,7 @@ namespace Scripts.World.Systems
                                 }
                                 else // not in this chunk
                                 {
-                                    var nextEnt = Neighbours[ent][dir];
-                                    if(nextEnt != Entity.Null)
+                                    if(PosToChunk.TryGetValue(currPos.Pos + dir.ToInt3(), out var nextEnt))
                                     {
                                         var nLight = LightBuffers[nextEnt].AtGet(nextBlock.x, nextBlock.y, nextBlock.z);
                                         if(nLight.Sunlight < lightAtPos.Sunlight - 1 // less than current
@@ -438,12 +439,10 @@ namespace Scripts.World.Systems
 
         protected override void OnCreateManager()
         {
-            base.OnCreateManager();
             _chunksNeedApplyVoxelChanges = GetEntityQuery(
                 ComponentType.ReadWrite<ChunkNeedApplyVoxelChanges>(),
                 ComponentType.ReadWrite<Voxel>(),
                 ComponentType.ReadWrite<VoxelSetQueryData>(),
-                ComponentType.ReadWrite<ChunkNeighboursComponent>(),
                 ComponentType.ReadWrite<LightSetQueryData>());
 
             _toBeRemeshedCached = new NativeQueue<Entity>(Allocator.Persistent);
@@ -454,11 +453,12 @@ namespace Scripts.World.Systems
             _toChangeLightCached = new NativeQueue<Entity>(Allocator.Persistent);
 
             _barrier = World.GetOrCreateSystem<EndSimulationEntityCommandBufferSystem>();
+
+            _chunkCreationSystem = World.GetOrCreateSystem<ChunkCreationSystem>();
         }
 
         protected override void OnDestroyManager()
         {
-            base.OnDestroyManager();
             _toBeRemeshedCached.Dispose();
             _toPropRegLightCached.Dispose();
             _toPropSunLightCached.Dispose();
@@ -475,13 +475,13 @@ namespace Scripts.World.Systems
             var j1 = new ApplyChangesVoxel
             {
                 ToBeRemeshedNeighbs = _toBeRemeshedCached.ToConcurrent(),
+                PosToEntity = _chunkCreationSystem.PosToEntity,
             };
             var h1 = j1.Schedule(this, inputDeps);
 
             var j2 = new ApplyChangesLight
             {
                 Entities = ents,
-                Neighbours = GetComponentDataFromEntity<ChunkNeighboursComponent>(true),
                 LightBuffers = GetBufferFromEntity<VoxelLightingLevel>(),
                 LightSetQuery = GetBufferFromEntity<LightSetQueryData>(),
                 ToBeRemeshed = _toBeRemeshedCached,
@@ -491,6 +491,8 @@ namespace Scripts.World.Systems
                 ToDepSunLight = _toDepSunLightCached,
                 ToPropRegLight = _toPropRegLightCached,
                 ToPropSunLight = _toPropSunLightCached,
+                Positions = GetComponentDataFromEntity<ChunkPosComponent>(true),
+                PosToChunk = _chunkCreationSystem.PosToEntity,
             };
             var h2 = j2.Schedule(JobHandle.CombineDependencies(collectEntities, h1));
 

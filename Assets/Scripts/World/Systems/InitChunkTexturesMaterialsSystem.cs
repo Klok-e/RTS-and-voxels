@@ -22,14 +22,13 @@ namespace Scripts.World.Systems
             {
                 if(once)
                     throw new Exception("Only one MapParameters instance allowed at a time.");
+                once = true;
 
                 PostUpdateCommands.DestroyEntity(ent);
 
                 _chunkMaterial = parameters._chunkMaterial;
 
                 SetTextureArray(parameters._textures);
-
-                once = true;
             });
         }
 

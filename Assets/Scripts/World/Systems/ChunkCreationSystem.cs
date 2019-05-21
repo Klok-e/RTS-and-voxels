@@ -12,7 +12,9 @@ namespace Scripts.World.Systems
 {
     public class ChunkCreationSystem : ComponentSystem
     {
-        private Dictionary<int3, Entity> _chunks;
+        public NativeHashMap<int3, Entity> PosToEntity { get; private set; }
+
+        public Dictionary<int3, RegularChunk> PosToChunk { get; private set; }
 
         private int3 _loaderChunkInPrev;
 
@@ -20,51 +22,52 @@ namespace Scripts.World.Systems
 
         protected override void OnCreateManager()
         {
-            _chunks = new Dictionary<int3, Entity>();
+            PosToEntity = new NativeHashMap<int3, Entity>(10000, Allocator.Persistent);
+            PosToChunk = new Dictionary<int3, RegularChunk>();
 
             _materials = World.GetOrCreateSystem<InitChunkTexturesMaterialsSystem>();
         }
 
         protected override void OnDestroyManager()
         {
+            PosToEntity.Dispose();
         }
 
         protected override void OnUpdate()
         {
-            var chunksCreated = new List<(RegularChunk, Entity)>();
+            PosToEntity.Clear();
+            Entities.ForEach((Entity entity, ref ChunkPosComponent pos) =>
+            {
+                if(!PosToEntity.TryAdd(pos.Pos, entity))
+                    throw new System.Exception("Could not add to PosToEntity hashmap");
+            });
+
             Entities.ForEach((ref MapLoader loader, ref Translation pos) =>
             {
                 var loaderChunkIn = ChunkIn(pos);
                 if(math.any(_loaderChunkInPrev != loaderChunkIn))
                 {
                     _loaderChunkInPrev = loaderChunkIn;
+
                     // gen new
                     for(int x = -loader.ChunkDistance; x <= loader.ChunkDistance; x++)
                         for(int y = -loader.ChunkDistance / 2; y <= loader.ChunkDistance / 2; y++)
                             for(int z = -loader.ChunkDistance; z <= loader.ChunkDistance; z++)
                             {
                                 var chPos = new int3(x, y, z) + loaderChunkIn;
-                                if(!_chunks.ContainsKey(chPos))
-                                    chunksCreated.Add(CreateChunk(chPos));
+                                if(!PosToEntity.TryGetValue(chPos, out var _))
+                                    CreateChunk(chPos);
                             }
 
-                    var remove = new List<int3>();
                     // prune old
-                    foreach(var key in _chunks.Keys)
-                    {
-                        if(math.distance(loaderChunkIn, key) > loader.ChunkDistance * 2)
+                    using(var keys = PosToEntity.GetKeyArray(Allocator.Temp))
+                        foreach(var key in keys)
                         {
-                            RemoveChunk(key);
-                            remove.Add(key);
+                            if(math.distance(loaderChunkIn, key) > loader.ChunkDistance * 2)
+                                RemoveChunk(key);
                         }
-                    }
-                    foreach(var item in remove)
-                        _chunks.Remove(item);
                 }
             });
-
-            foreach(var (chunk, ent) in chunksCreated)
-                EntityManager.AddComponentObject(ent, chunk);
         }
 
         private int3 ChunkIn(Translation pos)
@@ -77,28 +80,19 @@ namespace Scripts.World.Systems
 
         private void RemoveChunk(int3 pos)
         {
-            var ent = _chunks[pos];
+            var ent = PosToEntity[pos];
             Object.Destroy(EntityManager.GetComponentObject<RegularChunk>(ent).gameObject, 1f);
             PostUpdateCommands.DestroyEntity(ent);
 
-            for(int i = 0; i < 6; i++)
-            {
-                var dir = (DirectionsHelper.BlockDirectionFlag)(1 << i);
-                var dirVec = dir.ToInt3();
-                if(_chunks.ContainsKey(pos + dirVec))
-                {
-                    var nextEnt = _chunks[pos + dirVec];
-                    var nextNeighb = EntityManager.GetComponentData<ChunkNeighboursComponent>(nextEnt);
-                    nextNeighb[dir.Opposite()] = Entity.Null;
-                    EntityManager.SetComponentData(nextEnt, nextNeighb);
-                }
-            }
+            PosToChunk.Remove(pos);
         }
 
         private (RegularChunk, Entity) CreateChunk(int3 pos)
         {
             var chunk = RegularChunk.CreateNew();
             chunk.Initialize(pos, _materials._chunkMaterial);
+
+            PosToChunk.Add(pos, chunk);
 
             var ent = PostUpdateCommands.CreateEntity();
 
@@ -117,26 +111,6 @@ namespace Scripts.World.Systems
 
             PostUpdateCommands.AddBuffer<VoxelSetQueryData>(ent); // now voxels can be changed
             PostUpdateCommands.AddBuffer<LightSetQueryData>(ent); // now light can be changed
-
-            var neighbs = new ChunkNeighboursComponent();
-
-            _chunks.Add(pos, ent);
-            for(int i = 0; i < 6; i++)
-            {
-                var dir = (DirectionsHelper.BlockDirectionFlag)(1 << i);
-                var dirVec = dir.ToInt3();
-                if(_chunks.ContainsKey(pos + dirVec))
-                {
-                    var nextEnt = _chunks[pos + dirVec];
-                    var nextNeighb = EntityManager.GetComponentData<ChunkNeighboursComponent>(nextEnt);
-                    nextNeighb[dir.Opposite()] = ent;
-                    neighbs[dir] = nextEnt;
-                    EntityManager.SetComponentData(nextEnt, nextNeighb);
-                    if(!EntityManager.HasComponent<ChunkDirtyComponent>(nextEnt) && !EntityManager.HasComponent<ChunkNeedTerrainGeneration>(nextEnt))
-                        PostUpdateCommands.AddComponent(nextEnt, new ChunkDirtyComponent());
-                }
-            }
-            PostUpdateCommands.AddComponent(ent, neighbs);
 
             return (chunk, ent);
         }

@@ -21,7 +21,6 @@ namespace Scripts.World.Components
         }
     }
 
-    //TODO: In new version it must work
     [RequiresEntityConversion]
     public class MapParametersProxy : MonoBehaviour, IConvertGameObjectToEntity
     {
@@ -36,8 +35,4 @@ namespace Scripts.World.Components
             dstManager.AddSharedComponentData(entity, comp);
         }
     }
-
-    //public class MapParametersProxy : SharedComponentDataProxy<MapParameters>
-    //{
-    //}
 }

@@ -10,11 +10,11 @@ namespace Scripts.Help.DataContainers
 {
     public struct NativeMeshData : IDisposable
     {
-        public readonly NativeList<int> _triangles;
-        public readonly NativeList<Vector3> _vertices;
-        public readonly NativeList<Color> _colors;
-        public readonly NativeList<Vector3> _normals;
-        public readonly NativeList<Vector2> _uv, _uv2, _uv3;
+        public NativeList<int> _triangles;
+        public NativeList<Vector3> _vertices;
+        public NativeList<Color> _colors;
+        public NativeList<Vector3> _normals;
+        public NativeList<Vector2> _uv, _uv2, _uv3;
 
         public NativeMeshData(int size, Allocator allocator)
         {

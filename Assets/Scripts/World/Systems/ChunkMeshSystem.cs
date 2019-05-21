@@ -10,16 +10,13 @@ using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
 
+using Direction = Scripts.Help.DirectionsHelper.BlockDirectionFlag;
+
 namespace Scripts.World.Systems
 {
+    // TODO: Refactor to JobForeach
     public class ChunkMeshSystem : JobComponentSystem
     {
-        private EntityQuery _chunksDirty;
-
-        private class ChunkSystemBarrier : EntityCommandBufferSystem { }
-
-        private EntityCommandBufferSystem _barrier;
-
         [BurstCompile]
         private struct CopyLightJob : IJob
         {
@@ -28,12 +25,15 @@ namespace Scripts.World.Systems
 
             [ReadOnly]
             public BufferFromEntity<VoxelLightingLevel> ChunksLight;
-            [ReadOnly]
-            public ChunkNeighboursComponent Neighbours;
-            [ReadOnly]
-            public ComponentDataFromEntity<ChunkNeighboursComponent> AllChunksNeighbours;
+
             [ReadOnly]
             public Entity Chunk;
+
+            [ReadOnly]
+            public ChunkPosComponent ChunkPos;
+
+            [ReadOnly]
+            public NativeHashMap<int3, Entity> PosToEntity;
 
             public void Execute()
             {
@@ -51,11 +51,6 @@ namespace Scripts.World.Systems
                             copyTo[x, y, z] = voxLightBuff.AtGet(x - 1, y - 1, z - 1);
                         }
 
-                for(int i = 0; i < 6; i++)
-                {
-                    var dir1 = (DirectionsHelper.BlockDirectionFlag)(1 << i);
-                }
-
                 Copy6Sides(copyTo);
 
                 Copy12Edges(copyTo);
@@ -66,55 +61,55 @@ namespace Scripts.World.Systems
             private void Copy6Sides(NativeArray3D<VoxelLightingLevel> copyTo)
             {
                 const int sz = VoxConsts._chunkSize;
-                var neighb = Neighbours.Up;
-                if(neighb != Entity.Null)
+                var neighbDir = Direction.Up;
+                if(PosToEntity.TryGetValue(ChunkPos.Pos + neighbDir.ToInt3(), out var nextEnt))
                 {
-                    var nextVox = ChunksLight[neighb];
+                    var nextVox = ChunksLight[nextEnt];
                     for(int z = 0; z < sz; z++)
                         for(int x = 0; x < sz; x++)
                             copyTo[x + 1, sz + 1, z + 1] = nextVox.AtGet(x, 0, z);
                 }
 
-                neighb = Neighbours.Down;
-                if(neighb != Entity.Null)
+                neighbDir = Direction.Down;
+                if(PosToEntity.TryGetValue(ChunkPos.Pos + neighbDir.ToInt3(), out nextEnt))
                 {
-                    var nextVox = ChunksLight[neighb];
+                    var nextVox = ChunksLight[nextEnt];
                     for(int z = 0; z < sz; z++)
                         for(int x = 0; x < sz; x++)
                             copyTo[x + 1, 0, z + 1] = nextVox.AtGet(x, sz - 1, z);
                 }
 
-                neighb = Neighbours.Left;
-                if(neighb != Entity.Null)
+                neighbDir = Direction.Left;
+                if(PosToEntity.TryGetValue(ChunkPos.Pos + neighbDir.ToInt3(), out nextEnt))
                 {
-                    var nextVox = ChunksLight[neighb];
+                    var nextVox = ChunksLight[nextEnt];
                     for(int z = 0; z < sz; z++)
                         for(int y = 0; y < sz; y++)
                             copyTo[0, y + 1, z + 1] = nextVox.AtGet(sz - 1, y, z);
                 }
 
-                neighb = Neighbours.Right;
-                if(neighb != Entity.Null)
+                neighbDir = Direction.Right;
+                if(PosToEntity.TryGetValue(ChunkPos.Pos + neighbDir.ToInt3(), out nextEnt))
                 {
-                    var nextVox = ChunksLight[neighb];
+                    var nextVox = ChunksLight[nextEnt];
                     for(int z = 0; z < sz; z++)
                         for(int y = 0; y < sz; y++)
                             copyTo[sz + 1, y + 1, z + 1] = nextVox.AtGet(0, y, z);
                 }
 
-                neighb = Neighbours.Backward;
-                if(neighb != Entity.Null)
+                neighbDir = Direction.Backward;
+                if(PosToEntity.TryGetValue(ChunkPos.Pos + neighbDir.ToInt3(), out nextEnt))
                 {
-                    var nextVox = ChunksLight[neighb];
+                    var nextVox = ChunksLight[nextEnt];
                     for(int y = 0; y < sz; y++)
                         for(int x = 0; x < sz; x++)
                             copyTo[x + 1, y + 1, 0] = nextVox.AtGet(x, y, sz - 1);
                 }
 
-                neighb = Neighbours.Forward;
-                if(neighb != Entity.Null)
+                neighbDir = Direction.Forward;
+                if(PosToEntity.TryGetValue(ChunkPos.Pos + neighbDir.ToInt3(), out nextEnt))
                 {
-                    var nextVox = ChunksLight[neighb];
+                    var nextVox = ChunksLight[nextEnt];
                     for(int y = 0; y < sz; y++)
                         for(int x = 0; x < sz; x++)
                             copyTo[x + 1, y + 1, sz + 1] = nextVox.AtGet(x, y, 0);
@@ -124,190 +119,163 @@ namespace Scripts.World.Systems
             private void Copy12Edges(NativeArray3D<VoxelLightingLevel> copyTo)
             {
                 const int sz = VoxConsts._chunkSize;
-                if(Neighbours.Up != Entity.Null)
+
+                var neighbDir = Direction.Up | Direction.Right;
+                if(PosToEntity.TryGetValue(ChunkPos.Pos + neighbDir.ToInt3(), out var nextEnt))
                 {
-                    var neighb = AllChunksNeighbours[Neighbours.Up].Right;
-                    if(neighb != Entity.Null)
-                    {
-                        var nextVox = ChunksLight[neighb];
-                        for(int z = 0; z < sz; z++)
-                            copyTo[sz + 1, sz + 1, z + 1] = nextVox.AtGet(0, 0, z);
-                    }
-
-                    neighb = AllChunksNeighbours[Neighbours.Up].Left;
-                    if(neighb != Entity.Null)
-                    {
-                        var nextVox = ChunksLight[neighb];
-                        for(int z = 0; z < sz; z++)
-                            copyTo[0, sz + 1, z + 1] = nextVox.AtGet(sz - 1, 0, z);
-                    }
-
-                    neighb = AllChunksNeighbours[Neighbours.Up].Backward;
-                    if(neighb != Entity.Null)
-                    {
-                        var nextVox = ChunksLight[neighb];
-                        for(int x = 0; x < sz; x++)
-                            copyTo[x + 1, sz + 1, 0] = nextVox.AtGet(x, 0, sz - 1);
-                    }
-
-                    neighb = AllChunksNeighbours[Neighbours.Up].Forward;
-                    if(neighb != Entity.Null)
-                    {
-                        var nextVox = ChunksLight[neighb];
-                        for(int x = 0; x < sz; x++)
-                            copyTo[x + 1, sz + 1, sz + 1] = nextVox.AtGet(x, 0, 0);
-                    }
+                    var nextVox = ChunksLight[nextEnt];
+                    for(int z = 0; z < sz; z++)
+                        copyTo[sz + 1, sz + 1, z + 1] = nextVox.AtGet(0, 0, z);
                 }
-                if(Neighbours.Down != Entity.Null)
+
+                neighbDir = Direction.Up | Direction.Left;
+                if(PosToEntity.TryGetValue(ChunkPos.Pos + neighbDir.ToInt3(), out nextEnt))
                 {
-                    var neighb = AllChunksNeighbours[Neighbours.Down].Right;
-                    if(neighb != Entity.Null)
-                    {
-                        var nextVox = ChunksLight[neighb];
-                        for(int z = 0; z < sz; z++)
-                            copyTo[sz + 1, 0, z + 1] = nextVox.AtGet(0, sz - 1, z);
-                    }
-
-                    neighb = AllChunksNeighbours[Neighbours.Down].Left;
-                    if(neighb != Entity.Null)
-                    {
-                        var nextVox = ChunksLight[neighb];
-                        for(int z = 0; z < sz; z++)
-                            copyTo[0, 0, z + 1] = nextVox.AtGet(sz - 1, sz - 1, z);
-                    }
-
-                    neighb = AllChunksNeighbours[Neighbours.Down].Backward;
-                    if(neighb != Entity.Null)
-                    {
-                        var nextVox = ChunksLight[neighb];
-                        for(int x = 0; x < sz; x++)
-                            copyTo[x + 1, 0, 0] = nextVox.AtGet(x, sz - 1, sz - 1);
-                    }
-
-                    neighb = AllChunksNeighbours[Neighbours.Down].Forward;
-                    if(neighb != Entity.Null)
-                    {
-                        var nextVox = ChunksLight[neighb];
-                        for(int x = 0; x < sz; x++)
-                            copyTo[x + 1, 0, sz + 1] = nextVox.AtGet(x, sz - 1, 0);
-                    }
+                    var nextVox = ChunksLight[nextEnt];
+                    for(int z = 0; z < sz; z++)
+                        copyTo[0, sz + 1, z + 1] = nextVox.AtGet(sz - 1, 0, z);
                 }
-                if(Neighbours.Forward != Entity.Null)
-                {
-                    var neighb = AllChunksNeighbours[Neighbours.Forward].Right;
-                    if(neighb != Entity.Null)
-                    {
-                        var nextVox = ChunksLight[neighb];
-                        for(int y = 0; y < sz; y++)
-                            copyTo[sz + 1, y + 1, sz + 1] = nextVox.AtGet(0, y, 0);
-                    }
 
-                    neighb = AllChunksNeighbours[Neighbours.Forward].Left;
-                    if(neighb != Entity.Null)
-                    {
-                        var nextVox = ChunksLight[neighb];
-                        for(int y = 0; y < sz; y++)
-                            copyTo[0, y + 1, sz + 1] = nextVox.AtGet(sz - 1, y, 0);
-                    }
+                neighbDir = Direction.Up | Direction.Backward;
+                if(PosToEntity.TryGetValue(ChunkPos.Pos + neighbDir.ToInt3(), out nextEnt))
+                {
+                    var nextVox = ChunksLight[nextEnt];
+                    for(int x = 0; x < sz; x++)
+                        copyTo[x + 1, sz + 1, 0] = nextVox.AtGet(x, 0, sz - 1);
                 }
-                if(Neighbours.Backward != Entity.Null)
-                {
-                    var neighb = AllChunksNeighbours[Neighbours.Backward].Right;
-                    if(neighb != Entity.Null)
-                    {
-                        var nextVox = ChunksLight[neighb];
-                        for(int y = 0; y < sz; y++)
-                            copyTo[sz + 1, y + 1, 0] = nextVox.AtGet(0, y, sz - 1);
-                    }
 
-                    neighb = AllChunksNeighbours[Neighbours.Backward].Left;
-                    if(neighb != Entity.Null)
-                    {
-                        var nextVox = ChunksLight[neighb];
-                        for(int y = 0; y < sz; y++)
-                            copyTo[0, y + 1, 0] = nextVox.AtGet(sz - 1, y, sz - 1);
-                    }
+                neighbDir = Direction.Up | Direction.Forward;
+                if(PosToEntity.TryGetValue(ChunkPos.Pos + neighbDir.ToInt3(), out nextEnt))
+                {
+                    var nextVox = ChunksLight[nextEnt];
+                    for(int x = 0; x < sz; x++)
+                        copyTo[x + 1, sz + 1, sz + 1] = nextVox.AtGet(x, 0, 0);
+                }
+
+                neighbDir = Direction.Down | Direction.Right;
+                if(PosToEntity.TryGetValue(ChunkPos.Pos + neighbDir.ToInt3(), out nextEnt))
+                {
+                    var nextVox = ChunksLight[nextEnt];
+                    for(int z = 0; z < sz; z++)
+                        copyTo[sz + 1, 0, z + 1] = nextVox.AtGet(0, sz - 1, z);
+                }
+
+                neighbDir = Direction.Down | Direction.Left;
+                if(PosToEntity.TryGetValue(ChunkPos.Pos + neighbDir.ToInt3(), out nextEnt))
+                {
+                    var nextVox = ChunksLight[nextEnt];
+                    for(int z = 0; z < sz; z++)
+                        copyTo[0, 0, z + 1] = nextVox.AtGet(sz - 1, sz - 1, z);
+                }
+
+                neighbDir = Direction.Down | Direction.Backward;
+                if(PosToEntity.TryGetValue(ChunkPos.Pos + neighbDir.ToInt3(), out nextEnt))
+                {
+                    var nextVox = ChunksLight[nextEnt];
+                    for(int x = 0; x < sz; x++)
+                        copyTo[x + 1, 0, 0] = nextVox.AtGet(x, sz - 1, sz - 1);
+                }
+
+                neighbDir = Direction.Down | Direction.Forward;
+                if(PosToEntity.TryGetValue(ChunkPos.Pos + neighbDir.ToInt3(), out nextEnt))
+                {
+                    var nextVox = ChunksLight[nextEnt];
+                    for(int x = 0; x < sz; x++)
+                        copyTo[x + 1, 0, sz + 1] = nextVox.AtGet(x, sz - 1, 0);
+                }
+
+                neighbDir = Direction.Forward | Direction.Right;
+                if(PosToEntity.TryGetValue(ChunkPos.Pos + neighbDir.ToInt3(), out nextEnt))
+                {
+                    var nextVox = ChunksLight[nextEnt];
+                    for(int y = 0; y < sz; y++)
+                        copyTo[sz + 1, y + 1, sz + 1] = nextVox.AtGet(0, y, 0);
+                }
+
+                neighbDir = Direction.Forward | Direction.Left;
+                if(PosToEntity.TryGetValue(ChunkPos.Pos + neighbDir.ToInt3(), out nextEnt))
+                {
+                    var nextVox = ChunksLight[nextEnt];
+                    for(int y = 0; y < sz; y++)
+                        copyTo[0, y + 1, sz + 1] = nextVox.AtGet(sz - 1, y, 0);
+                }
+
+                neighbDir = Direction.Backward | Direction.Right;
+                if(PosToEntity.TryGetValue(ChunkPos.Pos + neighbDir.ToInt3(), out nextEnt))
+                {
+                    var nextVox = ChunksLight[nextEnt];
+                    for(int y = 0; y < sz; y++)
+                        copyTo[sz + 1, y + 1, 0] = nextVox.AtGet(0, y, sz - 1);
+                }
+
+                neighbDir = Direction.Backward | Direction.Left;
+                if(PosToEntity.TryGetValue(ChunkPos.Pos + neighbDir.ToInt3(), out nextEnt))
+                {
+                    var nextVox = ChunksLight[nextEnt];
+                    for(int y = 0; y < sz; y++)
+                        copyTo[0, y + 1, 0] = nextVox.AtGet(sz - 1, y, sz - 1);
                 }
             }
 
             private void Copy8Vertices(NativeArray3D<VoxelLightingLevel> copyTo)
             {
                 const int sz = VoxConsts._chunkSize;
-                if(Neighbours.Up != Entity.Null)
+
+                var neighbDir = Direction.Up | Direction.Left | Direction.Forward;
+                if(PosToEntity.TryGetValue(ChunkPos.Pos + neighbDir.ToInt3(), out var nextEnt))
                 {
-                    var neighb1 = AllChunksNeighbours[Neighbours.Up];
-
-                    if(neighb1.Left != Entity.Null)
-                    {
-                        var neighb2 = AllChunksNeighbours[neighb1.Left].Forward;
-                        if(neighb2 != Entity.Null)
-                        {
-                            var nextVox = ChunksLight[neighb2];
-                            copyTo[0, sz + 1, sz + 1] = nextVox.AtGet(sz - 1, 0, 0);
-                        }
-
-                        neighb2 = AllChunksNeighbours[neighb1.Left].Backward;
-                        if(neighb2 != Entity.Null)
-                        {
-                            var nextVox = ChunksLight[neighb2];
-                            copyTo[0, sz + 1, 0] = nextVox.AtGet(sz - 1, 0, sz - 1);
-                        }
-                    }
-
-                    if(neighb1.Right != Entity.Null)
-                    {
-                        var neighb2 = AllChunksNeighbours[neighb1.Right].Forward;
-                        if(neighb2 != Entity.Null)
-                        {
-                            var nextVox = ChunksLight[neighb2];
-                            copyTo[sz + 1, sz + 1, sz + 1] = nextVox.AtGet(0, 0, 0);
-                        }
-
-                        neighb2 = AllChunksNeighbours[neighb1.Right].Backward;
-                        if(neighb2 != Entity.Null)
-                        {
-                            var nextVox = ChunksLight[neighb2];
-                            copyTo[sz + 1, sz + 1, 0] = nextVox.AtGet(0, 0, sz - 1);
-                        }
-                    }
+                    var nextVox = ChunksLight[nextEnt];
+                    copyTo[0, sz + 1, sz + 1] = nextVox.AtGet(sz - 1, 0, 0);
                 }
-                if(Neighbours.Down != Entity.Null)
+
+
+                neighbDir = Direction.Up | Direction.Left | Direction.Backward;
+                if(PosToEntity.TryGetValue(ChunkPos.Pos + neighbDir.ToInt3(), out nextEnt))
                 {
-                    var neighb1 = AllChunksNeighbours[Neighbours.Down];
+                    var nextVox = ChunksLight[nextEnt];
+                    copyTo[0, sz + 1, 0] = nextVox.AtGet(sz - 1, 0, sz - 1);
+                }
 
-                    if(neighb1.Left != Entity.Null)
-                    {
-                        var neighb2 = AllChunksNeighbours[neighb1.Left].Forward;
-                        if(neighb2 != Entity.Null)
-                        {
-                            var nextVox = ChunksLight[neighb2];
-                            copyTo[0, 0, sz + 1] = nextVox.AtGet(sz - 1, sz - 1, 0);
-                        }
+                neighbDir = Direction.Up | Direction.Right | Direction.Forward;
+                if(PosToEntity.TryGetValue(ChunkPos.Pos + neighbDir.ToInt3(), out nextEnt))
+                {
+                    var nextVox = ChunksLight[nextEnt];
+                    copyTo[sz + 1, sz + 1, sz + 1] = nextVox.AtGet(0, 0, 0);
+                }
 
-                        neighb2 = AllChunksNeighbours[neighb1.Left].Backward;
-                        if(neighb2 != Entity.Null)
-                        {
-                            var nextVox = ChunksLight[neighb2];
-                            copyTo[0, 0, 0] = nextVox.AtGet(sz - 1, sz - 1, sz - 1);
-                        }
-                    }
+                neighbDir = Direction.Up | Direction.Right | Direction.Backward;
+                if(PosToEntity.TryGetValue(ChunkPos.Pos + neighbDir.ToInt3(), out nextEnt))
+                {
+                    var nextVox = ChunksLight[nextEnt];
+                    copyTo[sz + 1, sz + 1, 0] = nextVox.AtGet(0, 0, sz - 1);
+                }
 
-                    if(neighb1.Right != Entity.Null)
-                    {
-                        var neighb2 = AllChunksNeighbours[neighb1.Right].Forward;
-                        if(neighb2 != Entity.Null)
-                        {
-                            var nextVox = ChunksLight[neighb2];
-                            copyTo[sz + 1, 0, sz + 1] = nextVox.AtGet(0, sz - 1, 0);
-                        }
+                neighbDir = Direction.Down | Direction.Right | Direction.Forward;
+                if(PosToEntity.TryGetValue(ChunkPos.Pos + neighbDir.ToInt3(), out nextEnt))
+                {
+                    var nextVox = ChunksLight[nextEnt];
+                    copyTo[0, 0, sz + 1] = nextVox.AtGet(sz - 1, sz - 1, 0);
+                }
 
-                        neighb2 = AllChunksNeighbours[neighb1.Right].Backward;
-                        if(neighb2 != Entity.Null)
-                        {
-                            var nextVox = ChunksLight[neighb2];
-                            copyTo[sz + 1, 0, 0] = nextVox.AtGet(0, sz - 1, sz - 1);
-                        }
-                    }
+                neighbDir = Direction.Down | Direction.Left | Direction.Backward;
+                if(PosToEntity.TryGetValue(ChunkPos.Pos + neighbDir.ToInt3(), out nextEnt))
+                {
+                    var nextVox = ChunksLight[nextEnt];
+                    copyTo[0, 0, 0] = nextVox.AtGet(sz - 1, sz - 1, sz - 1);
+                }
+
+                neighbDir = Direction.Down | Direction.Right | Direction.Forward;
+                if(PosToEntity.TryGetValue(ChunkPos.Pos + neighbDir.ToInt3(), out nextEnt))
+                {
+                    var nextVox = ChunksLight[nextEnt];
+                    copyTo[sz + 1, 0, sz + 1] = nextVox.AtGet(0, sz - 1, 0);
+                }
+
+                neighbDir = Direction.Down | Direction.Right | Direction.Backward;
+                if(PosToEntity.TryGetValue(ChunkPos.Pos + neighbDir.ToInt3(), out nextEnt))
+                {
+                    var nextVox = ChunksLight[nextEnt];
+                    copyTo[sz + 1, 0, 0] = nextVox.AtGet(0, sz - 1, sz - 1);
                 }
             }
 
@@ -317,7 +285,6 @@ namespace Scripts.World.Systems
         [BurstCompile]
         private struct ConstructMeshJob : IJob
         {
-            [WriteOnly]
             public NativeMeshData MeshData;
 
             [ReadOnly]
@@ -332,15 +299,13 @@ namespace Scripts.World.Systems
 
             [DeallocateOnJobCompletion]
             [ReadOnly]
-            public NativeArray3D<DirectionsHelper.BlockDirectionFlag> VoxelsVisibleFaces;
+            public NativeArray3D<Direction> VoxelsVisibleFaces;
 
             public void Execute()
             {
                 var chunkBuffer = ChunkBufferEnt[Entity];
                 for(int z = 0; z < VoxConsts._chunkSize; z++)
-                {
                     for(int y = 0; y < VoxConsts._chunkSize; y++)
-                    {
                         for(int x = 0; x < VoxConsts._chunkSize; x++)
                         {
                             var vox = chunkBuffer.AtGet(x, y, z).Type;
@@ -350,13 +315,11 @@ namespace Scripts.World.Systems
                                 CreateCube(MeshData, new Vector3(x, y, z) * VoxConsts._blockSize, faces, new Vector3Int(x, y, z), vox);
                             }
                         }
-                    }
-                }
             }
 
             #region Mesh generation
 
-            private void CreateCube(NativeMeshData mesh, Vector3 pos, DirectionsHelper.BlockDirectionFlag facesVisible, Vector3Int blockPos, VoxelType voxelType)
+            private void CreateCube(NativeMeshData mesh, Vector3 pos, Direction facesVisible, Vector3Int blockPos, VoxelType voxelType)
             {
                 for(int i = 0; i < 6; i++)
                 {
@@ -366,7 +329,7 @@ namespace Scripts.World.Systems
                 }
             }
 
-            private void CreateFace(NativeMeshData mesh, Vector3 vertOffset, DirectionsHelper.BlockDirectionFlag dir, Vector3Int blockPos, VoxelType voxelType)
+            private void CreateFace(NativeMeshData mesh, Vector3 vertOffset, Direction dir, Vector3Int blockPos, VoxelType voxelType)
             {
                 var normal = dir.ToVecFloat();
 
@@ -514,73 +477,79 @@ namespace Scripts.World.Systems
         private struct RebuildChunkBlockVisibleFacesJob : IJobParallelFor
         {
             [WriteOnly]
-            public NativeArray3D<DirectionsHelper.BlockDirectionFlag> facesVisibleArr;
+            public NativeArray3D<Direction> FacesVisibleArr;
 
             [ReadOnly]
-            public Entity chunk;
+            public Entity Chunk;
 
             [ReadOnly]
-            public ChunkNeighboursComponent neighbours;
+            public NativeHashMap<int3, Entity> PosToEntity;
 
             [ReadOnly]
-            public BufferFromEntity<Voxel> chunks;
+            public ChunkPosComponent Pos;
+
+            [ReadOnly]
+            public BufferFromEntity<Voxel> Chunks;
 
             public void Execute(int index)
             {
-                facesVisibleArr.At(index, out int x, out int y, out int z);
+                FacesVisibleArr.At(index, out int x, out int y, out int z);
 
-                var facesVisible = DirectionsHelper.BlockDirectionFlag.None;
+                var facesVisible = Direction.None;
                 for(byte i = 0; i < 6; i++)
                 {
-                    var dir = (DirectionsHelper.BlockDirectionFlag)(1 << i);
+                    var dir = (Direction)(1 << i);
                     var vec = dir.ToInt3();
                     int xn = x + vec.x,
                         yn = y + vec.y,
                         zn = z + vec.z;
-                    var chunkIndIn = chunks[chunk];
-                    if(DirectionsHelper.WrapCoordsInChunk(ref xn, ref yn, ref zn) != DirectionsHelper.BlockDirectionFlag.None)
+                    var chunkIndIn = Chunks[Chunk];
+                    if(DirectionsHelper.WrapCoordsInChunk(ref xn, ref yn, ref zn) != Direction.None)
                     {
-                        if(neighbours[dir] != Entity.Null)
-                            chunkIndIn = chunks[neighbours[dir]];
+                        if(PosToEntity.TryGetValue(Pos.Pos + vec, out var ent))
+                            chunkIndIn = Chunks[ent];
                         else
-                        {
                             facesVisible |= dir;
-                            continue;
-                        }
                     }
 
                     if(chunkIndIn.AtGet(xn, yn, zn).Type.IsEmpty())
                         facesVisible |= dir;
                 }
-                facesVisibleArr[x, y, z] = facesVisible;
+                FacesVisibleArr[x, y, z] = facesVisible;
             }
         }
+
+        private EntityQuery _chunksDirty;
+
+        private EntityCommandBufferSystem _barrier;
+
+        private ChunkCreationSystem _chunkCreationSystem;
 
         protected override void OnCreateManager()
         {
             _chunksDirty = GetEntityQuery(
-                ComponentType.ReadOnly<RegularChunk>(),
                 ComponentType.ReadOnly<ChunkDirtyComponent>(),
-                ComponentType.ReadOnly<ChunkNeighboursComponent>(),
                 ComponentType.ReadOnly<Voxel>(),
-                ComponentType.ReadOnly<VoxelLightingLevel>());
+                ComponentType.ReadOnly<VoxelLightingLevel>(),
+                ComponentType.ReadOnly<ChunkPosComponent>());
+
             _barrier = World.GetOrCreateSystem<EndSimulationEntityCommandBufferSystem>();
+            _chunkCreationSystem = World.GetOrCreateSystem<ChunkCreationSystem>();
         }
 
         protected override JobHandle OnUpdate(JobHandle inputDeps)
         {
             var commandBuffer = _barrier.CreateCommandBuffer();
+            var dict = _chunkCreationSystem.PosToChunk;
 
             JobHandle handle;
-
-            var dirty = _chunksDirty.ToComponentArray<RegularChunk>();
             using(var entities = _chunksDirty.ToEntityArray(Allocator.TempJob))
-            using(var neig = _chunksDirty.ToComponentDataArray<ChunkNeighboursComponent>(Allocator.TempJob))
-            using(var handles = new NativeList<JobHandle>(dirty.Length, Allocator.Temp))
+            using(var neig = _chunksDirty.ToComponentDataArray<ChunkPosComponent>(Allocator.TempJob))
+            using(var handles = new NativeList<JobHandle>(entities.Length, Allocator.Temp))
             {
-                for(int i = 0; i < dirty.Length; i++)
+                for(int i = 0; i < entities.Length; i++)
                 {
-                    handles.Add(CleanChunk(dirty[i], entities[i], neig[i], inputDeps));
+                    handles.Add(CleanChunk(dict[neig[i].Pos], entities[i], neig[i], inputDeps));
                     commandBuffer.RemoveComponent<ChunkDirtyComponent>(entities[i]);
                     commandBuffer.AddComponent(entities[i], new ChunkNeedMeshApply());
                 }
@@ -591,28 +560,30 @@ namespace Scripts.World.Systems
 
         #region Chunk processing
 
-        public JobHandle CleanChunk(RegularChunk chunk, Entity entity, ChunkNeighboursComponent neighb, JobHandle inputDeps)
+        public JobHandle CleanChunk(RegularChunk chunk, Entity entity, ChunkPosComponent pos, JobHandle inputDeps)
         {
+            //Debug.Log(chunk.name);
             var j1 = new RebuildChunkBlockVisibleFacesJob()
             {
-                facesVisibleArr = new NativeArray3D<DirectionsHelper.BlockDirectionFlag>(
+                FacesVisibleArr = new NativeArray3D<Direction>(
                     VoxConsts._chunkSize, VoxConsts._chunkSize, VoxConsts._chunkSize, Allocator.TempJob, NativeArrayOptions.UninitializedMemory),
-                chunk = entity,
-                chunks = GetBufferFromEntity<Voxel>(true),
-                neighbours = neighb,
+                Chunk = entity,
+                Chunks = GetBufferFromEntity<Voxel>(true),
+                Pos = pos,
+                PosToEntity = _chunkCreationSystem.PosToEntity,
             };
             var j2 = new CopyLightJob()
             {
-                AllChunksNeighbours = GetComponentDataFromEntity<ChunkNeighboursComponent>(true),
                 Chunk = entity,
                 ChunksLight = GetBufferFromEntity<VoxelLightingLevel>(true),
                 LightingData = new NativeArray3D<VoxelLightingLevel>(VoxConsts._chunkSize + 2, VoxConsts._chunkSize + 2, VoxConsts._chunkSize + 2, Allocator.TempJob),
-                Neighbours = neighb,
+                ChunkPos = pos,
+                PosToEntity = _chunkCreationSystem.PosToEntity,
             };
             var j3 = new ConstructMeshJob()
             {
                 MeshData = chunk.MeshData,
-                VoxelsVisibleFaces = j1.facesVisibleArr,
+                VoxelsVisibleFaces = j1.FacesVisibleArr,
                 ChunkBufferEnt = GetBufferFromEntity<Voxel>(true),
                 LightingData = j2.LightingData,
                 Entity = entity,
@@ -647,7 +618,7 @@ namespace Scripts.World.Systems
 
         public static Vector3 VoxelPosToWorldPos(Vector3Int pos)
         {
-            return ((Vector3)pos * VoxConsts._chunkSize);
+            return (Vector3)pos * VoxConsts._chunkSize;
         }
 
         #endregion Helper methods

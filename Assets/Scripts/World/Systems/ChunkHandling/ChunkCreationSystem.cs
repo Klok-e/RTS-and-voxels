@@ -70,8 +70,6 @@ namespace Scripts.World.Systems
             });
         }
 
-
-
         private void RemoveChunk(int3 pos)
         {
             var ent = PosToEntity[pos];
@@ -94,14 +92,10 @@ namespace Scripts.World.Systems
             PostUpdateCommands.AddComponent(ent, new ChunkPosComponent { Pos = pos, });
 
             var buf1 = PostUpdateCommands.AddBuffer<Voxel>(ent);
-            //Debug.Log($"Length of voxel buffer: {buf1.Length} Capacity of voxel buffer: {buf1.Capacity}");
             buf1.ResizeUninitialized(VoxConsts._chunkSize * VoxConsts._chunkSize * VoxConsts._chunkSize);
-            //Debug.Log($"Length of voxel buffer: {buf1.Length} Capacity of voxel buffer: {buf1.Capacity}");
 
             var buf2 = PostUpdateCommands.AddBuffer<VoxelLightingLevel>(ent);
-            //Debug.Log($"Length of light buffer: {buf2.Length} Capacity of light buffer: {buf2.Capacity}");
             buf2.ResizeUninitialized(VoxConsts._chunkSize * VoxConsts._chunkSize * VoxConsts._chunkSize);
-            //Debug.Log($"Length of light buffer: {buf2.Length} Capacity of light buffer: {buf2.Capacity}");
 
             PostUpdateCommands.AddBuffer<VoxelSetQueryData>(ent); // now voxels can be changed
             PostUpdateCommands.AddBuffer<LightSetQueryData>(ent); // now light can be changed

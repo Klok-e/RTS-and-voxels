@@ -17,7 +17,7 @@ namespace Scripts.World.Components
     public struct ChunkUnloaded : IComponentData
     {
     }
-    public struct ChunkNeedLoadFromDisc : IComponentData
+    public struct ChunkNeedLoadFromDrive : IComponentData
     {
     }
 }

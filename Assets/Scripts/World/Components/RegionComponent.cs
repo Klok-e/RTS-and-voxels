@@ -17,6 +17,10 @@ namespace Scripts.World.Components
     {
     }
 
+    public struct RegionNeedUnloadComponentTag : IComponentData
+    {
+    }
+
     public struct RegionChunks : IBufferElementData
     {
         public Entity Chunk;

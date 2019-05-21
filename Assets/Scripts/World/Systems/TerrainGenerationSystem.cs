@@ -96,7 +96,6 @@ namespace Scripts.World.Systems
         {
             var t1 = new GenerateChunkTerrainJob
             {
-
             };
             var h1 = t1.Schedule(this, inputDeps);
 

@@ -1463,7 +1463,6 @@ GameObject:
   - component: {fileID: 778462435}
   - component: {fileID: 778462437}
   - component: {fileID: 778462438}
-  - component: {fileID: 778462439}
   m_Layer: 0
   m_Name: MapLoader
   m_TagString: Untagged
@@ -1532,26 +1531,31 @@ MonoBehaviour:
   m_GameObject: {fileID: 778462433}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0af0db853e732453799566a0e597993c, type: 3}
+  m_Script: {fileID: 11500000, guid: 6851b6711fc654d54b6566c5eae03737, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   m_SerializedData:
     Value:
-      x: 47.7
-      y: 10
-      z: 91.4
---- !u!114 &778462439
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 778462433}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9f922032aad1e4f109e892944af196e6, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+      c0:
+        x: -0.77317286
+        y: 0.000000007450581
+        z: 0.6341956
+        w: 0
+      c1:
+        x: -0.23722398
+        y: 0.92740655
+        z: -0.28920904
+        w: 0
+      c2:
+        x: -0.58815724
+        y: -0.37405494
+        z: -0.71704555
+        w: 0
+      c3:
+        x: 47.7
+        y: 10
+        z: 91.4
+        w: 1
 --- !u!1 &831216440
 GameObject:
   m_ObjectHideFlags: 0

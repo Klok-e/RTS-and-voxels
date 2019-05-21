@@ -10,7 +10,7 @@ namespace Scripts.World.Components
     [Serializable]
     public struct MapLoader : IComponentData
     {
-        public int ChunkDistance;
+        public int RegionDistance;
     }
 
     public class MapLoaderProxy : ComponentDataProxy<MapLoader>

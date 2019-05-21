@@ -42,17 +42,17 @@ namespace Scripts.World.Systems
                     throw new System.Exception("Could not add to PosToEntity hashmap");
             });
 
-            Entities.ForEach((ref MapLoader loader, ref Translation pos) =>
+            Entities.ForEach((ref MapLoader loader, ref LocalToWorld pos) =>
             {
-                var loaderChunkIn = ChunkIn(pos);
+                var loaderChunkIn = VoxConsts.ChunkIn(pos.Position);
                 if(math.any(_loaderChunkInPrev != loaderChunkIn))
                 {
                     _loaderChunkInPrev = loaderChunkIn;
 
                     // gen new
-                    for(int x = -loader.ChunkDistance; x <= loader.ChunkDistance; x++)
-                        for(int y = -loader.ChunkDistance / 2; y <= loader.ChunkDistance / 2; y++)
-                            for(int z = -loader.ChunkDistance; z <= loader.ChunkDistance; z++)
+                    for(int x = -loader.RegionDistance; x <= loader.RegionDistance; x++)
+                        for(int y = -loader.RegionDistance / 2; y <= loader.RegionDistance / 2; y++)
+                            for(int z = -loader.RegionDistance; z <= loader.RegionDistance; z++)
                             {
                                 var chPos = new int3(x, y, z) + loaderChunkIn;
                                 if(!PosToEntity.TryGetValue(chPos, out var _))
@@ -63,27 +63,21 @@ namespace Scripts.World.Systems
                     using(var keys = PosToEntity.GetKeyArray(Allocator.Temp))
                         foreach(var key in keys)
                         {
-                            if(math.distance(loaderChunkIn, key) > loader.ChunkDistance * 2)
+                            if(math.distance(loaderChunkIn, key) > loader.RegionDistance * 2)
                                 RemoveChunk(key);
                         }
                 }
             });
         }
 
-        private int3 ChunkIn(Translation pos)
-        {
-            var worldPos = pos.Value / VoxConsts._blockSize;
-            var loaderChunkInf = (worldPos - (math.float3(1f) * (VoxConsts._chunkSize / 2))) / VoxConsts._chunkSize;
-            var loaderChunkIn = new int3((int)math.round(loaderChunkInf.x), (int)math.round(loaderChunkInf.y), (int)math.round(loaderChunkInf.z));
-            return loaderChunkIn;
-        }
+
 
         private void RemoveChunk(int3 pos)
         {
             var ent = PosToEntity[pos];
-            Object.Destroy(EntityManager.GetComponentObject<RegularChunk>(ent).gameObject, 1f);
             PostUpdateCommands.DestroyEntity(ent);
 
+            Object.Destroy(PosToChunk[pos]);
             PosToChunk.Remove(pos);
         }
 

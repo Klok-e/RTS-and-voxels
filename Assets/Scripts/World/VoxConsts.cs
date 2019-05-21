@@ -1,18 +1,37 @@
-﻿using UnityEngine;
+﻿using Unity.Mathematics;
+using UnityEngine;
 
 namespace Scripts.World
 {
-    public class VoxConsts : MonoBehaviour
+    public static class VoxConsts
     {
         /// <summary>
         /// Only uneven amount or else SetVoxel won't work at all
         /// </summary>
-        public const int _chunkSize = 17;
+        public const int _chunkSize = 16;
+
+        /// <summary>
+        /// Size in chunks
+        /// </summary>
+        public const int _regionSize = 8;
 
         /// <summary>
         /// Size of a voxel
         /// </summary>
         public const float _blockSize = 0.5f;
+
+        public static int3 ChunkIn(float3 pos)
+        {
+            var worldPos = pos / _blockSize;
+            var loaderChunkInf = (worldPos - (math.float3(1f) * (_chunkSize / 2))) / _chunkSize;
+            var loaderChunkIn = math.int3(math.floor(loaderChunkInf));
+            return loaderChunkIn;
+        }
+
+        public static int3 RegionIn(float3 pos)
+        {
+            return ChunkIn(pos) / _regionSize;
+        }
         /*
         #region Visible in inspector
 

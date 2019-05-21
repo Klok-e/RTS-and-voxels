@@ -14,4 +14,10 @@ namespace Scripts.World.Components
     public struct ChunkNeedMeshApply : IComponentData
     {
     }
+    public struct ChunkUnloaded : IComponentData
+    {
+    }
+    public struct ChunkNeedLoadFromDisc : IComponentData
+    {
+    }
 }

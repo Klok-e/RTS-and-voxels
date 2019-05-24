@@ -21,8 +21,16 @@ namespace Scripts.World.Components
     {
     }
 
-    public struct RegionChunks : IBufferElementData
+    /// <summary>
+    /// Used to allow to iterate over all chunks of a region
+    /// </summary>
+    public struct ChunkParentRegion : ISharedComponentData
     {
-        public Entity Chunk;
+        public Entity ParentRegion;
+
+        public override int GetHashCode()
+        {
+            return ParentRegion.GetHashCode();
+        }
     }
 }

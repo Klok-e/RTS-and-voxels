@@ -69,7 +69,6 @@ namespace Scripts.World.Systems
 
             PostUpdateCommands.AddComponent(ent, new RegionNeedLoadComponentTag());
             PostUpdateCommands.AddComponent(ent, new RegionPosComponent { Pos = pos });
-            PostUpdateCommands.AddBuffer<RegionChunks>(ent);
         }
 
         private void RemoveRegion(int3 pos)

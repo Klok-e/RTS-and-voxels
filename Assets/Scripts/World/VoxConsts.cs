@@ -32,6 +32,7 @@ namespace Scripts.World
         {
             return ChunkIn(pos) / _regionSize;
         }
+
         /*
         #region Visible in inspector
 

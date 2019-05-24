@@ -18,32 +18,60 @@ namespace Scripts.World.Systems.Regions
         protected override void OnUpdate()
         {
             // load
-            Entities.WithAll<RegionNeedLoadComponentTag>().ForEach((Entity ent, DynamicBuffer<RegionChunks> chunks, ref RegionPosComponent regionPos) =>
+            Entities.WithAll<RegionNeedLoadComponentTag>().ForEach((Entity ent, ref RegionPosComponent regionPos) =>
             {
                 if(!TryFindRegion(regionPos.Pos))
                 {
-                    for(int z = 0; z < VoxConsts._regionSize; z++)
-                        for(int y = 0; y < VoxConsts._regionSize; y++)
-                            for(int x = 0; x < VoxConsts._regionSize; x++)
-                            {
-                                CreateChunk(regionPos.Pos * VoxConsts._regionSize + math.int3(x, y, z));
-                            }
+                    PopulateRegion(regionPos.Pos, ent);
+                }
+                else
+                {
+                    // TODO: this
                 }
             });
 
             // unload
-            Entities.WithAll<RegionNeedUnloadComponentTag>().ForEach((Entity ent, ref RegionPosComponent pos) =>
+            var filter = EntityManager.CreateEntityQuery(typeof(RegionNeedLoadComponentTag));
+            Entities.WithAll<RegionNeedLoadComponentTag>().ForEach((Entity regionEntity, ref RegionPosComponent regionPos) =>
             {
+                SaveRegion(regionPos.Pos);
 
+                // set filter so that only chunks within this region are iterated over
+                filter.SetFilter(new ChunkParentRegion
+                {
+                    ParentRegion = regionEntity,
+                });
+
+                // now delete
+                Entities.With(filter).ForEach((Entity chunkEntity) =>
+                {
+                    PostUpdateCommands.DestroyEntity(chunkEntity);
+                });
+
+                PostUpdateCommands.DestroyEntity(regionEntity);
             });
         }
 
-        private void CreateChunk(int3 pos)
+        private void PopulateRegion(int3 pos, Entity region)
+        {
+            for(int z = 0; z < VoxConsts._regionSize; z++)
+                for(int y = 0; y < VoxConsts._regionSize; y++)
+                    for(int x = 0; x < VoxConsts._regionSize; x++)
+                    {
+                        CreateChunk(pos * VoxConsts._regionSize + math.int3(x, y, z), region);
+                    }
+        }
+
+        private void CreateChunk(int3 pos, Entity region)
         {
             var ent = PostUpdateCommands.CreateEntity();
 
+            // archetypes are for weak
             PostUpdateCommands.AddComponent(ent, new ChunkNeedTerrainGeneration());
-            PostUpdateCommands.AddComponent(ent, new ChunkPosComponent { Pos = pos, });
+            PostUpdateCommands.AddComponent(ent, new ChunkPosComponent
+            {
+                Pos = pos,
+            });
 
             var buf1 = PostUpdateCommands.AddBuffer<Voxel>(ent);
             buf1.ResizeUninitialized(VoxConsts._chunkSize * VoxConsts._chunkSize * VoxConsts._chunkSize);
@@ -53,6 +81,7 @@ namespace Scripts.World.Systems.Regions
 
             PostUpdateCommands.AddBuffer<VoxelSetQueryData>(ent);
             PostUpdateCommands.AddBuffer<LightSetQueryData>(ent);
+            PostUpdateCommands.AddSharedComponent(ent, new ChunkParentRegion { ParentRegion = region, });
         }
 
         // TODO: this
@@ -61,7 +90,7 @@ namespace Scripts.World.Systems.Regions
             return false;
         }
 
-        // TODO: this
+        // TODO: this, synchronously first then try async
         private void SaveRegion(int3 pos)
         {
 

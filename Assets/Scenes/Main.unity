@@ -1497,7 +1497,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_SerializedData:
-    ChunkDistance: 5
+    RegionDistance: 2
 --- !u!114 &778462436
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1552,9 +1552,9 @@ MonoBehaviour:
         z: -0.71704555
         w: 0
       c3:
-        x: 47.7
-        y: 10
-        z: 91.4
+        x: 0
+        y: 8
+        z: 0
         w: 1
 --- !u!1 &831216440
 GameObject:
@@ -1665,7 +1665,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 831216440}
   m_LocalRotation: {x: -0.0641603, y: 0.92434096, z: -0.17938834, w: -0.3306012}
-  m_LocalPosition: {x: 47.7, y: 10, z: 91.4}
+  m_LocalPosition: {x: 0, y: 8, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children:
   - {fileID: 778462434}

@@ -6,14 +6,14 @@ namespace Scripts.World
     public static class VoxConsts
     {
         /// <summary>
-        /// Only uneven amount or else SetVoxel won't work at all
+        /// Only even amount or else SetVoxel won't work at all
         /// </summary>
         public const int _chunkSize = 16;
 
         /// <summary>
         /// Size in chunks
         /// </summary>
-        public const int _regionSize = 8;
+        public const int _regionSize = 1;
 
         /// <summary>
         /// Size of a voxel
@@ -23,14 +23,14 @@ namespace Scripts.World
         public static int3 ChunkIn(float3 pos)
         {
             var worldPos = pos / _blockSize;
-            var loaderChunkInf = (worldPos - (math.float3(1f) * (_chunkSize / 2))) / _chunkSize;
+            var loaderChunkInf = worldPos / _chunkSize;
             var loaderChunkIn = math.int3(math.floor(loaderChunkInf));
             return loaderChunkIn;
         }
 
         public static int3 RegionIn(float3 pos)
         {
-            return ChunkIn(pos) / _regionSize;
+            return math.int3(math.floor(math.float3(ChunkIn(pos)) / _regionSize));
         }
 
         /*

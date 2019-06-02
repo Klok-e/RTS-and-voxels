@@ -21,6 +21,10 @@ namespace Scripts.World
         public void Initialize(int3 pos, Material material)
         {
             var newpos = math.float3(pos) * VoxConsts._chunkSize * VoxConsts._blockSize;
+
+            // shift newpos so that it's actually at a 0,0,0 coords of a chunk assuming it's originally at center
+            //newpos -= math.float3(VoxConsts._chunkSize * VoxConsts._blockSize * 0.5f);
+
             transform.position = newpos;
             gameObject.SetActive(true);
             name = $"Chunk Active at {pos}";

@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
@@ -13,41 +14,55 @@ namespace Scripts.World.Systems.Regions
 {
     public class FillRegionWithChunksSystem : JobComponentSystem
     {
-        /*
-        [RequireComponentTag(typeof(RegionNeedFillWithChunksComponentTag))]
-        private struct FillJob : IJobForEachWithEntity_EBC<RegionChunks, RegionPosComponent>
+        private struct FillJob : IJob
         {
-            public EntityCommandBuffer.Concurrent CommandBuffer;
+            public EntityCommandBuffer CommandBuffer;
 
-            public void Execute(Entity entity, int index, DynamicBuffer<RegionChunks> b0, ref RegionPosComponent pos)
+            public BufferFromEntity<RegionChunks> ChunksBuffers;
+
+            [DeallocateOnJobCompletion]
+            public NativeArray<Entity> Entities;
+
+            [DeallocateOnJobCompletion]
+            public NativeArray<ChunkNeedAddToRegion> Components;
+
+            public void Execute()
             {
-                CommandBuffer.RemoveComponent<RegionNeedFillWithChunksComponentTag>(index, entity);
+                for(int i = 0; i < Entities.Length; i++)
+                {
+                    var parent = Components[i].ParentRegion;
+                    ChunksBuffers[parent].Add(new RegionChunks { Chunk = Entities[i], });
 
-                for(int z = 0; z < VoxConsts._regionSize; z++)
-                    for(int y = 0; y < VoxConsts._regionSize; y++)
-                        for(int x = 0; x < VoxConsts._regionSize; x++)
-                        {
-
-                        }
+                    CommandBuffer.RemoveComponent<ChunkNeedAddToRegion>(Entities[i]);
+                    CommandBuffer.AddComponent(Entities[i], new ChunkNeedTerrainGeneration());
+                }
             }
         }
-        */
 
         private EndSimulationEntityCommandBufferSystem _barrier;
+
+        private EntityQuery _entityQuery;
 
         protected override void OnCreate()
         {
             _barrier = World.GetOrCreateSystem<EndSimulationEntityCommandBufferSystem>();
+            _entityQuery = GetEntityQuery(ComponentType.ReadOnly<ChunkNeedAddToRegion>());
         }
 
         protected override JobHandle OnUpdate(JobHandle inputDeps)
         {
-            //var j1 = new FillJob
-            //{
-            //    CommandBuffer = _barrier.CreateCommandBuffer().ToConcurrent(),
-            //};
-            //var h1 = j1.Schedule(this, inputDeps);
-            return inputDeps;
+            var j1 = new FillJob
+            {
+                CommandBuffer = _barrier.CreateCommandBuffer(),
+                Components = _entityQuery.ToComponentDataArray<ChunkNeedAddToRegion>(Allocator.TempJob, out var collectComponents),
+                Entities = _entityQuery.ToEntityArray(Allocator.TempJob, out var collectEntities),
+                ChunksBuffers = GetBufferFromEntity<RegionChunks>(),
+            };
+            var h1 = j1.Schedule(JobHandle.CombineDependencies(collectComponents, collectEntities, inputDeps));
+
+            _barrier.AddJobHandleForProducer(h1);
+
+            return h1;
         }
     }
 }

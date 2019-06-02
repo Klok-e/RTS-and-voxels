@@ -1,6 +1,7 @@
 ﻿using Scripts.Help;
 using Scripts.World.Components;
 using Scripts.World.DynamicBuffers;
+using Scripts.World.Systems.Regions;
 using Scripts.World.Utils;
 using Unity.Burst;
 using Unity.Collections;
@@ -27,7 +28,7 @@ namespace Scripts.World.Systems
 
         private EntityCommandBufferSystem _barrier;
 
-        private ChunkCreationSystem _chunkCreationSystem;
+        private RegionLoadUnloadSystem _chunkCreationSystem;
 
         [BurstCompile]
         private struct ApplyChangesVoxel : IJobForEach_BBC<Voxel, VoxelSetQueryData, ChunkPosComponent>
@@ -454,7 +455,7 @@ namespace Scripts.World.Systems
 
             _barrier = World.GetOrCreateSystem<EndSimulationEntityCommandBufferSystem>();
 
-            _chunkCreationSystem = World.GetOrCreateSystem<ChunkCreationSystem>();
+            _chunkCreationSystem = World.GetOrCreateSystem<RegionLoadUnloadSystem>();
         }
 
         protected override void OnDestroyManager()

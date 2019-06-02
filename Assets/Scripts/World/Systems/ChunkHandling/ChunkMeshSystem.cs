@@ -2,6 +2,7 @@
 using Scripts.Help.DataContainers;
 using Scripts.World.Components;
 using Scripts.World.DynamicBuffers;
+using Scripts.World.Systems.Regions;
 using Scripts.World.Utils;
 using Unity.Burst;
 using Unity.Collections;
@@ -523,7 +524,7 @@ namespace Scripts.World.Systems
 
         private EntityCommandBufferSystem _barrier;
 
-        private ChunkCreationSystem _chunkCreationSystem;
+        private RegionLoadUnloadSystem _chunkCreationSystem;
 
         protected override void OnCreateManager()
         {
@@ -534,7 +535,7 @@ namespace Scripts.World.Systems
                 ComponentType.ReadOnly<ChunkPosComponent>());
 
             _barrier = World.GetOrCreateSystem<EndSimulationEntityCommandBufferSystem>();
-            _chunkCreationSystem = World.GetOrCreateSystem<ChunkCreationSystem>();
+            _chunkCreationSystem = World.GetOrCreateSystem<RegionLoadUnloadSystem>();
         }
 
         protected override JobHandle OnUpdate(JobHandle inputDeps)
@@ -555,6 +556,9 @@ namespace Scripts.World.Systems
                 }
                 handle = JobHandle.CombineDependencies(handles.AsArray());
             }
+
+            _barrier.AddJobHandleForProducer(handle);
+
             return handle;
         }
 

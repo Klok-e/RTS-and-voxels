@@ -1,6 +1,7 @@
 ﻿using Scripts.Help;
 using Scripts.World.Components;
 using Scripts.World.DynamicBuffers;
+using System;
 using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Entities;
@@ -10,31 +11,33 @@ using UnityEngine;
 
 namespace Scripts.World.Systems
 {
+    [Obsolete]
     public class ChunkCreationSystem : ComponentSystem
     {
-        public NativeHashMap<int3, Entity> PosToEntity { get; private set; }
+        //public NativeHashMap<int3, Entity> PosToEntity { get; private set; }
 
-        public Dictionary<int3, RegularChunk> PosToChunk { get; private set; }
+        //public Dictionary<int3, RegularChunk> PosToChunk { get; private set; }
 
-        private int3 _loaderChunkInPrev;
+        //private int3 _loaderChunkInPrev;
 
-        private InitChunkTexturesMaterialsSystem _materials;
+        //private InitChunkTexturesMaterialsSystem _materials;
 
         protected override void OnCreateManager()
         {
-            PosToEntity = new NativeHashMap<int3, Entity>(10000, Allocator.Persistent);
-            PosToChunk = new Dictionary<int3, RegularChunk>();
-
-            _materials = World.GetOrCreateSystem<InitChunkTexturesMaterialsSystem>();
+            //PosToEntity = new NativeHashMap<int3, Entity>(10000, Allocator.Persistent);
+            //PosToChunk = new Dictionary<int3, RegularChunk>();
+            //
+            //_materials = World.GetOrCreateSystem<InitChunkTexturesMaterialsSystem>();
         }
 
         protected override void OnDestroyManager()
         {
-            PosToEntity.Dispose();
+            //PosToEntity.Dispose();
         }
 
         protected override void OnUpdate()
         {
+            /*
             PosToEntity.Clear();
             Entities.ForEach((Entity entity, ref ChunkPosComponent pos) =>
             {
@@ -68,39 +71,40 @@ namespace Scripts.World.Systems
                         }
                 }
             });
+            */
         }
 
         private void RemoveChunk(int3 pos)
         {
-            var ent = PosToEntity[pos];
-            PostUpdateCommands.DestroyEntity(ent);
-
-            Object.Destroy(PosToChunk[pos]);
-            PosToChunk.Remove(pos);
+            //var ent = PosToEntity[pos];
+            //PostUpdateCommands.DestroyEntity(ent);
+            //
+            //Object.Destroy(PosToChunk[pos]);
+            //PosToChunk.Remove(pos);
         }
 
-        private (RegularChunk, Entity) CreateChunk(int3 pos)
-        {
-            var chunk = RegularChunk.CreateNew();
-            chunk.Initialize(pos, _materials._chunkMaterial);
-
-            PosToChunk.Add(pos, chunk);
-
-            var ent = PostUpdateCommands.CreateEntity();
-
-            PostUpdateCommands.AddComponent(ent, new ChunkNeedTerrainGeneration());
-            PostUpdateCommands.AddComponent(ent, new ChunkPosComponent { Pos = pos, });
-
-            var buf1 = PostUpdateCommands.AddBuffer<Voxel>(ent);
-            buf1.ResizeUninitialized(VoxConsts._chunkSize * VoxConsts._chunkSize * VoxConsts._chunkSize);
-
-            var buf2 = PostUpdateCommands.AddBuffer<VoxelLightingLevel>(ent);
-            buf2.ResizeUninitialized(VoxConsts._chunkSize * VoxConsts._chunkSize * VoxConsts._chunkSize);
-
-            PostUpdateCommands.AddBuffer<VoxelSetQueryData>(ent); // now voxels can be changed
-            PostUpdateCommands.AddBuffer<LightSetQueryData>(ent); // now light can be changed
-
-            return (chunk, ent);
-        }
+        // private (RegularChunk, Entity) CreateChunk(int3 pos)
+        // {
+        //var chunk = RegularChunk.CreateNew();
+        //chunk.Initialize(pos, _materials._chunkMaterial);
+        //
+        //PosToChunk.Add(pos, chunk);
+        //
+        //var ent = PostUpdateCommands.CreateEntity();
+        //
+        //PostUpdateCommands.AddComponent(ent, new ChunkNeedTerrainGeneration());
+        //PostUpdateCommands.AddComponent(ent, new ChunkPosComponent { Pos = pos, });
+        //
+        //var buf1 = PostUpdateCommands.AddBuffer<Voxel>(ent);
+        //buf1.ResizeUninitialized(VoxConsts._chunkSize * VoxConsts._chunkSize * VoxConsts._chunkSize);
+        //
+        //var buf2 = PostUpdateCommands.AddBuffer<VoxelLightingLevel>(ent);
+        //buf2.ResizeUninitialized(VoxConsts._chunkSize * VoxConsts._chunkSize * VoxConsts._chunkSize);
+        //
+        //PostUpdateCommands.AddBuffer<VoxelSetQueryData>(ent); // now voxels can be changed
+        //PostUpdateCommands.AddBuffer<LightSetQueryData>(ent); // now light can be changed
+        //
+        //return (chunk, ent);
+        //}
     }
 }

@@ -21,16 +21,14 @@ namespace Scripts.World.Components
     {
     }
 
-    /// <summary>
-    /// Used to allow to iterate over all chunks of a region
-    /// </summary>
-    public struct ChunkParentRegion : ISharedComponentData
+    public struct ChunkNeedAddToRegion : IComponentData
     {
         public Entity ParentRegion;
+    }
 
-        public override int GetHashCode()
-        {
-            return ParentRegion.GetHashCode();
-        }
+    [InternalBufferCapacity(VoxConsts._regionSize * VoxConsts._regionSize * VoxConsts._regionSize)]
+    public struct RegionChunks : IBufferElementData
+    {
+        public Entity Chunk;
     }
 }

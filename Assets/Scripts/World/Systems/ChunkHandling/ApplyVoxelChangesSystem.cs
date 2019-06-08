@@ -31,6 +31,7 @@ namespace Scripts.World.Systems
         private RegionLoadUnloadSystem _chunkCreationSystem;
 
         [BurstCompile]
+        [RequireComponentTag(typeof(ChunkNeedApplyVoxelChanges))]
         private struct ApplyChangesVoxel : IJobForEach_BBC<Voxel, VoxelSetQueryData, ChunkPosComponent>
         {
             public NativeQueue<Entity>.Concurrent ToBeRemeshedNeighbs;
@@ -38,22 +39,16 @@ namespace Scripts.World.Systems
             [ReadOnly]
             public NativeHashMap<int3, Entity> PosToEntity;
 
-            public void Execute(DynamicBuffer<Voxel> b0, DynamicBuffer<VoxelSetQueryData> b1, [ReadOnly] ref ChunkPosComponent pos)
-            {
-                ApplyChangesToChunk(b0, b1, pos);
-            }
-
-            private void ApplyChangesToChunk(DynamicBuffer<Voxel> buffer, DynamicBuffer<VoxelSetQueryData> query, ChunkPosComponent pos)
+            public void Execute(DynamicBuffer<Voxel> buffer, DynamicBuffer<VoxelSetQueryData> query, ref ChunkPosComponent pos)
             {
                 for(int i = 0; i < query.Length; i++)
                 {
                     var x = query[i];
 
-                    buffer.AtSet(x.Pos.x, x.Pos.y, x.Pos.z,
-                        new Voxel
-                        {
-                            Type = x.NewVoxelType,
-                        });
+                    buffer.AtSet(x.Pos.x, x.Pos.y, x.Pos.z, new Voxel
+                    {
+                        Type = x.NewVoxelType,
+                    });
 
                     var dir = DirectionsHelper.AreCoordsAtBordersOfChunk(x.Pos);
                     if(dir != dirFlags.None)
@@ -410,6 +405,7 @@ namespace Scripts.World.Systems
 
             public NativeQueue<Entity> ToBeRemeshedNeighb;
 
+            [DeallocateOnJobCompletion]
             public NativeArray<Entity> ToBeRemeshed;
 
             public void Execute()
@@ -471,36 +467,40 @@ namespace Scripts.World.Systems
         protected override JobHandle OnUpdate(JobHandle inputDeps)
         {
             _toBeRemeshedCached.Clear();
-            var ents = _chunksNeedApplyVoxelChanges.ToEntityArray(Allocator.TempJob, out var collectEntities);
 
             var j1 = new ApplyChangesVoxel
             {
                 ToBeRemeshedNeighbs = _toBeRemeshedCached.ToConcurrent(),
-                PosToEntity = _chunkCreationSystem.PosToEntity,
+                PosToEntity = _chunkCreationSystem.PosToChunkEntity,
             };
+
             var h1 = j1.Schedule(this, inputDeps);
 
+            // TODO: fix this sheet (doesn't work without .Complete())
+            h1.Complete();
+
+            var ents = _chunksNeedApplyVoxelChanges.ToEntityArray(Allocator.TempJob, out var collectEntities);
             var j2 = new ApplyChangesLight
             {
                 Entities = ents,
                 LightBuffers = GetBufferFromEntity<VoxelLightingLevel>(),
                 LightSetQuery = GetBufferFromEntity<LightSetQueryData>(),
                 ToBeRemeshed = _toBeRemeshedCached,
-                VoxelBuffers = GetBufferFromEntity<Voxel>(true),
+                VoxelBuffers = GetBufferFromEntity<Voxel>(),
                 ToChangeLight = _toChangeLightCached,
                 ToDepRegLight = _toDepRegLightCached,
                 ToDepSunLight = _toDepSunLightCached,
                 ToPropRegLight = _toPropRegLightCached,
                 ToPropSunLight = _toPropSunLightCached,
-                Positions = GetComponentDataFromEntity<ChunkPosComponent>(true),
-                PosToChunk = _chunkCreationSystem.PosToEntity,
+                Positions = GetComponentDataFromEntity<ChunkPosComponent>(),
+                PosToChunk = _chunkCreationSystem.PosToChunkEntity,
             };
             var h2 = j2.Schedule(JobHandle.CombineDependencies(collectEntities, h1));
 
             var j3 = new ChangeTagsJob
             {
                 CommandBuffer = _barrier.CreateCommandBuffer(),
-                AlreadyDirty = GetComponentDataFromEntity<ChunkDirtyComponent>(true),
+                AlreadyDirty = GetComponentDataFromEntity<ChunkDirtyComponent>(),
                 ToBeRemeshedNeighb = _toBeRemeshedCached,
                 ToBeRemeshed = ents,
             };

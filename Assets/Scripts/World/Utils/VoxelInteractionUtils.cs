@@ -13,6 +13,7 @@ namespace Scripts.World.Utils
 {
     internal static class VoxelInteractionUtils
     {
+        [Obsolete]
         public static void SetQuerySphere(Entity entity, EntityManager manager, int3 index, uint radius, VoxelType voxType)
         {
             var setVox = manager.GetBuffer<VoxelSetQueryData>(entity);

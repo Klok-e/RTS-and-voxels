@@ -15,14 +15,14 @@ namespace Scripts.World.Systems.Regions
 {
     public class RegionLoadUnloadSystem : ComponentSystem
     {
-        public NativeHashMap<int3, Entity> PosToEntity { get; private set; }
+        public NativeHashMap<int3, Entity> PosToChunkEntity { get; private set; }
         public Dictionary<int3, RegularChunk> PosToChunk { get; private set; }
 
         private InitChunkTexturesMaterialsSystem _materials;
 
         protected override void OnCreate()
         {
-            PosToEntity = new NativeHashMap<int3, Entity>(10000, Allocator.Persistent);
+            PosToChunkEntity = new NativeHashMap<int3, Entity>(10000, Allocator.Persistent);
             PosToChunk = new Dictionary<int3, RegularChunk>();
 
             _materials = World.GetOrCreateSystem<InitChunkTexturesMaterialsSystem>();
@@ -30,22 +30,23 @@ namespace Scripts.World.Systems.Regions
 
         protected override void OnDestroy()
         {
-            PosToEntity.Dispose();
+            PosToChunkEntity.Dispose();
         }
 
         protected override void OnUpdate()
         {
             // TODO: ineffieient
             // refresh
-            PosToEntity.Clear();
+            PosToChunkEntity.Clear();
             Entities.ForEach((Entity entity, ref ChunkPosComponent pos) =>
             {
-                if(!PosToEntity.TryAdd(pos.Pos, entity))
+                if(!PosToChunkEntity.TryAdd(pos.Pos, entity))
                     throw new System.Exception("Could not add to PosToEntity hashmap");
             });
 
             // load
-            Entities.WithAll(typeof(RegionNeedLoadComponentTag)).ForEach((Entity ent, ref RegionPosComponent regionPos) =>
+            var needLoad = ComponentType.ReadOnly<RegionNeedLoadComponentTag>();
+            Entities.WithAll(needLoad).ForEach((Entity ent, ref RegionPosComponent regionPos) =>
             {
                 if(!TryFindRegion(regionPos.Pos))
                 {
@@ -62,7 +63,10 @@ namespace Scripts.World.Systems.Regions
 
             // unload
             var chunkPositions = GetComponentDataFromEntity<ChunkPosComponent>(true);
-            Entities.WithAll<RegionNeedUnloadComponentTag>().ForEach((Entity regionEntity, DynamicBuffer<RegionChunks> chunks, ref RegionPosComponent regionPos) =>
+
+            var needUnload = ComponentType.ReadOnly<RegionNeedUnloadComponentTag>();
+            var exNeedLoad = ComponentType.ReadOnly<RegionNeedLoadComponentTag>();
+            Entities.WithNone(exNeedLoad).WithAll(needUnload).ForEach((Entity regionEntity, DynamicBuffer<RegionChunks> chunks, ref RegionPosComponent regionPos) =>
             {
                 SaveRegion(regionPos.Pos);
 
@@ -72,6 +76,14 @@ namespace Scripts.World.Systems.Regions
 
                 // delete region
                 PostUpdateCommands.DestroyEntity(regionEntity);
+            });
+
+            Entities.WithAll(typeof(ChunkQueuedForDeletionTag)).ForEach((Entity ent, ref ChunkPosComponent pos) =>
+            {
+                PostUpdateCommands.DestroyEntity(ent);
+
+                UnityEngine.Object.Destroy(PosToChunk[pos.Pos].gameObject);
+                PosToChunk.Remove(pos.Pos);
             });
         }
 
@@ -115,10 +127,7 @@ namespace Scripts.World.Systems.Regions
 
         private void DestroyChunk(int3 pos, Entity entity)
         {
-            PostUpdateCommands.DestroyEntity(entity);
-
-            UnityEngine.Object.Destroy(PosToChunk[pos].gameObject);
-            PosToChunk.Remove(pos);
+            PostUpdateCommands.AddComponent(entity, new ChunkQueuedForDeletionTag());
         }
 
         // TODO: this

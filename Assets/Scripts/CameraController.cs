@@ -2,8 +2,11 @@
 using Scripts.World;
 using Scripts.World.Components;
 using Scripts.World.DynamicBuffers;
+using Scripts.World.Systems.Interaction;
 using Scripts.World.Utils;
+using System;
 using Unity.Entities;
+using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -45,12 +48,15 @@ namespace Scripts
         private ObjectTypes objectType = ObjectTypes.Voxel;
         private VoxelType voxType = VoxelType.Dirt;
 
+        private ChangeTerrainVoxelSystem _changeTerrainVoxelSystem;
+
         #region MonoBehaviour implementation
 
         private void Start()
         {
-            Cursor.visible = false;
+            //Cursor.visible = false;
             //Cursor.lockState = CursorLockMode.Locked;
+            _changeTerrainVoxelSystem = Unity.Entities.World.Active.GetOrCreateSystem<ChangeTerrainVoxelSystem>();
         }
 
         private void Update()
@@ -58,8 +64,8 @@ namespace Scripts
             if(!isPaused)
             {
                 ChangeVoxelCoord();
-                ChangeObjectType();
-                ChangeSphereSize();
+                //ChangeObjectType();
+                //ChangeSphereSize();
                 ChangeVoxelType();
 
                 var removeBlock = Input.GetMouseButtonDown(0);
@@ -71,57 +77,40 @@ namespace Scripts
                     var ray = new Ray(transform.position, transform.forward);
                     if(Physics.Raycast(ray, out var hit, VoxConsts._blockSize * 10))
                     {
-                        var gameEntity = hit.collider.GetComponent<GameObjectEntity>();
-                        if(gameEntity != null)
-                            if(gameEntity.EntityManager.HasComponent<Voxel>(gameEntity.Entity))
-                            {
-                                var chunkPos = gameEntity.EntityManager.GetComponentData<ChunkPosComponent>(gameEntity.Entity);
-                                if(removeBlock)
+                        var pos = math.float3(0);
+                        var voxelType = VoxelType.Dirt;
+                        if(removeBlock)
+                        {
+                            pos = hit.point - (VoxConsts._blockSize * hit.normal / 2f);
+                            voxelType = VoxelType.Empty;
+                        }
+                        else if(placeBlock)
+                        {
+                            pos = hit.point + (VoxConsts._blockSize * hit.normal / 2f);
+                            voxelType = voxType;
+                        }
+
+                        switch(objectType)
+                        {
+                            case ObjectTypes.Voxel:
+                                var chunk = VoxConsts.ChunkIn(pos);
+                                var ind = VoxConsts.VoxIndexInChunk(pos, chunk);
+
+                                //Debug.Log($"Ch: {chunk.ToString()}, Ind: {ind.ToString()}");
+
+                                _changeTerrainVoxelSystem.ToSetPos.Enqueue(new ChangeTerrainVoxelSystem.SetPos
                                 {
-                                    var pos = (hit.point - (hit.normal * VoxConsts._blockSize / 2f)) / VoxConsts._blockSize;
-                                    // to index
-                                    var index = (pos - chunkPos.Pos.ToVec() * VoxConsts._chunkSize).ToVecInt().ToInt();
+                                    Chunk = chunk,
+                                    Coord = ind,
+                                    VoxelType = voxelType
+                                });
+                                break;
 
-                                    switch(objectType)
-                                    {
-                                        case ObjectTypes.Voxel:
-                                            VoxelInteractionUtils.SetQuerySphere(gameEntity.Entity, gameEntity.EntityManager, index, 1, VoxelType.Empty);
-                                            break;
-
-                                        case ObjectTypes.Sphere:
-                                            VoxelInteractionUtils.SetQuerySphere(gameEntity.Entity, gameEntity.EntityManager, index, _sphereSize, VoxelType.Empty);
-                                            break;
-                                    }
-                                }
-                                else if(placeBlock)
-                                {
-                                    var pos = (hit.point + (hit.normal * VoxConsts._blockSize / 2f)) / VoxConsts._blockSize;
-                                    // to index
-                                    var index = (pos - chunkPos.Pos.ToVec() * VoxConsts._chunkSize).ToVecInt().ToInt();
-
-                                    var ent = gameEntity.Entity;
-                                    var dir = DirectionsHelper.WrapCoordsInChunk(ref index.x, ref index.y, ref index.z);
-                                    if(dir != DirectionsHelper.BlockDirectionFlag.None)
-                                    {
-                                        var neighb = gameEntity.EntityManager.GetComponentData<ChunkNeighboursComponent>(gameEntity.Entity);
-                                        var next = neighb[dir];
-                                        if(next != Entity.Null)
-                                            ent = next;
-                                        else
-                                            return;
-                                    }
-                                    switch(objectType)
-                                    {
-                                        case ObjectTypes.Voxel:
-                                            VoxelInteractionUtils.SetQuerySphere(ent, gameEntity.EntityManager, index, 1, voxType);
-                                            break;
-
-                                        case ObjectTypes.Sphere:
-                                            VoxelInteractionUtils.SetQuerySphere(ent, gameEntity.EntityManager, index, _sphereSize, voxType);
-                                            break;
-                                    }
-                                }
-                            }
+                            case ObjectTypes.Sphere:
+                                //VoxelInteractionUtils.SetQuerySphere(gameEntity.Entity, gameEntity.EntityManager, index, _sphereSize, VoxelType.Empty);
+                                Debug.LogError("Must be unreachable");
+                                break;
+                        }
                     }
                 }
             }
@@ -143,6 +132,7 @@ namespace Scripts
 
         #endregion MonoBehaviour implementation
 
+        [Obsolete]
         private void ChangeObjectType()
         {
             var wheel = Input.GetAxis("Mouse ScrollWheel");
@@ -179,6 +169,7 @@ namespace Scripts
             voxelTypeLabel.text = voxType.ToString();
         }
 
+        [Obsolete]
         private void ChangeSphereSize()
         {
             if(Input.GetKeyDown(KeyCode.PageUp))
@@ -206,21 +197,10 @@ namespace Scripts
             var ray = new Ray(transform.position, transform.forward);
             if(Physics.Raycast(ray, out var hit))
             {
-                var gameEntity = hit.collider.GetComponent<GameObjectEntity>();
-                if(gameEntity != null)
-                    if(gameEntity.EntityManager.HasComponent<Voxel>(gameEntity.Entity))
-                    {
-                        var chunkPos = gameEntity.EntityManager.GetComponentData<ChunkPosComponent>(gameEntity.Entity);
-
-                        var pos = (hit.point - (hit.normal * VoxConsts._blockSize / 2f)) / VoxConsts._blockSize;
-                        // to index
-                        var index = (pos - chunkPos.Pos.ToVec() * VoxConsts._chunkSize).ToVecInt().ToInt();
-
-                        var light = gameEntity.EntityManager.GetBuffer<VoxelLightingLevel>(gameEntity.Entity);
-                        var lAt = light.AtGet(index.x, index.y, index.z);
-
-                        voxelCoordinatesLabel.text = index.ToString() + " " + lAt.RegularLight + " " + lAt.Sunlight;
-                    }
+                var point = hit.point - (hit.normal / 2f);
+                var chunk = VoxConsts.ChunkIn(point);
+                var voxCoord = VoxConsts.VoxIndexInChunk(point, chunk);
+                voxelCoordinatesLabel.text = $"Voxel: {voxCoord.ToString()}\nChunk: {chunk.ToString()}";
             }
         }
 

@@ -13,7 +13,7 @@ namespace Scripts.World
         /// <summary>
         /// Size in chunks
         /// </summary>
-        public const int _regionSize = 1;
+        public const int _regionSize = 2;
 
         /// <summary>
         /// Size of a voxel
@@ -22,7 +22,9 @@ namespace Scripts.World
 
         public static int3 ChunkIn(float3 pos)
         {
-            var worldPos = pos / _blockSize;
+            pos = OffsetWorld(pos);
+
+            var worldPos = FromWorldToVoxelWorldCoords(pos);
             var loaderChunkInf = worldPos / _chunkSize;
             var loaderChunkIn = math.int3(math.floor(loaderChunkInf));
             return loaderChunkIn;
@@ -31,6 +33,33 @@ namespace Scripts.World
         public static int3 RegionIn(float3 pos)
         {
             return math.int3(math.floor(math.float3(ChunkIn(pos)) / _regionSize));
+        }
+
+        public static int3 VoxIndexInChunk(float3 pos, int3 chunkPos)
+        {
+            pos = OffsetWorld(pos);
+
+            pos = FromWorldToVoxelWorldCoords(pos);
+
+            return math.int3(math.floor(pos - math.float3(chunkPos * _chunkSize)));
+        }
+
+        public static float3 FromWorldToVoxelWorldCoords(float3 pos)
+        {
+            return pos / _blockSize;
+        }
+
+        public static int3 VoxIndexInChunk(float3 pos)
+        {
+            return VoxIndexInChunk(pos, ChunkIn(pos));
+        }
+
+        private static float3 OffsetWorld(float3 pos)
+        {
+            pos.x += _blockSize / 2f;
+            pos.y += _blockSize / 2f;
+            pos.z += _blockSize / 2f;
+            return pos;
         }
 
         /*

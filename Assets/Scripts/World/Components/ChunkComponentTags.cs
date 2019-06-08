@@ -20,4 +20,7 @@ namespace Scripts.World.Components
     public struct ChunkNeedLoadFromDrive : IComponentData
     {
     }
+    public struct ChunkQueuedForDeletionTag : IComponentData
+    {
+    }
 }

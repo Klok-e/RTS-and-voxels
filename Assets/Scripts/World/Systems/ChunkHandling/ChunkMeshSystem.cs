@@ -574,7 +574,7 @@ namespace Scripts.World.Systems
                 Chunk = entity,
                 Chunks = GetBufferFromEntity<Voxel>(true),
                 Pos = pos,
-                PosToEntity = _chunkCreationSystem.PosToEntity,
+                PosToEntity = _chunkCreationSystem.PosToChunkEntity,
             };
             var j2 = new CopyLightJob()
             {
@@ -582,7 +582,7 @@ namespace Scripts.World.Systems
                 ChunksLight = GetBufferFromEntity<VoxelLightingLevel>(true),
                 LightingData = new NativeArray3D<VoxelLightingLevel>(VoxConsts._chunkSize + 2, VoxConsts._chunkSize + 2, VoxConsts._chunkSize + 2, Allocator.TempJob),
                 ChunkPos = pos,
-                PosToEntity = _chunkCreationSystem.PosToEntity,
+                PosToEntity = _chunkCreationSystem.PosToChunkEntity,
             };
             var j3 = new ConstructMeshJob()
             {

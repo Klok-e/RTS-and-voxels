@@ -1,12 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Unity.Mathematics;
+﻿using Unity.Mathematics;
 using UnityEngine;
 
-namespace Scripts.Help
+namespace Help
 {
     public static class MathUtils
     {

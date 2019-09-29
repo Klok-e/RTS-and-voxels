@@ -1,24 +1,14 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Unity.Collections;
 
-namespace Scripts.Help.DataContainers
+namespace Help.DataContainers
 {
     public struct NativeStack<T> : IDisposable
         where T : struct
     {
         private NativeList<T> list;
 
-        public int Length
-        {
-            get
-            {
-                return list.Length;
-            }
-        }
+        public int Length => list.Length;
 
         public NativeStack(int size, Allocator allocator)
         {

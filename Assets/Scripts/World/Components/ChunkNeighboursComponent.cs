@@ -1,8 +1,8 @@
-﻿using Scripts.Help;
-using System;
+﻿using System;
+using Help;
 using Unity.Entities;
 
-namespace Scripts.World.Components
+namespace World.Components
 {
     [Obsolete]
     public struct ChunkNeighboursComponent : IComponentData
@@ -18,7 +18,7 @@ namespace Scripts.World.Components
         {
             get
             {
-                switch(dir)
+                switch (dir)
                 {
                     case DirectionsHelper.BlockDirectionFlag.Up:
                         return Up;
@@ -40,7 +40,7 @@ namespace Scripts.World.Components
             }
             set
             {
-                switch(dir)
+                switch (dir)
                 {
                     case DirectionsHelper.BlockDirectionFlag.Up:
                         Up = value;

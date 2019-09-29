@@ -1,15 +1,4 @@
-﻿using Scripts.World.Components;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Unity.Collections;
-using Unity.Entities;
-using Unity.Jobs;
-using Unity.Mathematics;
-
-namespace Scripts.World.Systems.Regions
+﻿namespace World.Systems.Regions
 {
     //public class RegionRemoveSystem : JobComponentSystem
     //{

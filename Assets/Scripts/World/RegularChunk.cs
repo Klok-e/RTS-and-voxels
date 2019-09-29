@@ -1,22 +1,22 @@
-﻿using Scripts.Help.DataContainers;
+﻿using Help.DataContainers;
 using Unity.Collections;
 using Unity.Mathematics;
 using UnityEngine;
 
-namespace Scripts.World
+namespace World
 {
     [RequireComponent(typeof(MeshFilter), typeof(MeshCollider))]
     [RequireComponent(typeof(MeshRenderer))]
     public class RegularChunk : MonoBehaviour
     {
-        public NativeMeshData MeshData { get; private set; }
+        private MeshCollider _coll;
+        private MeshFilter   _filter;
+
+        private Mesh           _mesh;
+        private MeshRenderer   _renderer;
+        public  NativeMeshData MeshData { get; private set; }
 
         public bool IsInitialized { get; private set; }
-
-        private Mesh _mesh;
-        private MeshRenderer _renderer;
-        private MeshFilter _filter;
-        private MeshCollider _coll;
 
         public void Initialize(int3 pos, Material material)
         {
@@ -27,8 +27,8 @@ namespace Scripts.World
 
             transform.position = newpos;
             gameObject.SetActive(true);
-            name = $"Chunk Active at {pos}";
-            IsInitialized = true;
+            name               = $"Chunk Active at {pos}";
+            IsInitialized      = true;
             _renderer.material = material;
 
             MeshData = new NativeMeshData(0, Allocator.Persistent);
@@ -36,7 +36,7 @@ namespace Scripts.World
 
         public void Deinitialize()
         {
-            name = "Chunk Inactive";
+            name          = "Chunk Inactive";
             IsInitialized = false;
             gameObject.SetActive(false);
 
@@ -49,22 +49,22 @@ namespace Scripts.World
             _mesh.vertices = MeshData._vertices.ToArray();
             _mesh.SetTriangles(MeshData._triangles.ToArray(), 0);
             _mesh.normals = MeshData._normals.ToArray();
-            _mesh.colors = MeshData._colors.ToArray();
-            _mesh.uv = MeshData._uv.ToArray();
-            _mesh.uv2 = MeshData._uv2.ToArray();
-            _mesh.uv3 = MeshData._uv3.ToArray();
+            _mesh.colors  = MeshData._colors.ToArray();
+            _mesh.uv      = MeshData._uv.ToArray();
+            _mesh.uv2     = MeshData._uv2.ToArray();
+            _mesh.uv3     = MeshData._uv3.ToArray();
             MeshData.Clear();
 
             _filter.sharedMesh = _mesh;
-            _coll.sharedMesh = _mesh;
+            _coll.sharedMesh   = _mesh;
         }
 
         private void Awake()
         {
-            _filter = GetComponent<MeshFilter>();
+            _filter   = GetComponent<MeshFilter>();
             _renderer = GetComponent<MeshRenderer>();
-            _coll = GetComponent<MeshCollider>();
-            _mesh = new Mesh();
+            _coll     = GetComponent<MeshCollider>();
+            _mesh     = new Mesh();
             _mesh.MarkDynamic();
         }
 
@@ -77,7 +77,7 @@ namespace Scripts.World
         public static RegularChunk CreateNew()
         {
             RegularChunk chunkObj;
-            var go = new GameObject("Chunk");
+            var          go = new GameObject("Chunk");
 
             go.AddComponent<MeshFilter>();
             go.AddComponent<MeshRenderer>();

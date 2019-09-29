@@ -1,28 +1,16 @@
-﻿using Scripts.World.Components;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System;
 using Unity.Entities;
 using Unity.Jobs;
+using World.Components;
 
-namespace Scripts.World.Systems
+namespace World.Systems.ChunkHandling
 {
     /// <summary>
-    /// Decides whether to load this chunk
+    ///     Decides whether to load this chunk
     /// </summary>
     public class ChunkLoadManagerSystem : JobComponentSystem
     {
         private ChunkCreationSystem _chunkCreationSystem;
-
-        private struct DetermineWhetherToLoadFromDiscOrGenerateNewJob : IJobForEachWithEntity_EC<ChunkUnloaded>
-        {
-            public void Execute(Entity entity, int index, ref ChunkUnloaded c0)
-            {
-                throw new NotImplementedException();
-            }
-        }
 
         protected override void OnCreate()
         {
@@ -32,6 +20,14 @@ namespace Scripts.World.Systems
         protected override JobHandle OnUpdate(JobHandle inputDeps)
         {
             return inputDeps;
+        }
+
+        private struct DetermineWhetherToLoadFromDiscOrGenerateNewJob : IJobForEachWithEntity_EC<ChunkUnloaded>
+        {
+            public void Execute(Entity entity, int index, ref ChunkUnloaded c0)
+            {
+                throw new NotImplementedException();
+            }
         }
     }
 }

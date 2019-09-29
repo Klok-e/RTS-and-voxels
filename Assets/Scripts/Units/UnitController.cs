@@ -1,16 +1,16 @@
-﻿using Scripts.Pathfinding;
+﻿using Pathfinding;
 using UnityEngine;
 
-namespace Scripts.Units
+namespace Units
 {
     [DisallowMultipleComponent]
     [RequireComponent(typeof(PathfinderAgentController))]
     public class UnitController : MonoBehaviour
     {
+        private PathfinderAgentController _pathfinder;
+
         [SerializeField]
         private GameObject selectedUnitHighlighter;
-
-        private PathfinderAgentController _pathfinder;
 
         #region MonoBehaviour implementation
 

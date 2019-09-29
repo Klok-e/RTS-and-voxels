@@ -1,35 +1,33 @@
-﻿using Scripts.Help.DataContainers;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System;
+using Help.DataContainers;
 using UnityEngine;
 
-namespace Scripts.Pathfinding
+namespace Pathfinding
 {
     public class PathCell : IComparable<PathCell>, IHeapItem<PathCell>
     {
-        public Vector3Int Pos { get; private set; }
-        public PathCell Parent { get; private set; }
-
         public float _gCost;
         public float _hCost;
 
-        public float FCost
-        {
-            get => _gCost + _hCost;
-        }
-
-        public int HeapIndex { get; set; }
-
         public PathCell(Vector3Int pos)
         {
-            Pos = pos;
+            Pos    = pos;
             _gCost = 0;
             _hCost = 0;
             Parent = null;
         }
+
+        public Vector3Int Pos    { get; private set; }
+        public PathCell   Parent { get; private set; }
+
+        public float FCost => _gCost + _hCost;
+
+        public int CompareTo(PathCell other)
+        {
+            return other.FCost.CompareTo(FCost);
+        }
+
+        public int HeapIndex { get; set; }
 
         public void SetPos(Vector3Int pos)
         {
@@ -45,11 +43,6 @@ namespace Scripts.Pathfinding
         public override int GetHashCode()
         {
             return Pos.GetHashCode();
-        }
-
-        public int CompareTo(PathCell other)
-        {
-            return other.FCost.CompareTo(FCost);
         }
     }
 }

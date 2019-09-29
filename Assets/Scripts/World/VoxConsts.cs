@@ -1,22 +1,21 @@
 ﻿using Unity.Mathematics;
-using UnityEngine;
 
-namespace Scripts.World
+namespace World
 {
     public static class VoxConsts
     {
         /// <summary>
-        /// Only even amount or else SetVoxel won't work at all
+        ///     Only even amount or else SetVoxel won't work at all
         /// </summary>
         public const int _chunkSize = 16;
 
         /// <summary>
-        /// Size in chunks
+        ///     Size in chunks
         /// </summary>
         public const int _regionSize = 2;
 
         /// <summary>
-        /// Size of a voxel
+        ///     Size of a voxel
         /// </summary>
         public const float _blockSize = 0.5f;
 
@@ -24,9 +23,9 @@ namespace Scripts.World
         {
             pos = OffsetWorld(pos);
 
-            var worldPos = FromWorldToVoxelWorldCoords(pos);
+            var worldPos       = FromWorldToVoxelWorldCoords(pos);
             var loaderChunkInf = worldPos / _chunkSize;
-            var loaderChunkIn = math.int3(math.floor(loaderChunkInf));
+            var loaderChunkIn  = math.int3(math.floor(loaderChunkInf));
             return loaderChunkIn;
         }
 

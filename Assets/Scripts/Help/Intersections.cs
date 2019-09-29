@@ -1,11 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using UnityEngine;
+﻿using UnityEngine;
 
-namespace Scripts.Help
+namespace Help
 {
     internal static class Intersections
     {
@@ -16,17 +11,16 @@ namespace Scripts.Help
             if (minCorner.x < point.x && minCorner.y < point.y && minCorner.z < point.z
                 &&
                 maxCorner.x > point.x && maxCorner.y > point.y && maxCorner.z > point.z)
-            {
                 return true;
-            }
             return false;
         }
 
-        public static bool CubeVsCubeIntersection(Vector3 firstCenter, float firstHalfWidth, Vector3 secondCenter, float secondHalfWidth)
+        public static bool CubeVsCubeIntersection(Vector3 firstCenter, float firstHalfWidth, Vector3 secondCenter,
+                                                  float   secondHalfWidth)
         {
-            bool x = Mathf.Abs(firstCenter.x - secondCenter.x) <= (firstHalfWidth + secondHalfWidth);
-            bool y = Mathf.Abs(firstCenter.y - secondCenter.y) <= (firstHalfWidth + secondHalfWidth);
-            bool z = Mathf.Abs(firstCenter.z - secondCenter.z) <= (firstHalfWidth + secondHalfWidth);
+            bool x = Mathf.Abs(firstCenter.x - secondCenter.x) <= firstHalfWidth + secondHalfWidth;
+            bool y = Mathf.Abs(firstCenter.y - secondCenter.y) <= firstHalfWidth + secondHalfWidth;
+            bool z = Mathf.Abs(firstCenter.z - secondCenter.z) <= firstHalfWidth + secondHalfWidth;
             return x && y && z;
         }
     }

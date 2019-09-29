@@ -1,26 +1,22 @@
-﻿using Scripts.World.Components;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System;
 using Unity.Entities;
 using UnityEngine;
+using World.Components;
 
-namespace Scripts.World.Systems
+namespace World.Systems.ChunkHandling
 {
     [UpdateInGroup(typeof(InitializationSystemGroup))]
     public class InitChunkTexturesMaterialsSystem : ComponentSystem
     {
-        public Material _chunkMaterial { get; private set; }
-        public Vector2Int _mapSize { get; private set; }
+        public Material   _chunkMaterial { get; private set; }
+        public Vector2Int _mapSize       { get; private set; }
 
         protected override void OnUpdate()
         {
             bool once = false;
             Entities.ForEach((Entity ent, MapParameters parameters) =>
             {
-                if(once)
+                if (once)
                     throw new Exception("Only one MapParameters instance allowed at a time.");
                 once = true;
 
@@ -35,11 +31,12 @@ namespace Scripts.World.Systems
         private void SetTextureArray(Texture2D[] textures)
         {
             var textureArray = new Texture2DArray(16, 16, textures.Length, TextureFormat.RGBA32, true);
-            for(int i = 0; i < textures.Length; i++)
+            for (int i = 0; i < textures.Length; i++)
             {
                 var pix = textures[i].GetPixels();
                 textureArray.SetPixels(pix, i);
             }
+
             textureArray.Apply();
 
             textureArray.filterMode = FilterMode.Point;

@@ -1,10 +1,10 @@
 ﻿using UnityEngine;
 
-namespace Scripts.World.QueryDataStructures
+namespace World.QueryDataStructures
 {
     public struct LightChangeQueryData
     {
         public Vector3 worldPos;
-        public int level;
+        public int     level;
     }
 }

@@ -1,15 +1,8 @@
-﻿using Scripts.Help;
-using Scripts.World.Components;
-using Scripts.World.DynamicBuffers;
-using System;
-using System.Collections.Generic;
-using Unity.Collections;
+﻿using System;
 using Unity.Entities;
 using Unity.Mathematics;
-using Unity.Transforms;
-using UnityEngine;
 
-namespace Scripts.World.Systems
+namespace World.Systems.ChunkHandling
 {
     [Obsolete]
     public class ChunkCreationSystem : ComponentSystem

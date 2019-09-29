@@ -1,7 +1,7 @@
 ﻿using Unity.Entities;
 using Unity.Mathematics;
 
-namespace Scripts.World.Components
+namespace World.Components
 {
     public struct ChunkPosComponent : IComponentData
     {

@@ -1,14 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace Scripts.Help
+namespace Help
 {
     public class Disposer
     {
-        private List<IDisposable> _toDispose;
+        private readonly List<IDisposable> _toDispose;
 
         public Disposer(int size)
         {
@@ -22,10 +19,7 @@ namespace Scripts.Help
 
         public void DisposeAll()
         {
-            foreach (var item in _toDispose)
-            {
-                item.Dispose();
-            }
+            foreach (var item in _toDispose) item.Dispose();
         }
     }
 }

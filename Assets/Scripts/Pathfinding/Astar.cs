@@ -1,47 +1,47 @@
 ﻿using UnityEngine;
 
-namespace Scripts.Pathfinding
+namespace Pathfinding
 {
     public class Astar : MonoBehaviour
     {
-        private static readonly Vector3Int[] neighbPosRelative = new Vector3Int[]
+        private static readonly Vector3Int[] neighbPosRelative =
         {
-                new Vector3Int(-1, 1, 0),//up
-                new Vector3Int(1, 1, 0),
-                new Vector3Int(0, 1, 1),
-                new Vector3Int(0, 1, -1),
-                new Vector3Int(0, 1, 0),
+            new Vector3Int(-1, 1, 0), //up
+            new Vector3Int(1,  1, 0),
+            new Vector3Int(0,  1, 1),
+            new Vector3Int(0,  1, -1),
+            new Vector3Int(0,  1, 0),
 
-                new Vector3Int(-1, -1, 0),//down
-                new Vector3Int(1, -1, 0),
-                new Vector3Int(0, -1, 1),
-                new Vector3Int(0, -1, -1),
-                new Vector3Int(0, -1, 0),
+            new Vector3Int(-1, -1, 0), //down
+            new Vector3Int(1,  -1, 0),
+            new Vector3Int(0,  -1, 1),
+            new Vector3Int(0,  -1, -1),
+            new Vector3Int(0,  -1, 0),
 
-                new Vector3Int(-1, 0, 1),//left
-                new Vector3Int(-1, 0, -1),
-                new Vector3Int(-1, 0, 0),
+            new Vector3Int(-1, 0, 1), //left
+            new Vector3Int(-1, 0, -1),
+            new Vector3Int(-1, 0, 0),
 
-                new Vector3Int(1, 0, 1),//right
-                new Vector3Int(1, 0, -1),
-                new Vector3Int(1, 0, 0),
+            new Vector3Int(1, 0, 1), //right
+            new Vector3Int(1, 0, -1),
+            new Vector3Int(1, 0, 0),
 
-                new Vector3Int(0, 0, 1),//front
+            new Vector3Int(0, 0, 1), //front
 
-                new Vector3Int(0, 0, -1),//back
+            new Vector3Int(0, 0, -1), //back
 
-                //corners
-                //up
-                new Vector3Int(-1, 1, 1),
-                new Vector3Int(-1, 1, -1),
-                new Vector3Int(1, 1, 1),
-                new Vector3Int(1, 1, -1),
+            //corners
+            //up
+            new Vector3Int(-1, 1, 1),
+            new Vector3Int(-1, 1, -1),
+            new Vector3Int(1,  1, 1),
+            new Vector3Int(1,  1, -1),
 
-                //down
-                new Vector3Int(-1, -1, 1),
-                new Vector3Int(-1, -1, -1),
-                new Vector3Int(1, -1, 1),
-                new Vector3Int(1, -1, -1),
+            //down
+            new Vector3Int(-1, -1, 1),
+            new Vector3Int(-1, -1, -1),
+            new Vector3Int(1,  -1, 1),
+            new Vector3Int(1,  -1, -1)
         };
 
         //[SerializeField]

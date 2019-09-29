@@ -1,12 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Unity.Entities;
+﻿using Unity.Entities;
 using Unity.Mathematics;
 
-namespace Scripts.World.Components
+namespace World.Components
 {
     public struct RegionPosComponent : IComponentData
     {

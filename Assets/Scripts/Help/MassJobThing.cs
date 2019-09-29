@@ -2,12 +2,10 @@
 using Unity.Collections;
 using Unity.Jobs;
 
-namespace Scripts.Help
+namespace Help
 {
     public class MassJobThing
     {
-        public List<JobHandle> _handles { get; }
-
         public MassJobThing(int size)
         {
             _handles = new List<JobHandle>(size);
@@ -18,6 +16,8 @@ namespace Scripts.Help
             _handles = new List<JobHandle>(1);
         }
 
+        public List<JobHandle> _handles { get; }
+
         public void AddHandle(JobHandle handle)
         {
             _handles.Add(handle);
@@ -25,7 +25,7 @@ namespace Scripts.Help
 
         public JobHandle CombineAll()
         {
-            var arr = new NativeArray<JobHandle>(_handles.ToArray(), Allocator.Temp);
+            var arr    = new NativeArray<JobHandle>(_handles.ToArray(), Allocator.Temp);
             var handle = JobHandle.CombineDependencies(arr);
             _handles.Clear();
             arr.Dispose();

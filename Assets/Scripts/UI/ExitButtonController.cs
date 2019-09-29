@@ -1,9 +1,7 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.UI;
 
-namespace Scripts.UI
+namespace UI
 {
     [RequireComponent(typeof(Button))]
     public class ExitButtonController : MonoBehaviour

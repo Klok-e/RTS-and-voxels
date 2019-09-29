@@ -1,6 +1,5 @@
-﻿using Scripts.Units;
-using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using Units;
 using UnityEngine;
 
 public class TeamManagerController : MonoBehaviour
@@ -23,12 +22,12 @@ public class TeamManagerController : MonoBehaviour
     {
         public List<UnitController> _units;
 
-        public int Index { get; }
-
         public Team(int index)
         {
             _units = new List<UnitController>();
-            Index = index;
+            Index  = index;
         }
+
+        public int Index { get; }
     }
 }

@@ -1,19 +1,19 @@
 ﻿using Unity.Entities;
 using UnityEngine;
 
-namespace Scripts.World.DynamicBuffers
+namespace World.DynamicBuffers
 {
     /// <summary>
-    /// Levels of light
+    ///     Levels of light
     /// </summary>
     [InternalBufferCapacity(0)]
     public struct VoxelLightingLevel : IBufferElementData
     {
         private const int _regularLightMask = 0b0000_1111;
-        private const int _sunLightMask = 0b1111_0000;
+        private const int _sunLightMask     = 0b1111_0000;
 
         /// <summary>
-        /// [sulight]xxxx || [regular light]xxxx
+        ///     [sulight]xxxx || [regular light]xxxx
         /// </summary>
         public byte Level;
 
@@ -21,40 +21,31 @@ namespace Scripts.World.DynamicBuffers
 
         public int RegularLight
         {
-            get
-            {
-                return (byte)(Level & _regularLightMask);
-            }
+            get => (byte) (Level & _regularLightMask);
             set
             {
                 Level &= _sunLightMask;
-                Level |= (byte)(_regularLightMask & value);
+                Level |= (byte) (_regularLightMask & value);
             }
         }
 
         public int Sunlight
         {
-            get
-            {
-                return (byte)((Level & _sunLightMask) >> 4);
-            }
+            get => (byte) ((Level & _sunLightMask) >> 4);
             set
             {
                 Level &= _regularLightMask;
-                Level |= (byte)(_sunLightMask & (value << 4));
+                Level |= (byte) (_sunLightMask & (value << 4));
             }
         }
 
-        public bool IsAnyLightPresent
-        {
-            get { return Level > 0; }
-        }
+        public bool IsAnyLightPresent => Level > 0;
 
         public VoxelLightingLevel(int light, int sunlight)
         {
-            Level = 0;
+            Level        = 0;
             RegularLight = light;
-            Sunlight = sunlight;
+            Sunlight     = sunlight;
         }
     }
 

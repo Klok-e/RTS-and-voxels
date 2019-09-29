@@ -2,12 +2,12 @@
 using Unity.Entities;
 using UnityEngine;
 
-namespace Scripts.World.Components
+namespace World.Components
 {
     [Serializable]
     public struct MapParameters : ISharedComponentData, IEquatable<MapParameters>
     {
-        public Material _chunkMaterial;
+        public Material    _chunkMaterial;
         public Texture2D[] _textures;
 
         public bool Equals(MapParameters other)
@@ -26,12 +26,13 @@ namespace Scripts.World.Components
     {
         [SerializeField]
         private Material _chunkMaterial;
+
         [SerializeField]
         private Texture2D[] _textures;
 
         public void Convert(Entity entity, EntityManager dstManager, GameObjectConversionSystem converstionSystem)
         {
-            var comp = new MapParameters { _chunkMaterial = _chunkMaterial, _textures = _textures };
+            var comp = new MapParameters {_chunkMaterial = _chunkMaterial, _textures = _textures};
             dstManager.AddSharedComponentData(entity, comp);
         }
     }

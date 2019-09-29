@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-namespace Scripts.Pathfinding
+namespace Pathfinding
 {
     [DisallowMultipleComponent]
     [RequireComponent(typeof(IMover))]

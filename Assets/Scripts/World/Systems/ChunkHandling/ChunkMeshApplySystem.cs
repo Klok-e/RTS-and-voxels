@@ -1,10 +1,8 @@
-﻿using Scripts.World.Components;
-using Scripts.World.Systems.Regions;
-using Unity.Collections;
-using Unity.Entities;
-using Unity.Jobs;
+﻿using Unity.Entities;
+using World.Components;
+using World.Systems.Regions;
 
-namespace Scripts.World.Systems
+namespace World.Systems.ChunkHandling
 {
     public class ChunkMeshApplySystem : ComponentSystem
     {

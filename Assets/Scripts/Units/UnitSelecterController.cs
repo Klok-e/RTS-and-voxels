@@ -1,20 +1,16 @@
-﻿using Scripts.World;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
 using UnityEngine;
+using World;
 
-namespace Scripts.Units
+namespace Units
 {
     [RequireComponent(typeof(Camera))]
     public class UnitSelecterController : MonoBehaviour
     {
+        private Camera _camera;
+
         [SerializeField]
         private List<UnitController> selectedUnits;
-
-        private Camera _camera;
 
         private void Start()
         {
@@ -36,10 +32,7 @@ namespace Scripts.Units
                     }
                     else
                     {
-                        foreach (var item in selectedUnits)
-                        {
-                            item.SetSelection(false);
-                        }
+                        foreach (var item in selectedUnits) item.SetSelection(false);
                         selectedUnits.Clear();
                     }
                 }
@@ -49,12 +42,8 @@ namespace Scripts.Units
             {
                 var ray = _camera.ScreenPointToRay(Input.mousePosition);
                 if (Physics.Raycast(ray, out var hit))
-                {
                     foreach (var unit in selectedUnits)
-                    {
-                        unit.Move(hit.point + (hit.normal * VoxConsts._blockSize / 2f));
-                    }
-                }
+                        unit.Move(hit.point + hit.normal * VoxConsts._blockSize / 2f);
             }
         }
     }

@@ -1,12 +1,11 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using System;
 using UnityEngine;
 
-namespace Scripts.UI
+namespace UI
 {
     public class MenuController : MonoBehaviour
     {
-        private bool isPaused = false;
+        private bool isPaused;
 
         [SerializeField]
         private GameObject menuGraphic;
@@ -27,26 +26,26 @@ namespace Scripts.UI
         private void Pause()
         {
             if (isPaused)
-                throw new System.Exception();
+                throw new Exception();
 
             isPaused = true;
 
             menuGraphic.SetActive(true);
 
-            Cursor.visible = true;
+            Cursor.visible   = true;
             Cursor.lockState = CursorLockMode.Confined;
         }
 
         private void Resume()
         {
             if (!isPaused)
-                throw new System.Exception();
+                throw new Exception();
 
             isPaused = false;
 
             menuGraphic.SetActive(false);
 
-            Cursor.visible = false;
+            Cursor.visible   = false;
             Cursor.lockState = CursorLockMode.Confined;
         }
     }

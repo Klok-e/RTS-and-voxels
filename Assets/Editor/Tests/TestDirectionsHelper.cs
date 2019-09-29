@@ -2,7 +2,7 @@
 using UnityEngine.TestTools;
 using NUnit.Framework;
 using System.Collections;
-using Scripts.Help;
+using Help;
 
 public class TestDirectionsHelper
 {

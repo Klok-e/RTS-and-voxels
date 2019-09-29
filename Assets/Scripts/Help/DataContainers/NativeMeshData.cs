@@ -1,30 +1,26 @@
 ﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using Unity.Collections;
 using UnityEngine;
 
-namespace Scripts.Help.DataContainers
+namespace Help.DataContainers
 {
     public struct NativeMeshData : IDisposable
     {
-        public NativeList<int> _triangles;
+        public NativeList<int>     _triangles;
         public NativeList<Vector3> _vertices;
-        public NativeList<Color> _colors;
+        public NativeList<Color>   _colors;
         public NativeList<Vector3> _normals;
         public NativeList<Vector2> _uv, _uv2, _uv3;
 
         public NativeMeshData(int size, Allocator allocator)
         {
             _triangles = new NativeList<int>(size, allocator);
-            _vertices = new NativeList<Vector3>(size, allocator);
-            _colors = new NativeList<Color>(size, allocator);
-            _normals = new NativeList<Vector3>(size, allocator);
-            _uv = new NativeList<Vector2>(size, allocator);
-            _uv2 = new NativeList<Vector2>(size, allocator);
-            _uv3 = new NativeList<Vector2>(size, allocator);
+            _vertices  = new NativeList<Vector3>(size, allocator);
+            _colors    = new NativeList<Color>(size, allocator);
+            _normals   = new NativeList<Vector3>(size, allocator);
+            _uv        = new NativeList<Vector2>(size, allocator);
+            _uv2       = new NativeList<Vector2>(size, allocator);
+            _uv3       = new NativeList<Vector2>(size, allocator);
         }
 
         public void Clear()

@@ -1,8 +1,8 @@
 ﻿using NUnit.Framework;
-using Scripts.World;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using World;
 
 public class TestChunkContainer
 {

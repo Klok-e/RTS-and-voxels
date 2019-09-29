@@ -1,0 +1,212 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ContentModelStore">
+    <e p="C:\Users\Dima\.Rider2019.2\system\extResources" t="IncludeRecursive" />
+    <e p="C:\Users\Dima\.Rider2019.2\system\resharper-host\Local\Transient\ReSharperHost\v192\SolutionCaches\_Voxel Engine V6.2049166709.00" t="ExcludeRecursive" />
+    <e p="D:\Doc\Unity\Voxel Engine V6" t="IncludeRecursive">
+      <e p="Assets" t="Include">
+        <e p="Editor" t="Include">
+          <e p="Tests" t="Include">
+            <e p="TestChunkContainer.cs" t="Include" />
+            <e p="TestDirectionsHelper.cs" t="Include" />
+            <e p="TestNativeList.cs" t="Include" />
+          </e>
+        </e>
+        <e p="Scripts" t="Include">
+          <e p="CameraController.cs" t="Include" />
+          <e p="Help" t="Include">
+            <e p="Console.cs" t="Include" />
+            <e p="DataContainers" t="Include">
+              <e p="Heap.cs" t="Include" />
+              <e p="NativeArray3D.cs" t="Include" />
+              <e p="NativeMeshData.cs" t="Include" />
+              <e p="NativeStack.cs" t="Include" />
+            </e>
+            <e p="DirectionsHelper.cs" t="Include" />
+            <e p="Disposer.cs" t="Include" />
+            <e p="Intersections.cs" t="Include" />
+            <e p="MassJobThing.cs" t="Include" />
+            <e p="MathUtils.cs" t="Include" />
+            <e p="NormalSolver.cs" t="Include" />
+            <e p="NumHelp.cs" t="Include" />
+          </e>
+          <e p="Pathfinding" t="Include">
+            <e p="Astar.cs" t="Include" />
+            <e p="IMover.cs" t="Include" />
+            <e p="PathCell.cs" t="Include" />
+            <e p="PathfinderAgentController.cs" t="Include" />
+          </e>
+          <e p="RTSCameraController.cs" t="Include" />
+          <e p="SimpleCameraController.cs" t="Include" />
+          <e p="TeamManagerController.cs" t="Include" />
+          <e p="UI" t="Include">
+            <e p="ButtonPressedEventInvokerController.cs" t="Include" />
+            <e p="ExitButtonController.cs" t="Include" />
+            <e p="MenuController.cs" t="Include" />
+          </e>
+          <e p="Units" t="Include">
+            <e p="RigidbodyUnitMoverController.cs" t="Include" />
+            <e p="UnitController.cs" t="Include" />
+            <e p="UnitSelecterController.cs" t="Include" />
+          </e>
+          <e p="World" t="Include">
+            <e p="ChunkContainer.cs" t="Include" />
+            <e p="Components" t="Include">
+              <e p="ChunkComponentTags.cs" t="Include" />
+              <e p="ChunkNeighboursComponent.cs" t="Include" />
+              <e p="ChunkPosComponent.cs" t="Include" />
+              <e p="MapLoaderProxy.cs" t="Include" />
+              <e p="MapParametersProxy.cs" t="Include" />
+              <e p="RegionComponent.cs" t="Include" />
+            </e>
+            <e p="DynamicBuffers" t="Include">
+              <e p="LightSetQuery.cs" t="Include" />
+              <e p="Voxel.cs" t="Include" />
+              <e p="VoxelLightning.cs" t="Include" />
+              <e p="VoxelSetQuery.cs" t="Include" />
+            </e>
+            <e p="QueryDataStructures" t="Include">
+              <e p="VoxelAndLightQueryData.cs" t="Include" />
+            </e>
+            <e p="RegularChunk.cs" t="Include" />
+            <e p="Systems" t="Include">
+              <e p="ChunkHandling" t="Include">
+                <e p="ApplyVoxelChangesSystem.cs" t="Include" />
+                <e p="ChunkCreationSystem.cs" t="Include" />
+                <e p="ChunkLoadManagerSystem.cs" t="Include" />
+                <e p="ChunkMeshApplySystem.cs" t="Include" />
+                <e p="ChunkMeshSystem.cs" t="Include" />
+                <e p="InitChunkTexturesMaterialsSystem.cs" t="Include" />
+                <e p="RemeshPerformanceTestSystem.cs" t="Include" />
+                <e p="TerrainGenerationSystem.cs" t="Include" />
+              </e>
+              <e p="Interaction" t="Include">
+                <e p="ChangeTerrainVoxelSystem.cs" t="Include" />
+              </e>
+              <e p="Regions" t="Include">
+                <e p="FillRegionWithChunksSystem.cs" t="Include" />
+                <e p="RegionCreationSystem.cs" t="Include" />
+                <e p="RegionLoadUnloadSystem.cs" t="Include" />
+                <e p="RegionRemoveSystem.cs" t="Include" />
+              </e>
+            </e>
+            <e p="Utils" t="Include">
+              <e p="VoxelExtensions.cs" t="Include" />
+              <e p="VoxelInteractionUtils.cs" t="Include" />
+            </e>
+            <e p="VoxConsts.cs" t="Include" />
+          </e>
+        </e>
+        <e p="StandalonePackages" t="Include">
+          <e p="AssetStorePackages" t="Include">
+            <e p="Tayx" t="Include">
+              <e p="Editor" t="Include">
+                <e p="GraphyDebuggerEditor.cs" t="Include" />
+                <e p="GraphyManagerEditor.cs" t="Include" />
+              </e>
+              <e p="Graphy - Ultimate Stats Monitor" t="Include">
+                <e p="Changelog.txt" t="Include" />
+                <e p="Font" t="Include">
+                  <e p="Northwest-Bold" t="Include">
+                    <e p="ERIC-TIRADO-NORTHWEST-LICENSE.txt" t="Include" />
+                  </e>
+                  <e p="Roboto" t="Include">
+                    <e p="LICENSE.txt" t="Include" />
+                  </e>
+                </e>
+                <e p="Scene" t="Include">
+                  <e p="Color Picker" t="Include">
+                    <e p="G_CUIColorPicker.cs" t="Include" />
+                  </e>
+                  <e p="Customization Scripts" t="Include">
+                    <e p="CustomizeGraphy.cs" t="Include" />
+                    <e p="ForceSliderToMultipleOf3.cs" t="Include" />
+                    <e p="ForceSliderToPowerOf2.cs" t="Include" />
+                    <e p="UpdateTextWithSliderValue.cs" t="Include" />
+                  </e>
+                </e>
+                <e p="Scripts" t="Include">
+                  <e p="Advanced" t="Include">
+                    <e p="G_AdvancedData.cs" t="Include" />
+                  </e>
+                  <e p="Audio" t="Include">
+                    <e p="G_AudioGraph.cs" t="Include" />
+                    <e p="G_AudioManager.cs" t="Include" />
+                    <e p="G_AudioMonitor.cs" t="Include" />
+                    <e p="G_AudioText.cs" t="Include" />
+                  </e>
+                  <e p="Fps" t="Include">
+                    <e p="G_FpsGraph.cs" t="Include" />
+                    <e p="G_FpsManager.cs" t="Include" />
+                    <e p="G_FpsMonitor.cs" t="Include" />
+                    <e p="G_FpsText.cs" t="Include" />
+                  </e>
+                  <e p="Graph" t="Include">
+                    <e p="G_Graph.cs" t="Include" />
+                  </e>
+                  <e p="GraphyDebugger.cs" t="Include" />
+                  <e p="GraphyManager.cs" t="Include" />
+                  <e p="Ram" t="Include">
+                    <e p="G_RamGraph.cs" t="Include" />
+                    <e p="G_RamManager.cs" t="Include" />
+                    <e p="G_RamMonitor.cs" t="Include" />
+                    <e p="G_RamText.cs" t="Include" />
+                  </e>
+                  <e p="Shader" t="Include">
+                    <e p="G_GraphShader.cs" t="Include" />
+                  </e>
+                  <e p="UI" t="Include">
+                    <e p="IModifiableState.cs" t="Include" />
+                    <e p="IMovable.cs" t="Include" />
+                  </e>
+                  <e p="Util" t="Include">
+                    <e p="G_ExtensionMethods.cs" t="Include" />
+                    <e p="G_FloatString.cs" t="Include" />
+                    <e p="G_Intstring.cs" t="Include" />
+                    <e p="G_Singleton.cs" t="Include" />
+                  </e>
+                </e>
+                <e p="Shaders" t="Include">
+                  <e p="GraphMobile.shader" t="Include" />
+                  <e p="GraphStandard.shader" t="Include" />
+                </e>
+              </e>
+            </e>
+          </e>
+          <e p="DebugDrawingExtension" t="Include">
+            <e p="DebugExtension.cs" t="Include" />
+          </e>
+          <e p="ScriptableObjects" t="Include">
+            <e p="Editor" t="Include">
+              <e p="EventEditor.cs" t="Include" />
+              <e p="FloatIntReferenceDrawer.cs" t="Include" />
+            </e>
+            <e p="Runtime" t="Include">
+              <e p="Containers" t="Include">
+                <e p="FloatContainer.cs" t="Include" />
+                <e p="FloatReference.cs" t="Include" />
+                <e p="IntContainer.cs" t="Include" />
+                <e p="IntReference.cs" t="Include" />
+              </e>
+              <e p="Events" t="Include">
+                <e p="GameEvent.cs" t="Include" />
+                <e p="GameEventListener.cs" t="Include" />
+              </e>
+            </e>
+          </e>
+        </e>
+      </e>
+      <e p="DebugDrawingExtension.csproj" t="IncludeRecursive" />
+      <e p="Graphy.csproj" t="IncludeRecursive" />
+      <e p="Graphy.Editor.csproj" t="IncludeRecursive" />
+      <e p="obj" t="ExcludeRecursive" />
+      <e p="Packages" t="ExcludeRecursive" />
+      <e p="ScriptableObjects.csproj" t="IncludeRecursive" />
+      <e p="ScriptableObjects.Editor.csproj" t="IncludeRecursive" />
+      <e p="Scripts.csproj" t="IncludeRecursive" />
+      <e p="Temp\bin" t="ExcludeRecursive" />
+      <e p="Tests.csproj" t="IncludeRecursive" />
+      <e p="Voxel Engine V6.sln" t="IncludeFlat" />
+    </e>
+  </component>
+</project>

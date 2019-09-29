@@ -4,7 +4,7 @@ using Unity.Entities;
 
 namespace Scripts.World.Components
 {
-    [Obsolete()]
+    [Obsolete]
     public struct ChunkNeighboursComponent : IComponentData
     {
         public Entity Left;

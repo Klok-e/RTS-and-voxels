@@ -324,7 +324,7 @@ namespace Scripts.World.Systems
             {
                 for(int i = 0; i < 6; i++)
                 {
-                    var curr = (DirectionsHelper.BlockDirectionFlag)(1 << i);
+                    var curr = (Direction)(1 << i);
                     if((curr & facesVisible) != 0)//0b010 00 & 0b010 00 -> 0b010 00; 0b100 00 & 0b010 00 -> 0b000 00
                         CreateFace(mesh, pos, curr, blockPos, voxelType);
                 }

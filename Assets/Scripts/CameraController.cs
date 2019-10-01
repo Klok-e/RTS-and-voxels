@@ -141,18 +141,18 @@ public class CameraController : MonoBehaviour
             if (removeBlock ^ placeBlock)
             {
                 var ray = new Ray(transform.position, transform.forward);
-                if (Physics.Raycast(ray, out var hit, VoxConsts._blockSize * 10))
+                if (Physics.Raycast(ray, out var hit, VoxConsts.BlockSize * 10))
                 {
                     var pos       = math.float3(0);
                     var voxelType = VoxelType.Dirt;
                     if (removeBlock)
                     {
-                        pos       = hit.point - VoxConsts._blockSize * hit.normal / 2f;
+                        pos       = hit.point - VoxConsts.BlockSize * hit.normal / 2f;
                         voxelType = VoxelType.Empty;
                     }
                     else if (placeBlock)
                     {
-                        pos       = hit.point + VoxConsts._blockSize * hit.normal / 2f;
+                        pos       = hit.point + VoxConsts.BlockSize * hit.normal / 2f;
                         voxelType = voxType;
                     }
 
@@ -166,9 +166,9 @@ public class CameraController : MonoBehaviour
 
                             _changeTerrainVoxelSystem.ToSetPos.Enqueue(new ChangeTerrainVoxelSystem.SetPos
                             {
-                                Chunk     = chunk,
-                                Coord     = ind,
-                                VoxelType = voxelType
+                                chunk     = chunk,
+                                coord     = ind,
+                                voxelType = voxelType
                             });
                             break;
 

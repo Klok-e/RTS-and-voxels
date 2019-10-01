@@ -96,7 +96,7 @@ namespace World.Systems.ChunkHandling
                 commandBuffer      = _barrier.CreateCommandBuffer(),
                 alreadyDirty       = GetComponentDataFromEntity<ChunkDirtyComponent>(),
                 toBeRemeshedNeighb = _toBeRemeshedCached,
-                ToBeRemeshed       = ents
+                toBeRemeshed       = ents
             };
             var h3 = j3.Schedule(h2);
 
@@ -123,7 +123,7 @@ namespace World.Systems.ChunkHandling
 
                     buffer.AtSet(x.Pos.x, x.Pos.y, x.Pos.z, new Voxel
                     {
-                        Type = x.NewVoxelType
+                        type = x.NewVoxelType
                     });
 
                     var dir = DirectionsHelper.AreCoordsAtBordersOfChunk(x.Pos);
@@ -187,50 +187,50 @@ namespace World.Systems.ChunkHandling
                     {
                         var curr = currSet[i];
 
-                        var  p       = curr.Pos;
+                        var  p       = curr.pos;
                         var  atLight = currLight.AtGet(p.x, p.y, p.z);
-                        byte newLvl  = curr.NewLight;
-                        if (curr.Propagation == PropagationType.Regular)
+                        byte newLvl  = curr.newLight;
+                        if (curr.propagation == PropagationType.Regular)
                         {
-                            if (curr.LightType == SetLightType.RegularLight)
+                            if (curr.lightType == SetLightType.RegularLight)
                             {
                                 if (atLight.RegularLight < newLvl)
                                 {
-                                    toPropRegLight.Enqueue(curr.Pos);
+                                    toPropRegLight.Enqueue(curr.pos);
                                     currLight.AtSet(p.x, p.y, p.z, new VoxelLightingLevel(newLvl, atLight.Sunlight));
                                 }
                                 else if (atLight.RegularLight >= newLvl)
                                 {
-                                    toDepRegLight.Enqueue(curr.Pos);
+                                    toDepRegLight.Enqueue(curr.pos);
                                 }
                             }
                             else
                             {
                                 if (atLight.Sunlight < newLvl)
                                 {
-                                    toPropSunLight.Enqueue(curr.Pos);
+                                    toPropSunLight.Enqueue(curr.pos);
                                     currLight.AtSet(p.x, p.y, p.z,
                                         new VoxelLightingLevel(atLight.RegularLight, newLvl));
                                 }
                                 else if (atLight.Sunlight >= newLvl)
                                 {
-                                    toDepSunLight.Enqueue(curr.Pos);
+                                    toDepSunLight.Enqueue(curr.pos);
                                 }
                             }
                         }
-                        else if (curr.Propagation == PropagationType.Depropagate)
+                        else if (curr.propagation == PropagationType.Depropagate)
                         {
-                            if (curr.LightType == SetLightType.RegularLight)
-                                toDepRegLight.Enqueue(curr.Pos);
+                            if (curr.lightType == SetLightType.RegularLight)
+                                toDepRegLight.Enqueue(curr.pos);
                             else
-                                toDepSunLight.Enqueue(curr.Pos);
+                                toDepSunLight.Enqueue(curr.pos);
                         }
                         else
                         {
-                            if (curr.LightType == SetLightType.RegularLight)
-                                toPropRegLight.Enqueue(curr.Pos);
+                            if (curr.lightType == SetLightType.RegularLight)
+                                toPropRegLight.Enqueue(curr.pos);
                             else
-                                toPropSunLight.Enqueue(curr.Pos);
+                                toPropSunLight.Enqueue(curr.pos);
                         }
                     }
 
@@ -280,9 +280,9 @@ namespace World.Systems.ChunkHandling
 
                                         lightSetQuery[nextEnt].Add(new LightSetQueryData
                                         {
-                                            LightType   = SetLightType.RegularLight,
-                                            Pos         = nextBlock,
-                                            Propagation = pr
+                                            lightType   = SetLightType.RegularLight,
+                                            pos         = nextBlock,
+                                            propagation = pr
                                         });
                                     }
 
@@ -315,7 +315,7 @@ namespace World.Systems.ChunkHandling
                                     var nLight = currLight.AtGet(nextBlock.x, nextBlock.y, nextBlock.z);
                                     if (nLight.RegularLight < lightAtPos.RegularLight - 1 // less than current
                                         &&
-                                        currVox.AtGet(nextBlock.x, nextBlock.y, nextBlock.z).Type
+                                        currVox.AtGet(nextBlock.x, nextBlock.y, nextBlock.z).type
                                                .IsEmpty()) // and empty
                                     {
                                         toPropRegLight.Enqueue(nextBlock);
@@ -331,14 +331,14 @@ namespace World.Systems.ChunkHandling
                                         if (nLight.RegularLight < lightAtPos.RegularLight - 1 // less than current
                                             &&
                                             voxelBuffers[nextEnt]
-                                                .AtGet(nextBlock.x, nextBlock.y, nextBlock.z).Type
+                                                .AtGet(nextBlock.x, nextBlock.y, nextBlock.z).type
                                                 .IsEmpty()) // and empty
                                         {
                                             lightSetQuery[nextEnt].Add(new LightSetQueryData
                                             {
-                                                LightType   = SetLightType.RegularLight,
-                                                Pos         = nextBlock,
-                                                Propagation = PropagationType.Propagate
+                                                lightType   = SetLightType.RegularLight,
+                                                pos         = nextBlock,
+                                                propagation = PropagationType.Propagate
                                             });
                                             lightBuffers[nextEnt].AtSet(nextBlock.x, nextBlock.y, nextBlock.z,
                                                 new VoxelLightingLevel(lightAtPos.RegularLight - 1, nLight.Sunlight));
@@ -405,9 +405,9 @@ namespace World.Systems.ChunkHandling
 
                                         lightSetQuery[nextEnt].Add(new LightSetQueryData
                                         {
-                                            LightType   = SetLightType.Sunlight,
-                                            Pos         = nextBlock,
-                                            Propagation = pr
+                                            lightType   = SetLightType.Sunlight,
+                                            pos         = nextBlock,
+                                            propagation = pr
                                         });
                                     }
 
@@ -440,7 +440,7 @@ namespace World.Systems.ChunkHandling
                                     var nLight = currLight.AtGet(nextBlock.x, nextBlock.y, nextBlock.z);
                                     if (nLight.Sunlight < lightAtPos.Sunlight - 1 // less than current
                                         &&
-                                        currVox.AtGet(nextBlock.x, nextBlock.y, nextBlock.z).Type
+                                        currVox.AtGet(nextBlock.x, nextBlock.y, nextBlock.z).type
                                                .IsEmpty()) // and empty
                                     {
                                         int nxtVal;
@@ -462,14 +462,14 @@ namespace World.Systems.ChunkHandling
                                         if (nLight.Sunlight < lightAtPos.Sunlight - 1 // less than current
                                             &&
                                             voxelBuffers[nextEnt]
-                                                .AtGet(nextBlock.x, nextBlock.y, nextBlock.z).Type
+                                                .AtGet(nextBlock.x, nextBlock.y, nextBlock.z).type
                                                 .IsEmpty()) // and empty
                                         {
                                             lightSetQuery[nextEnt].Add(new LightSetQueryData
                                             {
-                                                LightType   = SetLightType.Sunlight,
-                                                Pos         = nextBlock,
-                                                Propagation = PropagationType.Propagate
+                                                lightType   = SetLightType.Sunlight,
+                                                pos         = nextBlock,
+                                                propagation = PropagationType.Propagate
                                             });
 
                                             int nxtVal;
@@ -502,31 +502,31 @@ namespace World.Systems.ChunkHandling
             public NativeQueue<Entity> toBeRemeshedNeighb;
 
             [DeallocateOnJobCompletion]
-            public NativeArray<Entity> ToBeRemeshed;
+            public NativeArray<Entity> toBeRemeshed;
 
             public void Execute()
             {
                 // used as a hash map
-                var _processedEntities =
-                    new NativeHashMap<Entity, int>(toBeRemeshedNeighb.Count + ToBeRemeshed.Length, Allocator.Temp);
+                var processedEntities =
+                    new NativeHashMap<Entity, int>(toBeRemeshedNeighb.Count + toBeRemeshed.Length, Allocator.Temp);
 
-                for (int i = 0; i < ToBeRemeshed.Length; i++)
+                for (int i = 0; i < toBeRemeshed.Length; i++)
                 {
-                    commandBuffer.RemoveComponent<ChunkNeedApplyVoxelChanges>(ToBeRemeshed[i]);
-                    if (!alreadyDirty.Exists(ToBeRemeshed[i]))
-                        commandBuffer.AddComponent(ToBeRemeshed[i], new ChunkDirtyComponent());
-                    _processedEntities.TryAdd(ToBeRemeshed[i], 0);
+                    commandBuffer.RemoveComponent<ChunkNeedApplyVoxelChanges>(toBeRemeshed[i]);
+                    if (!alreadyDirty.Exists(toBeRemeshed[i]))
+                        commandBuffer.AddComponent(toBeRemeshed[i], new ChunkDirtyComponent());
+                    processedEntities.TryAdd(toBeRemeshed[i], 0);
                 }
 
                 while (toBeRemeshedNeighb.TryDequeue(out var ent))
-                    if (!_processedEntities.TryGetValue(ent, out int _))
+                    if (!processedEntities.TryGetValue(ent, out int _))
                     {
                         if (!alreadyDirty.Exists(ent))
                             commandBuffer.AddComponent(ent, new ChunkDirtyComponent());
-                        _processedEntities.TryAdd(ent, 0);
+                        processedEntities.TryAdd(ent, 0);
                     }
 
-                _processedEntities.Dispose();
+                processedEntities.Dispose();
             }
         }
     }

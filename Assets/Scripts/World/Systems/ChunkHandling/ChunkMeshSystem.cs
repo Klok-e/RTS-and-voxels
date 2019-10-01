@@ -62,40 +62,40 @@ namespace World.Systems.ChunkHandling
 
         #region Chunk processing
 
-        public JobHandle CleanChunk(RegularChunk chunk, Entity entity, ChunkPosComponent pos, JobHandle inputDeps)
+        private JobHandle CleanChunk(RegularChunk chunk, Entity entity, ChunkPosComponent pos, JobHandle inputDeps)
         {
             //Debug.Log(chunk.name);
             var j1 = new RebuildChunkBlockVisibleFacesJob
             {
-                FacesVisibleArr = new NativeArray3D<Direction>(
-                    VoxConsts._chunkSize, VoxConsts._chunkSize, VoxConsts._chunkSize, Allocator.TempJob,
+                facesVisibleArr = new NativeArray3D<Direction>(
+                    VoxConsts.ChunkSize, VoxConsts.ChunkSize, VoxConsts.ChunkSize, Allocator.TempJob,
                     NativeArrayOptions.UninitializedMemory),
-                Chunk       = entity,
-                Chunks      = GetBufferFromEntity<Voxel>(true),
-                Pos         = pos,
-                PosToEntity = _chunkCreationSystem.PosToChunkEntity
+                chunk       = entity,
+                chunks      = GetBufferFromEntity<Voxel>(true),
+                pos         = pos,
+                posToEntity = _chunkCreationSystem.PosToChunkEntity
             };
             var j2 = new CopyLightJob
             {
-                Chunk       = entity,
-                ChunksLight = GetBufferFromEntity<VoxelLightingLevel>(true),
-                LightingData = new NativeArray3D<VoxelLightingLevel>(VoxConsts._chunkSize + 2, VoxConsts._chunkSize + 2,
-                    VoxConsts._chunkSize                                                  + 2, Allocator.TempJob),
-                ChunkPos    = pos,
-                PosToEntity = _chunkCreationSystem.PosToChunkEntity
+                chunk       = entity,
+                chunksLight = GetBufferFromEntity<VoxelLightingLevel>(true),
+                lightingData = new NativeArray3D<VoxelLightingLevel>(VoxConsts.ChunkSize + 2, VoxConsts.ChunkSize + 2,
+                    VoxConsts.ChunkSize                                                  + 2, Allocator.TempJob),
+                chunkPos    = pos,
+                posToEntity = _chunkCreationSystem.PosToChunkEntity
             };
             var j3 = new ConstructMeshJob
             {
-                MeshData           = chunk.MeshData,
-                VoxelsVisibleFaces = j1.FacesVisibleArr,
-                ChunkBufferEnt     = GetBufferFromEntity<Voxel>(true),
-                LightingData       = j2.LightingData,
-                Entity             = entity
+                meshData           = chunk.MeshData,
+                voxelsVisibleFaces = j1.facesVisibleArr,
+                chunkBufferEnt     = GetBufferFromEntity<Voxel>(true),
+                lightingData       = j2.lightingData,
+                entity             = entity
             };
 
             return j3.Schedule(JobHandle.CombineDependencies(
                 j2.Schedule(inputDeps),
-                j1.Schedule(VoxConsts._chunkSize * VoxConsts._chunkSize * VoxConsts._chunkSize, 1024, inputDeps)));
+                j1.Schedule(VoxConsts.ChunkSize * VoxConsts.ChunkSize * VoxConsts.ChunkSize, 1024, inputDeps)));
         }
 
         #endregion Chunk processing
@@ -104,33 +104,33 @@ namespace World.Systems.ChunkHandling
         private struct CopyLightJob : IJob
         {
             [WriteOnly]
-            public NativeArray3D<VoxelLightingLevel> LightingData;
+            public NativeArray3D<VoxelLightingLevel> lightingData;
 
             [ReadOnly]
-            public BufferFromEntity<VoxelLightingLevel> ChunksLight;
+            public BufferFromEntity<VoxelLightingLevel> chunksLight;
 
             [ReadOnly]
-            public Entity Chunk;
+            public Entity chunk;
 
             [ReadOnly]
-            public ChunkPosComponent ChunkPos;
+            public ChunkPosComponent chunkPos;
 
             [ReadOnly]
-            public NativeHashMap<int3, Entity> PosToEntity;
+            public NativeHashMap<int3, Entity> posToEntity;
 
             public void Execute()
             {
-                CopyNeighboursLight(LightingData);
+                CopyNeighboursLight(lightingData);
             }
 
             #region Copying
 
             private void CopyNeighboursLight(NativeArray3D<VoxelLightingLevel> copyTo)
             {
-                var voxLightBuff = ChunksLight[Chunk];
-                for (int z = 1; z < VoxConsts._chunkSize + 1; z++)
-                for (int y = 1; y < VoxConsts._chunkSize + 1; y++)
-                for (int x = 1; x < VoxConsts._chunkSize + 1; x++)
+                var voxLightBuff = chunksLight[chunk];
+                for (int z = 1; z < VoxConsts.ChunkSize + 1; z++)
+                for (int y = 1; y < VoxConsts.ChunkSize + 1; y++)
+                for (int x = 1; x < VoxConsts.ChunkSize + 1; x++)
                     copyTo[x, y, z] = voxLightBuff.AtGet(x - 1, y - 1, z - 1);
 
                 Copy6Sides(copyTo);
@@ -142,56 +142,56 @@ namespace World.Systems.ChunkHandling
 
             private void Copy6Sides(NativeArray3D<VoxelLightingLevel> copyTo)
             {
-                const int sz        = VoxConsts._chunkSize;
+                const int sz        = VoxConsts.ChunkSize;
                 var       neighbDir = Direction.Up;
-                if (PosToEntity.TryGetValue(ChunkPos.Pos + neighbDir.ToInt3(), out var nextEnt))
+                if (posToEntity.TryGetValue(chunkPos.Pos + neighbDir.ToInt3(), out var nextEnt))
                 {
-                    var nextVox = ChunksLight[nextEnt];
+                    var nextVox = chunksLight[nextEnt];
                     for (int z = 0; z < sz; z++)
                     for (int x = 0; x < sz; x++)
                         copyTo[x + 1, sz + 1, z + 1] = nextVox.AtGet(x, 0, z);
                 }
 
                 neighbDir = Direction.Down;
-                if (PosToEntity.TryGetValue(ChunkPos.Pos + neighbDir.ToInt3(), out nextEnt))
+                if (posToEntity.TryGetValue(chunkPos.Pos + neighbDir.ToInt3(), out nextEnt))
                 {
-                    var nextVox = ChunksLight[nextEnt];
+                    var nextVox = chunksLight[nextEnt];
                     for (int z = 0; z < sz; z++)
                     for (int x = 0; x < sz; x++)
                         copyTo[x + 1, 0, z + 1] = nextVox.AtGet(x, sz - 1, z);
                 }
 
                 neighbDir = Direction.Left;
-                if (PosToEntity.TryGetValue(ChunkPos.Pos + neighbDir.ToInt3(), out nextEnt))
+                if (posToEntity.TryGetValue(chunkPos.Pos + neighbDir.ToInt3(), out nextEnt))
                 {
-                    var nextVox = ChunksLight[nextEnt];
+                    var nextVox = chunksLight[nextEnt];
                     for (int z = 0; z < sz; z++)
                     for (int y = 0; y < sz; y++)
                         copyTo[0, y + 1, z + 1] = nextVox.AtGet(sz - 1, y, z);
                 }
 
                 neighbDir = Direction.Right;
-                if (PosToEntity.TryGetValue(ChunkPos.Pos + neighbDir.ToInt3(), out nextEnt))
+                if (posToEntity.TryGetValue(chunkPos.Pos + neighbDir.ToInt3(), out nextEnt))
                 {
-                    var nextVox = ChunksLight[nextEnt];
+                    var nextVox = chunksLight[nextEnt];
                     for (int z = 0; z < sz; z++)
                     for (int y = 0; y < sz; y++)
                         copyTo[sz + 1, y + 1, z + 1] = nextVox.AtGet(0, y, z);
                 }
 
                 neighbDir = Direction.Backward;
-                if (PosToEntity.TryGetValue(ChunkPos.Pos + neighbDir.ToInt3(), out nextEnt))
+                if (posToEntity.TryGetValue(chunkPos.Pos + neighbDir.ToInt3(), out nextEnt))
                 {
-                    var nextVox = ChunksLight[nextEnt];
+                    var nextVox = chunksLight[nextEnt];
                     for (int y = 0; y < sz; y++)
                     for (int x = 0; x < sz; x++)
                         copyTo[x + 1, y + 1, 0] = nextVox.AtGet(x, y, sz - 1);
                 }
 
                 neighbDir = Direction.Forward;
-                if (PosToEntity.TryGetValue(ChunkPos.Pos + neighbDir.ToInt3(), out nextEnt))
+                if (posToEntity.TryGetValue(chunkPos.Pos + neighbDir.ToInt3(), out nextEnt))
                 {
-                    var nextVox = ChunksLight[nextEnt];
+                    var nextVox = chunksLight[nextEnt];
                     for (int y = 0; y < sz; y++)
                     for (int x = 0; x < sz; x++)
                         copyTo[x + 1, y + 1, sz + 1] = nextVox.AtGet(x, y, 0);
@@ -200,100 +200,100 @@ namespace World.Systems.ChunkHandling
 
             private void Copy12Edges(NativeArray3D<VoxelLightingLevel> copyTo)
             {
-                const int sz = VoxConsts._chunkSize;
+                const int sz = VoxConsts.ChunkSize;
 
                 var neighbDir = Direction.Up | Direction.Right;
-                if (PosToEntity.TryGetValue(ChunkPos.Pos + neighbDir.ToInt3(), out var nextEnt))
+                if (posToEntity.TryGetValue(chunkPos.Pos + neighbDir.ToInt3(), out var nextEnt))
                 {
-                    var nextVox = ChunksLight[nextEnt];
+                    var nextVox = chunksLight[nextEnt];
                     for (int z = 0; z < sz; z++)
                         copyTo[sz + 1, sz + 1, z + 1] = nextVox.AtGet(0, 0, z);
                 }
 
                 neighbDir = Direction.Up | Direction.Left;
-                if (PosToEntity.TryGetValue(ChunkPos.Pos + neighbDir.ToInt3(), out nextEnt))
+                if (posToEntity.TryGetValue(chunkPos.Pos + neighbDir.ToInt3(), out nextEnt))
                 {
-                    var nextVox = ChunksLight[nextEnt];
+                    var nextVox = chunksLight[nextEnt];
                     for (int z = 0; z < sz; z++)
                         copyTo[0, sz + 1, z + 1] = nextVox.AtGet(sz - 1, 0, z);
                 }
 
                 neighbDir = Direction.Up | Direction.Backward;
-                if (PosToEntity.TryGetValue(ChunkPos.Pos + neighbDir.ToInt3(), out nextEnt))
+                if (posToEntity.TryGetValue(chunkPos.Pos + neighbDir.ToInt3(), out nextEnt))
                 {
-                    var nextVox = ChunksLight[nextEnt];
+                    var nextVox = chunksLight[nextEnt];
                     for (int x = 0; x < sz; x++)
                         copyTo[x + 1, sz + 1, 0] = nextVox.AtGet(x, 0, sz - 1);
                 }
 
                 neighbDir = Direction.Up | Direction.Forward;
-                if (PosToEntity.TryGetValue(ChunkPos.Pos + neighbDir.ToInt3(), out nextEnt))
+                if (posToEntity.TryGetValue(chunkPos.Pos + neighbDir.ToInt3(), out nextEnt))
                 {
-                    var nextVox = ChunksLight[nextEnt];
+                    var nextVox = chunksLight[nextEnt];
                     for (int x = 0; x < sz; x++)
                         copyTo[x + 1, sz + 1, sz + 1] = nextVox.AtGet(x, 0, 0);
                 }
 
                 neighbDir = Direction.Down | Direction.Right;
-                if (PosToEntity.TryGetValue(ChunkPos.Pos + neighbDir.ToInt3(), out nextEnt))
+                if (posToEntity.TryGetValue(chunkPos.Pos + neighbDir.ToInt3(), out nextEnt))
                 {
-                    var nextVox = ChunksLight[nextEnt];
+                    var nextVox = chunksLight[nextEnt];
                     for (int z = 0; z < sz; z++)
                         copyTo[sz + 1, 0, z + 1] = nextVox.AtGet(0, sz - 1, z);
                 }
 
                 neighbDir = Direction.Down | Direction.Left;
-                if (PosToEntity.TryGetValue(ChunkPos.Pos + neighbDir.ToInt3(), out nextEnt))
+                if (posToEntity.TryGetValue(chunkPos.Pos + neighbDir.ToInt3(), out nextEnt))
                 {
-                    var nextVox = ChunksLight[nextEnt];
+                    var nextVox = chunksLight[nextEnt];
                     for (int z = 0; z < sz; z++)
                         copyTo[0, 0, z + 1] = nextVox.AtGet(sz - 1, sz - 1, z);
                 }
 
                 neighbDir = Direction.Down | Direction.Backward;
-                if (PosToEntity.TryGetValue(ChunkPos.Pos + neighbDir.ToInt3(), out nextEnt))
+                if (posToEntity.TryGetValue(chunkPos.Pos + neighbDir.ToInt3(), out nextEnt))
                 {
-                    var nextVox = ChunksLight[nextEnt];
+                    var nextVox = chunksLight[nextEnt];
                     for (int x = 0; x < sz; x++)
                         copyTo[x + 1, 0, 0] = nextVox.AtGet(x, sz - 1, sz - 1);
                 }
 
                 neighbDir = Direction.Down | Direction.Forward;
-                if (PosToEntity.TryGetValue(ChunkPos.Pos + neighbDir.ToInt3(), out nextEnt))
+                if (posToEntity.TryGetValue(chunkPos.Pos + neighbDir.ToInt3(), out nextEnt))
                 {
-                    var nextVox = ChunksLight[nextEnt];
+                    var nextVox = chunksLight[nextEnt];
                     for (int x = 0; x < sz; x++)
                         copyTo[x + 1, 0, sz + 1] = nextVox.AtGet(x, sz - 1, 0);
                 }
 
                 neighbDir = Direction.Forward | Direction.Right;
-                if (PosToEntity.TryGetValue(ChunkPos.Pos + neighbDir.ToInt3(), out nextEnt))
+                if (posToEntity.TryGetValue(chunkPos.Pos + neighbDir.ToInt3(), out nextEnt))
                 {
-                    var nextVox = ChunksLight[nextEnt];
+                    var nextVox = chunksLight[nextEnt];
                     for (int y = 0; y < sz; y++)
                         copyTo[sz + 1, y + 1, sz + 1] = nextVox.AtGet(0, y, 0);
                 }
 
                 neighbDir = Direction.Forward | Direction.Left;
-                if (PosToEntity.TryGetValue(ChunkPos.Pos + neighbDir.ToInt3(), out nextEnt))
+                if (posToEntity.TryGetValue(chunkPos.Pos + neighbDir.ToInt3(), out nextEnt))
                 {
-                    var nextVox = ChunksLight[nextEnt];
+                    var nextVox = chunksLight[nextEnt];
                     for (int y = 0; y < sz; y++)
                         copyTo[0, y + 1, sz + 1] = nextVox.AtGet(sz - 1, y, 0);
                 }
 
                 neighbDir = Direction.Backward | Direction.Right;
-                if (PosToEntity.TryGetValue(ChunkPos.Pos + neighbDir.ToInt3(), out nextEnt))
+                if (posToEntity.TryGetValue(chunkPos.Pos + neighbDir.ToInt3(), out nextEnt))
                 {
-                    var nextVox = ChunksLight[nextEnt];
+                    var nextVox = chunksLight[nextEnt];
                     for (int y = 0; y < sz; y++)
                         copyTo[sz + 1, y + 1, 0] = nextVox.AtGet(0, y, sz - 1);
                 }
 
                 neighbDir = Direction.Backward | Direction.Left;
-                if (PosToEntity.TryGetValue(ChunkPos.Pos + neighbDir.ToInt3(), out nextEnt))
+                if (posToEntity.TryGetValue(chunkPos.Pos + neighbDir.ToInt3(), out nextEnt))
                 {
-                    var nextVox = ChunksLight[nextEnt];
+                    var nextVox = chunksLight[nextEnt];
                     for (int y = 0; y < sz; y++)
                         copyTo[0, y + 1, 0] = nextVox.AtGet(sz - 1, y, sz - 1);
                 }
@@ -301,62 +301,62 @@ namespace World.Systems.ChunkHandling
 
             private void Copy8Vertices(NativeArray3D<VoxelLightingLevel> copyTo)
             {
-                const int sz = VoxConsts._chunkSize;
+                const int sz = VoxConsts.ChunkSize;
 
                 var neighbDir = Direction.Up | Direction.Left | Direction.Forward;
-                if (PosToEntity.TryGetValue(ChunkPos.Pos + neighbDir.ToInt3(), out var nextEnt))
+                if (posToEntity.TryGetValue(chunkPos.Pos + neighbDir.ToInt3(), out var nextEnt))
                 {
-                    var nextVox = ChunksLight[nextEnt];
+                    var nextVox = chunksLight[nextEnt];
                     copyTo[0, sz + 1, sz + 1] = nextVox.AtGet(sz - 1, 0, 0);
                 }
 
 
                 neighbDir = Direction.Up | Direction.Left | Direction.Backward;
-                if (PosToEntity.TryGetValue(ChunkPos.Pos + neighbDir.ToInt3(), out nextEnt))
+                if (posToEntity.TryGetValue(chunkPos.Pos + neighbDir.ToInt3(), out nextEnt))
                 {
-                    var nextVox = ChunksLight[nextEnt];
+                    var nextVox = chunksLight[nextEnt];
                     copyTo[0, sz + 1, 0] = nextVox.AtGet(sz - 1, 0, sz - 1);
                 }
 
                 neighbDir = Direction.Up | Direction.Right | Direction.Forward;
-                if (PosToEntity.TryGetValue(ChunkPos.Pos + neighbDir.ToInt3(), out nextEnt))
+                if (posToEntity.TryGetValue(chunkPos.Pos + neighbDir.ToInt3(), out nextEnt))
                 {
-                    var nextVox = ChunksLight[nextEnt];
+                    var nextVox = chunksLight[nextEnt];
                     copyTo[sz + 1, sz + 1, sz + 1] = nextVox.AtGet(0, 0, 0);
                 }
 
                 neighbDir = Direction.Up | Direction.Right | Direction.Backward;
-                if (PosToEntity.TryGetValue(ChunkPos.Pos + neighbDir.ToInt3(), out nextEnt))
+                if (posToEntity.TryGetValue(chunkPos.Pos + neighbDir.ToInt3(), out nextEnt))
                 {
-                    var nextVox = ChunksLight[nextEnt];
+                    var nextVox = chunksLight[nextEnt];
                     copyTo[sz + 1, sz + 1, 0] = nextVox.AtGet(0, 0, sz - 1);
                 }
 
                 neighbDir = Direction.Down | Direction.Right | Direction.Forward;
-                if (PosToEntity.TryGetValue(ChunkPos.Pos + neighbDir.ToInt3(), out nextEnt))
+                if (posToEntity.TryGetValue(chunkPos.Pos + neighbDir.ToInt3(), out nextEnt))
                 {
-                    var nextVox = ChunksLight[nextEnt];
+                    var nextVox = chunksLight[nextEnt];
                     copyTo[0, 0, sz + 1] = nextVox.AtGet(sz - 1, sz - 1, 0);
                 }
 
                 neighbDir = Direction.Down | Direction.Left | Direction.Backward;
-                if (PosToEntity.TryGetValue(ChunkPos.Pos + neighbDir.ToInt3(), out nextEnt))
+                if (posToEntity.TryGetValue(chunkPos.Pos + neighbDir.ToInt3(), out nextEnt))
                 {
-                    var nextVox = ChunksLight[nextEnt];
+                    var nextVox = chunksLight[nextEnt];
                     copyTo[0, 0, 0] = nextVox.AtGet(sz - 1, sz - 1, sz - 1);
                 }
 
                 neighbDir = Direction.Down | Direction.Right | Direction.Forward;
-                if (PosToEntity.TryGetValue(ChunkPos.Pos + neighbDir.ToInt3(), out nextEnt))
+                if (posToEntity.TryGetValue(chunkPos.Pos + neighbDir.ToInt3(), out nextEnt))
                 {
-                    var nextVox = ChunksLight[nextEnt];
+                    var nextVox = chunksLight[nextEnt];
                     copyTo[sz + 1, 0, sz + 1] = nextVox.AtGet(0, sz - 1, 0);
                 }
 
                 neighbDir = Direction.Down | Direction.Right | Direction.Backward;
-                if (PosToEntity.TryGetValue(ChunkPos.Pos + neighbDir.ToInt3(), out nextEnt))
+                if (posToEntity.TryGetValue(chunkPos.Pos + neighbDir.ToInt3(), out nextEnt))
                 {
-                    var nextVox = ChunksLight[nextEnt];
+                    var nextVox = chunksLight[nextEnt];
                     copyTo[sz + 1, 0, 0] = nextVox.AtGet(0, sz - 1, sz - 1);
                 }
             }
@@ -367,34 +367,34 @@ namespace World.Systems.ChunkHandling
         [BurstCompile]
         private struct ConstructMeshJob : IJob
         {
-            public NativeMeshData MeshData;
+            public NativeMeshData meshData;
 
             [ReadOnly]
-            public BufferFromEntity<Voxel> ChunkBufferEnt;
+            public BufferFromEntity<Voxel> chunkBufferEnt;
 
             [ReadOnly]
-            public Entity Entity;
-
-            [DeallocateOnJobCompletion]
-            [ReadOnly]
-            public NativeArray3D<VoxelLightingLevel> LightingData;
+            public Entity entity;
 
             [DeallocateOnJobCompletion]
             [ReadOnly]
-            public NativeArray3D<Direction> VoxelsVisibleFaces;
+            public NativeArray3D<VoxelLightingLevel> lightingData;
+
+            [DeallocateOnJobCompletion]
+            [ReadOnly]
+            public NativeArray3D<Direction> voxelsVisibleFaces;
 
             public void Execute()
             {
-                var chunkBuffer = ChunkBufferEnt[Entity];
-                for (int z = 0; z < VoxConsts._chunkSize; z++)
-                for (int y = 0; y < VoxConsts._chunkSize; y++)
-                for (int x = 0; x < VoxConsts._chunkSize; x++)
+                var chunkBuffer = chunkBufferEnt[entity];
+                for (int z = 0; z < VoxConsts.ChunkSize; z++)
+                for (int y = 0; y < VoxConsts.ChunkSize; y++)
+                for (int x = 0; x < VoxConsts.ChunkSize; x++)
                 {
-                    var vox = chunkBuffer.AtGet(x, y, z).Type;
+                    var vox = chunkBuffer.AtGet(x, y, z).type;
                     if (vox != VoxelType.Empty)
                     {
-                        var faces = VoxelsVisibleFaces[x, y, z];
-                        CreateCube(MeshData,         new Vector3(x, y, z) * VoxConsts._blockSize, faces,
+                        var faces = voxelsVisibleFaces[x, y, z];
+                        CreateCube(meshData,         new Vector3(x, y, z) * VoxConsts.BlockSize, faces,
                             new Vector3Int(x, y, z), vox);
                     }
                 }
@@ -437,10 +437,12 @@ namespace World.Systems.ChunkHandling
 
                 voxelType.Mesh(dir, mesh);
 
-                mesh._vertices.Add(rotation * (new Vector3(-.5f, .5f,  .5f) * VoxConsts._blockSize) + vertOffset);
-                mesh._vertices.Add(rotation * (new Vector3(.5f,  .5f,  .5f) * VoxConsts._blockSize) + vertOffset);
-                mesh._vertices.Add(rotation * (new Vector3(-.5f, -.5f, .5f) * VoxConsts._blockSize) + vertOffset);
-                mesh._vertices.Add(rotation * (new Vector3(.5f,  -.5f, .5f) * VoxConsts._blockSize) + vertOffset);
+                // ReSharper disable Unity.InefficientMultiplicationOrder
+                mesh._vertices.Add(rotation * (new Vector3(-.5f, .5f,  .5f) * VoxConsts.BlockSize) + vertOffset);
+                mesh._vertices.Add(rotation * (new Vector3(.5f,  .5f,  .5f) * VoxConsts.BlockSize) + vertOffset);
+                mesh._vertices.Add(rotation * (new Vector3(-.5f, -.5f, .5f) * VoxConsts.BlockSize) + vertOffset);
+                mesh._vertices.Add(rotation * (new Vector3(.5f,  -.5f, .5f) * VoxConsts.BlockSize) + vertOffset);
+                // ReSharper restore Unity.InefficientMultiplicationOrder
 
                 mesh._normals.Add(normal);
                 mesh._normals.Add(normal);
@@ -506,15 +508,15 @@ namespace World.Systems.ChunkHandling
                 backwardLeftInd  += blockPos;
                 backwardRightInd += blockPos;
 
-                var center     = LightingData[centerInd.x, centerInd.y, centerInd.z];
-                var left       = LightingData[leftInd.x, leftInd.y, leftInd.z];
-                var right      = LightingData[rightInd.x, rightInd.y, rightInd.z];
-                var front      = LightingData[forwardInd.x, forwardInd.y, forwardInd.z];
-                var back       = LightingData[backwardInd.x, backwardInd.y, backwardInd.z];
-                var frontLeft  = LightingData[forwardLeftInd.x, forwardLeftInd.y, forwardLeftInd.z];
-                var frontRight = LightingData[forwardRightInd.x, forwardRightInd.y, forwardRightInd.z];
-                var backLeft   = LightingData[backwardLeftInd.x, backwardLeftInd.y, backwardLeftInd.z];
-                var backRight  = LightingData[backwardRightInd.x, backwardRightInd.y, backwardRightInd.z];
+                var center     = lightingData[centerInd.x, centerInd.y, centerInd.z];
+                var left       = lightingData[leftInd.x, leftInd.y, leftInd.z];
+                var right      = lightingData[rightInd.x, rightInd.y, rightInd.z];
+                var front      = lightingData[forwardInd.x, forwardInd.y, forwardInd.z];
+                var back       = lightingData[backwardInd.x, backwardInd.y, backwardInd.z];
+                var frontLeft  = lightingData[forwardLeftInd.x, forwardLeftInd.y, forwardLeftInd.z];
+                var frontRight = lightingData[forwardRightInd.x, forwardRightInd.y, forwardRightInd.z];
+                var backLeft   = lightingData[backwardLeftInd.x, backwardLeftInd.y, backwardLeftInd.z];
+                var backRight  = lightingData[backwardRightInd.x, backwardRightInd.y, backwardRightInd.z];
 
                 int centerVal     = math.max(center.RegularLight,     center.Sunlight);
                 int leftVal       = math.max(left.RegularLight,       left.Sunlight);
@@ -542,15 +544,12 @@ namespace World.Systems.ChunkHandling
                 float vert4 = VertexLight(centerVal, rightVal, frontVal, frontRightVal);
 
                 //source: https://0fps.net/2013/07/03/ambient-occlusion-for-minecraft-like-worlds/
-                if (vert1 + vert4 > vert2 + vert3)
-                    isFlipped = true;
-                else
-                    isFlipped = false;
+                isFlipped = vert1 + vert4 > vert2 + vert3;
 
                 return new Vector4(vert1, vert2, vert3, vert4);
             }
 
-            private float VertexLight(int center, int side1, int side2, int corner)
+            private static float VertexLight(int center, int side1, int side2, int corner)
             {
                 return (center + side1 + side2 + corner) / 4f / 15f;
             }
@@ -562,23 +561,23 @@ namespace World.Systems.ChunkHandling
         private struct RebuildChunkBlockVisibleFacesJob : IJobParallelFor
         {
             [WriteOnly]
-            public NativeArray3D<Direction> FacesVisibleArr;
+            public NativeArray3D<Direction> facesVisibleArr;
 
             [ReadOnly]
-            public Entity Chunk;
+            public Entity chunk;
 
             [ReadOnly]
-            public NativeHashMap<int3, Entity> PosToEntity;
+            public NativeHashMap<int3, Entity> posToEntity;
 
             [ReadOnly]
-            public ChunkPosComponent Pos;
+            public ChunkPosComponent pos;
 
             [ReadOnly]
-            public BufferFromEntity<Voxel> Chunks;
+            public BufferFromEntity<Voxel> chunks;
 
             public void Execute(int index)
             {
-                FacesVisibleArr.At(index, out int x, out int y, out int z);
+                facesVisibleArr.At(index, out int x, out int y, out int z);
 
                 var facesVisible = Direction.None;
                 for (byte i = 0; i < 6; i++)
@@ -588,20 +587,20 @@ namespace World.Systems.ChunkHandling
                     int xn = x + vec.x,
                         yn = y + vec.y,
                         zn = z + vec.z;
-                    var chunkIndIn = Chunks[Chunk];
+                    var chunkIndIn = chunks[chunk];
                     if (DirectionsHelper.WrapCoordsInChunk(ref xn, ref yn, ref zn) != Direction.None)
                     {
-                        if (PosToEntity.TryGetValue(Pos.Pos + vec, out var ent))
-                            chunkIndIn = Chunks[ent];
+                        if (posToEntity.TryGetValue(pos.Pos + vec, out var ent))
+                            chunkIndIn = chunks[ent];
                         else
                             facesVisible |= dir;
                     }
 
-                    if (chunkIndIn.AtGet(xn, yn, zn).Type.IsEmpty())
+                    if (chunkIndIn.AtGet(xn, yn, zn).type.IsEmpty())
                         facesVisible |= dir;
                 }
 
-                FacesVisibleArr[x, y, z] = facesVisible;
+                facesVisibleArr[x, y, z] = facesVisible;
             }
         }
 
@@ -609,26 +608,28 @@ namespace World.Systems.ChunkHandling
 
         public static void ChunkVoxelCoordinates(Vector3 worldPos, out Vector3Int chunkPos, out Vector3Int voxelPos)
         {
-            worldPos /= VoxConsts._chunkSize;
-            chunkPos =  ((worldPos - Vector3.one * (VoxConsts._chunkSize / 2)) / VoxConsts._chunkSize).ToVecInt();
-            voxelPos =  (worldPos - chunkPos * VoxConsts._chunkSize).ToVecInt();
+            worldPos /= VoxConsts.ChunkSize;
+            // ReSharper disable once PossibleLossOfFraction
+            chunkPos =  ((worldPos - Vector3.one * (VoxConsts.ChunkSize / 2)) / VoxConsts.ChunkSize).ToVecInt();
+            voxelPos =  (worldPos - chunkPos * VoxConsts.ChunkSize).ToVecInt();
         }
 
         public static void ChunkVoxelCoordinates(Vector3Int     voxelWorldPos, out Vector3Int chunkPos,
                                                  out Vector3Int voxelPos)
         {
-            chunkPos = ((voxelWorldPos - Vector3.one * (VoxConsts._chunkSize / 2)) / VoxConsts._chunkSize).ToVecInt();
-            voxelPos = voxelWorldPos - chunkPos * VoxConsts._chunkSize;
+            // ReSharper disable once PossibleLossOfFraction
+            chunkPos = ((voxelWorldPos - Vector3.one * (VoxConsts.ChunkSize / 2)) / VoxConsts.ChunkSize).ToVecInt();
+            voxelPos = voxelWorldPos - chunkPos * VoxConsts.ChunkSize;
         }
 
         public static Vector3Int WorldPosToVoxelPos(Vector3 pos)
         {
-            return (pos / VoxConsts._chunkSize).ToVecInt();
+            return (pos / VoxConsts.ChunkSize).ToVecInt();
         }
 
         public static Vector3 VoxelPosToWorldPos(Vector3Int pos)
         {
-            return (Vector3) pos * VoxConsts._chunkSize;
+            return (Vector3) pos * VoxConsts.ChunkSize;
         }
 
         #endregion Helper methods

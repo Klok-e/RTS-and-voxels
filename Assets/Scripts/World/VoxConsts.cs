@@ -7,31 +7,31 @@ namespace World
         /// <summary>
         ///     Only even amount or else SetVoxel won't work at all
         /// </summary>
-        public const int _chunkSize = 16;
+        public const int ChunkSize = 16;
 
         /// <summary>
         ///     Size in chunks
         /// </summary>
-        public const int _regionSize = 2;
+        public const int RegionSize = 2;
 
         /// <summary>
         ///     Size of a voxel
         /// </summary>
-        public const float _blockSize = 0.5f;
+        public const float BlockSize = 0.5f;
 
         public static int3 ChunkIn(float3 pos)
         {
             pos = OffsetWorld(pos);
 
             var worldPos       = FromWorldToVoxelWorldCoords(pos);
-            var loaderChunkInf = worldPos / _chunkSize;
+            var loaderChunkInf = worldPos / ChunkSize;
             var loaderChunkIn  = math.int3(math.floor(loaderChunkInf));
             return loaderChunkIn;
         }
 
         public static int3 RegionIn(float3 pos)
         {
-            return math.int3(math.floor(math.float3(ChunkIn(pos)) / _regionSize));
+            return math.int3(math.floor(math.float3(ChunkIn(pos)) / RegionSize));
         }
 
         public static int3 VoxIndexInChunk(float3 pos, int3 chunkPos)
@@ -40,12 +40,12 @@ namespace World
 
             pos = FromWorldToVoxelWorldCoords(pos);
 
-            return math.int3(math.floor(pos - math.float3(chunkPos * _chunkSize)));
+            return math.int3(math.floor(pos - math.float3(chunkPos * ChunkSize)));
         }
 
         public static float3 FromWorldToVoxelWorldCoords(float3 pos)
         {
-            return pos / _blockSize;
+            return pos / BlockSize;
         }
 
         public static int3 VoxIndexInChunk(float3 pos)
@@ -55,9 +55,9 @@ namespace World
 
         private static float3 OffsetWorld(float3 pos)
         {
-            pos.x += _blockSize / 2f;
-            pos.y += _blockSize / 2f;
-            pos.z += _blockSize / 2f;
+            pos.x += BlockSize / 2f;
+            pos.y += BlockSize / 2f;
+            pos.z += BlockSize / 2f;
             return pos;
         }
 

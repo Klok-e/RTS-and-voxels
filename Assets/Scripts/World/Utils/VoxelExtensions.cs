@@ -25,19 +25,19 @@ namespace World.Utils
 
         public static Voxel AtGet(this DynamicBuffer<Voxel> buffer, int x, int y, int z)
         {
-            const int sz = VoxConsts._chunkSize;
+            const int sz = VoxConsts.ChunkSize;
             return buffer[z * sz * sz + y * sz + x];
         }
 
         public static void AtSet(this DynamicBuffer<Voxel> buffer, int x, int y, int z, Voxel value)
         {
-            const int sz = VoxConsts._chunkSize;
+            const int sz = VoxConsts.ChunkSize;
             buffer[z * sz * sz + y * sz + x] = value;
         }
 
         public static void AtAt(this DynamicBuffer<Voxel> buffer, int i, out int x, out int y, out int z)
         {
-            const int sz = VoxConsts._chunkSize;
+            const int sz = VoxConsts.ChunkSize;
             x = i      % sz;
             y = i / sz % sz;
             z = i      / (sz * sz);
@@ -45,20 +45,20 @@ namespace World.Utils
 
         public static VoxelLightingLevel AtGet(this DynamicBuffer<VoxelLightingLevel> buffer, int x, int y, int z)
         {
-            const int sz = VoxConsts._chunkSize;
+            const int sz = VoxConsts.ChunkSize;
             return buffer[z * sz * sz + y * sz + x];
         }
 
         public static void AtSet(this DynamicBuffer<VoxelLightingLevel> buffer, int x, int y, int z,
                                  VoxelLightingLevel                     value)
         {
-            const int sz = VoxConsts._chunkSize;
+            const int sz = VoxConsts.ChunkSize;
             buffer[z * sz * sz + y * sz + x] = value;
         }
 
         public static void AtAt(this DynamicBuffer<VoxelLightingLevel> buffer, int i, out int x, out int y, out int z)
         {
-            const int sz = VoxConsts._chunkSize;
+            const int sz = VoxConsts.ChunkSize;
             x = i      % sz;
             y = i / sz % sz;
             z = i      / (sz * sz);

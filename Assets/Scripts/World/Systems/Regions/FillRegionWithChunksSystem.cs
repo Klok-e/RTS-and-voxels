@@ -21,12 +21,12 @@ namespace World.Systems.Regions
         {
             var j1 = new FillJob
             {
-                CommandBuffer = _barrier.CreateCommandBuffer(),
-                Components =
+                commandBuffer = _barrier.CreateCommandBuffer(),
+                components =
                     _entityQuery.ToComponentDataArray<ChunkNeedAddToRegion>(Allocator.TempJob,
                         out var collectComponents),
-                Entities      = _entityQuery.ToEntityArray(Allocator.TempJob, out var collectEntities),
-                ChunksBuffers = GetBufferFromEntity<RegionChunks>()
+                entities      = _entityQuery.ToEntityArray(Allocator.TempJob, out var collectEntities),
+                chunksBuffers = GetBufferFromEntity<RegionChunks>()
             };
             var h1 = j1.Schedule(JobHandle.CombineDependencies(collectComponents, collectEntities, inputDeps));
 
@@ -37,25 +37,25 @@ namespace World.Systems.Regions
 
         private struct FillJob : IJob
         {
-            public EntityCommandBuffer CommandBuffer;
+            public EntityCommandBuffer commandBuffer;
 
-            public BufferFromEntity<RegionChunks> ChunksBuffers;
-
-            [DeallocateOnJobCompletion]
-            public NativeArray<Entity> Entities;
+            public BufferFromEntity<RegionChunks> chunksBuffers;
 
             [DeallocateOnJobCompletion]
-            public NativeArray<ChunkNeedAddToRegion> Components;
+            public NativeArray<Entity> entities;
+
+            [DeallocateOnJobCompletion]
+            public NativeArray<ChunkNeedAddToRegion> components;
 
             public void Execute()
             {
-                for (int i = 0; i < Entities.Length; i++)
+                for (int i = 0; i < entities.Length; i++)
                 {
-                    var parent = Components[i].ParentRegion;
-                    ChunksBuffers[parent].Add(new RegionChunks {Chunk = Entities[i]});
+                    var parent = components[i].parentRegion;
+                    chunksBuffers[parent].Add(new RegionChunks {chunk = entities[i]});
 
-                    CommandBuffer.RemoveComponent<ChunkNeedAddToRegion>(Entities[i]);
-                    CommandBuffer.AddComponent(Entities[i], new ChunkNeedTerrainGeneration());
+                    commandBuffer.RemoveComponent<ChunkNeedAddToRegion>(entities[i]);
+                    commandBuffer.AddComponent(entities[i], new ChunkNeedTerrainGeneration());
                 }
             }
         }

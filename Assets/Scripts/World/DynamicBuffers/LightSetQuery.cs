@@ -19,9 +19,9 @@ namespace World.DynamicBuffers
     [InternalBufferCapacity(0)]
     public struct LightSetQueryData : IBufferElementData
     {
-        public int3            Pos;
-        public byte            NewLight;
-        public SetLightType    LightType;
-        public PropagationType Propagation;
+        public int3            pos;
+        public byte            newLight;
+        public SetLightType    lightType;
+        public PropagationType propagation;
     }
 }

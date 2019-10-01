@@ -8,7 +8,7 @@ namespace World.DynamicBuffers
     [InternalBufferCapacity(0)]
     public struct Voxel : IBufferElementData
     {
-        public VoxelType Type;
+        public VoxelType type;
     }
 
     public enum VoxelType : byte

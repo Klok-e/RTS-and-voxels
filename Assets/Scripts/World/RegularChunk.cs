@@ -20,7 +20,7 @@ namespace World
 
         public void Initialize(int3 pos, Material material)
         {
-            var newpos = math.float3(pos) * VoxConsts._chunkSize * VoxConsts._blockSize;
+            var newpos = math.float3(pos) * VoxConsts.ChunkSize * VoxConsts.BlockSize;
 
             // shift newpos so that it's actually at a 0,0,0 coords of a chunk assuming it's originally at center
             //newpos -= math.float3(VoxConsts._chunkSize * VoxConsts._blockSize * 0.5f);

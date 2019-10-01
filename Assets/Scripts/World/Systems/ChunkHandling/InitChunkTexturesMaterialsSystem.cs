@@ -1,4 +1,5 @@
 ﻿using System;
+using JetBrains.Annotations;
 using Unity.Entities;
 using UnityEngine;
 using World.Components;
@@ -8,8 +9,10 @@ namespace World.Systems.ChunkHandling
     [UpdateInGroup(typeof(InitializationSystemGroup))]
     public class InitChunkTexturesMaterialsSystem : ComponentSystem
     {
-        public Material   _chunkMaterial { get; private set; }
-        public Vector2Int _mapSize       { get; private set; }
+        private static readonly int VoxelTextureArray = Shader.PropertyToID("_VoxelTextureArray");
+
+        public Material   ChunkMaterial { get; private set; }
+        public Vector2Int MapSize       { get; private set; }
 
         protected override void OnUpdate()
         {
@@ -22,7 +25,7 @@ namespace World.Systems.ChunkHandling
 
                 PostUpdateCommands.DestroyEntity(ent);
 
-                _chunkMaterial = parameters._chunkMaterial;
+                ChunkMaterial = parameters._chunkMaterial;
 
                 SetTextureArray(parameters._textures);
             });
@@ -41,7 +44,7 @@ namespace World.Systems.ChunkHandling
 
             textureArray.filterMode = FilterMode.Point;
 
-            _chunkMaterial.SetTexture("_VoxelTextureArray", textureArray);
+            ChunkMaterial.SetTexture(VoxelTextureArray, textureArray);
         }
     }
 }

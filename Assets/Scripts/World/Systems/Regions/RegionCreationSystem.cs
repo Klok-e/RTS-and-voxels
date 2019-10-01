@@ -9,8 +9,9 @@ namespace World.Systems.Regions
 {
     public class RegionCreationSystem : ComponentSystem
     {
-        private int3                        _loaderRegionInPrev;
-        public  NativeHashMap<int3, Entity> Regions { get; private set; }
+        private int3 _loaderRegionInPrev;
+
+        public NativeHashMap<int3, Entity> Regions { get; private set; }
 
         protected override void OnCreate()
         {

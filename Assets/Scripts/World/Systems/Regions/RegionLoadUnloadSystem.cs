@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
+using UnityEngine;
 using World.Components;
 using World.DynamicBuffers;
 using World.Systems.ChunkHandling;
@@ -13,12 +14,14 @@ namespace World.Systems.Regions
     public class RegionLoadUnloadSystem : ComponentSystem
     {
         private InitChunkTexturesMaterialsSystem _materials;
-        public  NativeHashMap<int3, Entity>      PosToChunkEntity { get; private set; }
-        public  Dictionary<int3, RegularChunk>   PosToChunk       { get; private set; }
+
+        public NativeHashMap<int3, Entity> PosToChunkEntity { get; private set; }
+
+        public Dictionary<int3, RegularChunk> PosToChunk { get; private set; }
 
         protected override void OnCreate()
         {
-            PosToChunkEntity = new NativeHashMap<int3, Entity>(10000, Allocator.Persistent);
+            PosToChunkEntity = new NativeHashMap<int3, Entity>(1000, Allocator.Persistent);
             PosToChunk       = new Dictionary<int3, RegularChunk>();
 
             _materials = World.GetOrCreateSystem<InitChunkTexturesMaterialsSystem>();
@@ -65,7 +68,7 @@ namespace World.Systems.Regions
 
                     // delete chunks
                     for (int i = 0; i < chunks.Length; i++)
-                        DestroyChunk(chunkPositions[chunks[i].Chunk].Pos, chunks[i].Chunk);
+                        DestroyChunk(chunkPositions[chunks[i].chunk].Pos, chunks[i].chunk);
 
                     // delete region
                     PostUpdateCommands.DestroyEntity(regionEntity);
@@ -82,10 +85,10 @@ namespace World.Systems.Regions
 
         private void PopulateRegion(int3 regionPos, Entity region)
         {
-            for (int z = 0; z < VoxConsts._regionSize; z++)
-            for (int y = 0; y < VoxConsts._regionSize; y++)
-            for (int x = 0; x < VoxConsts._regionSize; x++)
-                CreateChunk(regionPos * VoxConsts._regionSize + math.int3(x, y, z), region);
+            for (int z = 0; z < VoxConsts.RegionSize; z++)
+            for (int y = 0; y < VoxConsts.RegionSize; y++)
+            for (int x = 0; x < VoxConsts.RegionSize; x++)
+                CreateChunk(regionPos * VoxConsts.RegionSize + math.int3(x, y, z), region);
         }
 
         private void CreateChunk(int3 chunkPos, Entity region)
@@ -93,24 +96,28 @@ namespace World.Systems.Regions
             var ent = PostUpdateCommands.CreateEntity();
 
             // archetypes are for weak
-            PostUpdateCommands.AddComponent(ent, new ChunkNeedAddToRegion {ParentRegion = region});
+            PostUpdateCommands.AddComponent(ent, new ChunkNeedAddToRegion {parentRegion = region});
             PostUpdateCommands.AddComponent(ent, new ChunkPosComponent
             {
                 Pos = chunkPos
             });
 
             var buf1 = PostUpdateCommands.AddBuffer<Voxel>(ent);
-            buf1.ResizeUninitialized(VoxConsts._chunkSize * VoxConsts._chunkSize * VoxConsts._chunkSize);
+            buf1.ResizeUninitialized(VoxConsts.ChunkSize * VoxConsts.ChunkSize * VoxConsts.ChunkSize);
 
             var buf2 = PostUpdateCommands.AddBuffer<VoxelLightingLevel>(ent);
-            buf2.ResizeUninitialized(VoxConsts._chunkSize * VoxConsts._chunkSize * VoxConsts._chunkSize);
+            buf2.ResizeUninitialized(VoxConsts.ChunkSize * VoxConsts.ChunkSize * VoxConsts.ChunkSize);
 
             PostUpdateCommands.AddBuffer<VoxelSetQueryData>(ent);
             PostUpdateCommands.AddBuffer<LightSetQueryData>(ent);
+            
+            Debug.Log(ent);
+            
+           //PostUpdateCommands.Playback(EntityManager);
 
             // create chunk object
             var chunk = RegularChunk.CreateNew();
-            chunk.Initialize(chunkPos, _materials._chunkMaterial);
+            chunk.Initialize(chunkPos, _materials.ChunkMaterial);
 
             //Debug.Log($"Chunk {chunkPos}");
             PosToChunk.Add(chunkPos, chunk);

@@ -148,19 +148,19 @@ namespace Help
         public static BlockDirectionFlag WrapCoordsInChunk(ref int x, ref int y, ref int z)
         {
             var dirWrapped = BlockDirectionFlag.None;
-            if (x >= VoxConsts._chunkSize)
+            if (x >= VoxConsts.ChunkSize)
             {
                 x          =  0;
                 dirWrapped |= BlockDirectionFlag.Right;
             }
 
-            if (y >= VoxConsts._chunkSize)
+            if (y >= VoxConsts.ChunkSize)
             {
                 y          =  0;
                 dirWrapped |= BlockDirectionFlag.Up;
             }
 
-            if (z >= VoxConsts._chunkSize)
+            if (z >= VoxConsts.ChunkSize)
             {
                 z          =  0;
                 dirWrapped |= BlockDirectionFlag.Forward;
@@ -168,19 +168,19 @@ namespace Help
 
             if (x < 0)
             {
-                x          =  VoxConsts._chunkSize - 1;
+                x          =  VoxConsts.ChunkSize - 1;
                 dirWrapped |= BlockDirectionFlag.Left;
             }
 
             if (y < 0)
             {
-                y          =  VoxConsts._chunkSize - 1;
+                y          =  VoxConsts.ChunkSize - 1;
                 dirWrapped |= BlockDirectionFlag.Down;
             }
 
             if (z < 0)
             {
-                z          =  VoxConsts._chunkSize - 1;
+                z          =  VoxConsts.ChunkSize - 1;
                 dirWrapped |= BlockDirectionFlag.Backward;
             }
 
@@ -189,25 +189,25 @@ namespace Help
 
         public static bool AreCoordsOutOfBordersOfChunk(int x, int y, int z)
         {
-            return x >= VoxConsts._chunkSize || x < 0
+            return x >= VoxConsts.ChunkSize || x < 0
                                              ||
-                                             y >= VoxConsts._chunkSize || y < 0
+                                             y >= VoxConsts.ChunkSize || y < 0
                                              ||
-                                             z >= VoxConsts._chunkSize || z < 0;
+                                             z >= VoxConsts.ChunkSize || z < 0;
         }
 
         public static BlockDirectionFlag AreCoordsAtBordersOfChunk(int3 coords)
         {
             var res = BlockDirectionFlag.None;
-            if (coords.x == VoxConsts._chunkSize - 1)
+            if (coords.x == VoxConsts.ChunkSize - 1)
                 res |= BlockDirectionFlag.Right;
             if (coords.x == 0)
                 res |= BlockDirectionFlag.Left;
-            if (coords.y == VoxConsts._chunkSize - 1)
+            if (coords.y == VoxConsts.ChunkSize - 1)
                 res |= BlockDirectionFlag.Up;
             if (coords.y == 0)
                 res |= BlockDirectionFlag.Down;
-            if (coords.z == VoxConsts._chunkSize - 1)
+            if (coords.z == VoxConsts.ChunkSize - 1)
                 res |= BlockDirectionFlag.Forward;
             if (coords.z == 0)
                 res |= BlockDirectionFlag.Backward;

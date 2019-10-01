@@ -26,7 +26,7 @@ namespace World.Systems.ChunkHandling
 
             var t2 = new ChangeTagsJob
             {
-                CommandBuffer = _barrier.CreateCommandBuffer().ToConcurrent()
+                commandBuffer = _barrier.CreateCommandBuffer().ToConcurrent()
             };
             var h2 = t2.Schedule(this, h1);
 
@@ -41,13 +41,14 @@ namespace World.Systems.ChunkHandling
 
         [BurstCompile]
         [RequireComponentTag(typeof(ChunkNeedTerrainGeneration))]
-        public struct GenerateChunkTerrainJob : IJobForEachWithEntity_EBBC<Voxel, VoxelLightingLevel, ChunkPosComponent>
+        private struct
+            GenerateChunkTerrainJob : IJobForEachWithEntity_EBBC<Voxel, VoxelLightingLevel, ChunkPosComponent>
         {
             public void Execute(Entity                            entity, int index,
                                 DynamicBuffer<Voxel>              voxelsBuffer,
                                 DynamicBuffer<VoxelLightingLevel> lightBuffer, ref ChunkPosComponent c2)
             {
-                const int chunkSize = VoxConsts._chunkSize;
+                const int chunkSize = VoxConsts.ChunkSize;
 
                 var offset = c2.Pos;
 
@@ -67,13 +68,13 @@ namespace World.Systems.ChunkHandling
                                 voxelsBuffer.AtSet(x, y, z,
                                     new Voxel
                                     {
-                                        Type = VoxelType.Grass
+                                        type = VoxelType.Grass
                                     });
                             else
                                 voxelsBuffer.AtSet(x, y, z,
                                     new Voxel
                                     {
-                                        Type = VoxelType.Dirt
+                                        type = VoxelType.Dirt
                                     });
                             lightBuffer.AtSet(x, y, z, new VoxelLightingLevel(0, 0));
                         }
@@ -82,7 +83,7 @@ namespace World.Systems.ChunkHandling
                             voxelsBuffer.AtSet(x, y, z,
                                 new Voxel
                                 {
-                                    Type = VoxelType.Empty
+                                    type = VoxelType.Empty
                                 });
                             lightBuffer.AtSet(x, y, z, new VoxelLightingLevel(0, VoxelLightingLevel.MaxLight));
                         }
@@ -97,16 +98,18 @@ namespace World.Systems.ChunkHandling
         }
 
         [RequireComponentTag(typeof(ChunkNeedTerrainGeneration))]
-        public struct ChangeTagsJob : IJobForEachWithEntity_EBBC<Voxel, VoxelLightingLevel, ChunkPosComponent>
+        private struct ChangeTagsJob : IJobForEachWithEntity_EBBC<Voxel, VoxelLightingLevel, ChunkPosComponent>
         {
-            public EntityCommandBuffer.Concurrent CommandBuffer;
+            public EntityCommandBuffer.Concurrent commandBuffer;
 
-            public void Execute(Entity                            entity, int index, DynamicBuffer<Voxel> b0,
+            public void Execute(Entity                            entity,
+                                int                               index,
+                                DynamicBuffer<Voxel>              b0,
                                 DynamicBuffer<VoxelLightingLevel> b1,
                                 ref ChunkPosComponent             c2)
             {
-                CommandBuffer.AddComponent(index, entity, new ChunkDirtyComponent());
-                CommandBuffer.RemoveComponent<ChunkNeedTerrainGeneration>(index, entity);
+                commandBuffer.AddComponent(index, entity, new ChunkDirtyComponent());
+                commandBuffer.RemoveComponent<ChunkNeedTerrainGeneration>(index, entity);
             }
         }
     }

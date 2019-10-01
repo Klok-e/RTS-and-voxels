@@ -18,8 +18,8 @@ namespace World.Utils
             setVox.Add(new VoxelSetQueryData {NewVoxelType = voxType, Pos = index});
 
             setLight.Add(new LightSetQueryData
-                {LightType = SetLightType.RegularLight, NewLight = voxType.GetLight(), Pos = index});
-            setLight.Add(new LightSetQueryData {LightType = SetLightType.Sunlight, NewLight = 0, Pos = index});
+                {lightType = SetLightType.RegularLight, newLight = voxType.GetLight(), pos = index});
+            setLight.Add(new LightSetQueryData {lightType = SetLightType.Sunlight, newLight = 0, pos = index});
 
             manager.AddComponentData(entity, new ChunkNeedApplyVoxelChanges());
         }

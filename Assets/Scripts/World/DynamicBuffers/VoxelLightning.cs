@@ -9,8 +9,8 @@ namespace World.DynamicBuffers
     [InternalBufferCapacity(0)]
     public struct VoxelLightingLevel : IBufferElementData
     {
-        private const int _regularLightMask = 0b0000_1111;
-        private const int _sunLightMask     = 0b1111_0000;
+        private const int regularLightMask = 0b0000_1111;
+        private const int sunLightMask     = 0b1111_0000;
 
         /// <summary>
         ///     [sulight]xxxx || [regular light]xxxx
@@ -21,21 +21,21 @@ namespace World.DynamicBuffers
 
         public int RegularLight
         {
-            get => (byte) (Level & _regularLightMask);
+            get => (byte) (Level & regularLightMask);
             set
             {
-                Level &= _sunLightMask;
-                Level |= (byte) (_regularLightMask & value);
+                Level &= sunLightMask;
+                Level |= (byte) (regularLightMask & value);
             }
         }
 
         public int Sunlight
         {
-            get => (byte) ((Level & _sunLightMask) >> 4);
+            get => (byte) ((Level & sunLightMask) >> 4);
             set
             {
-                Level &= _regularLightMask;
-                Level |= (byte) (_sunLightMask & (value << 4));
+                Level &= regularLightMask;
+                Level |= (byte) (sunLightMask & (value << 4));
             }
         }
 

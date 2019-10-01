@@ -18,12 +18,12 @@ namespace World.Components
 
     public struct ChunkNeedAddToRegion : IComponentData
     {
-        public Entity ParentRegion;
+        public Entity parentRegion;
     }
 
-    [InternalBufferCapacity(VoxConsts._regionSize * VoxConsts._regionSize * VoxConsts._regionSize)]
+    [InternalBufferCapacity(VoxConsts.RegionSize * VoxConsts.RegionSize * VoxConsts.RegionSize)]
     public struct RegionChunks : IBufferElementData
     {
-        public Entity Chunk;
+        public Entity chunk;
     }
 }

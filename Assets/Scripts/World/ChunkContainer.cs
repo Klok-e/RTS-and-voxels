@@ -1,9 +1,11 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 namespace World
 {
+    [Obsolete]
     public class ChunkContainer : IEnumerable<RegularChunk>
     {
         private readonly List<RegularChunk[,]> _chunks;

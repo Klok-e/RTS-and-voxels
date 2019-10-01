@@ -24,9 +24,9 @@ namespace World.Systems.ChunkHandling
         {
             var j1 = new RandomlySetVoxelsJob
             {
-                Rand            = new Random(math.asuint(Time.time)),
-                CommandBuffer   = _barrier.CreateCommandBuffer().ToConcurrent(),
-                NeedApplChanges = GetComponentDataFromEntity<ChunkNeedApplyVoxelChanges>(true)
+                rand            = new Random(math.asuint(Time.time)),
+                commandBuffer   = _barrier.CreateCommandBuffer().ToConcurrent(),
+                needApplChanges = GetComponentDataFromEntity<ChunkNeedApplyVoxelChanges>(true)
             };
             var h1 = j1.Schedule(this, inputDeps);
 
@@ -38,24 +38,24 @@ namespace World.Systems.ChunkHandling
         [BurstCompile]
         private struct RandomlySetVoxelsJob : IJobForEachWithEntity_EB<VoxelSetQueryData>
         {
-            public EntityCommandBuffer.Concurrent CommandBuffer;
+            public EntityCommandBuffer.Concurrent commandBuffer;
 
-            public Random Rand;
+            public Random rand;
 
             [ReadOnly]
-            public ComponentDataFromEntity<ChunkNeedApplyVoxelChanges> NeedApplChanges;
+            public ComponentDataFromEntity<ChunkNeedApplyVoxelChanges> needApplChanges;
 
             public void Execute(Entity entity, int index, DynamicBuffer<VoxelSetQueryData> buf)
             {
-                if (Rand.NextFloat(0f, 1f) > 0.9f)
+                if (rand.NextFloat(0f, 1f) > 0.9f)
                 {
                     buf.Add(new VoxelSetQueryData
                     {
-                        NewVoxelType = Rand.NextBool() ? VoxelType.Empty : VoxelType.Dirt,
-                        Pos          = Rand.NextInt3(new int3(0), new int3(VoxConsts._chunkSize))
+                        NewVoxelType = rand.NextBool() ? VoxelType.Empty : VoxelType.Dirt,
+                        Pos          = rand.NextInt3(new int3(0), new int3(VoxConsts.ChunkSize))
                     });
-                    if (!NeedApplChanges.Exists(entity))
-                        CommandBuffer.AddComponent(index, entity, new ChunkNeedApplyVoxelChanges());
+                    if (!needApplChanges.Exists(entity))
+                        commandBuffer.AddComponent(index, entity, new ChunkNeedApplyVoxelChanges());
                 }
             }
         }

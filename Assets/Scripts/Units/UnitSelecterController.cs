@@ -43,7 +43,7 @@ namespace Units
                 var ray = _camera.ScreenPointToRay(Input.mousePosition);
                 if (Physics.Raycast(ray, out var hit))
                     foreach (var unit in selectedUnits)
-                        unit.Move(hit.point + hit.normal * VoxConsts._blockSize / 2f);
+                        unit.Move(hit.point + hit.normal * VoxConsts.BlockSize / 2f);
             }
         }
     }

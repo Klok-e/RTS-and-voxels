@@ -31,43 +31,43 @@ namespace World.Systems.Interaction
 
                 Check(curr);
 
-                var ent      = _regionLoadUnloadSystem.PosToChunkEntity[curr.Chunk];
+                var ent      = _regionLoadUnloadSystem.PosToChunkEntity[curr.chunk];
                 var voxSet   = EntityManager.GetBuffer<VoxelSetQueryData>(ent);
                 var lightSet = EntityManager.GetBuffer<LightSetQueryData>(ent);
 
                 voxSet.Add(new VoxelSetQueryData
                 {
-                    NewVoxelType = curr.VoxelType,
-                    Pos          = curr.Coord
+                    NewVoxelType = curr.voxelType,
+                    Pos          = curr.coord
                 });
                 lightSet.Add(new LightSetQueryData
                 {
-                    LightType = SetLightType.RegularLight,
-                    NewLight  = curr.VoxelType.GetLight(),
-                    Pos       = curr.Coord
+                    lightType = SetLightType.RegularLight,
+                    newLight  = curr.voxelType.GetLight(),
+                    pos       = curr.coord
                 });
                 lightSet.Add(new LightSetQueryData
                 {
-                    LightType = SetLightType.Sunlight,
-                    NewLight  = 0,
-                    Pos       = curr.Coord
+                    lightType = SetLightType.Sunlight,
+                    newLight  = 0,
+                    pos       = curr.coord
                 });
 
                 PostUpdateCommands.AddComponent(ent, new ChunkNeedApplyVoxelChanges());
             }
         }
 
-        private void Check(SetPos pos)
+        private static void Check(SetPos pos)
         {
-            var p = pos.Coord;
+            var p = pos.coord;
             Debug.Assert(!DirectionsHelper.AreCoordsOutOfBordersOfChunk(p.x, p.y, p.z));
         }
 
         public struct SetPos
         {
-            public int3      Chunk;
-            public int3      Coord;
-            public VoxelType VoxelType;
+            public int3      chunk;
+            public int3      coord;
+            public VoxelType voxelType;
         }
     }
 }

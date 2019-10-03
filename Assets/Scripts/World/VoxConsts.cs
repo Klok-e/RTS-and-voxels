@@ -12,7 +12,7 @@ namespace World
         /// <summary>
         ///     Size in chunks
         /// </summary>
-        public const int RegionSize = 2;
+        public const int RegionSize = 4;
 
         /// <summary>
         ///     Size of a voxel

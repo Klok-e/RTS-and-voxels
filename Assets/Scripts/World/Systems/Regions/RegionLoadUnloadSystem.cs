@@ -34,15 +34,6 @@ namespace World.Systems.Regions
 
         protected override void OnUpdate()
         {
-            // TODO: ineffieient
-            // refresh
-            PosToChunkEntity.Clear();
-            Entities.ForEach((Entity entity, ref ChunkPosComponent pos) =>
-            {
-                if (!PosToChunkEntity.TryAdd(pos.Pos, entity))
-                    throw new Exception("Could not add to PosToEntity hashmap");
-            });
-
             // load
             var needLoad = ComponentType.ReadOnly<RegionNeedLoadComponentTag>();
             Entities.WithAll(needLoad).ForEach((Entity ent, ref RegionPosComponent regionPos) =>
@@ -80,6 +71,7 @@ namespace World.Systems.Regions
 
                 Object.Destroy(PosToChunk[pos.Pos].gameObject);
                 PosToChunk.Remove(pos.Pos);
+                PosToChunkEntity.Remove(pos.Pos);
             });
         }
 
@@ -110,10 +102,6 @@ namespace World.Systems.Regions
 
             EntityManager.AddBuffer<VoxelSetQueryData>(ent);
             EntityManager.AddBuffer<LightSetQueryData>(ent);
-            
-            Debug.Log(ent);
-            
-           //PostUpdateCommands.Playback(EntityManager);
 
             // create chunk object
             var chunk = RegularChunk.CreateNew();
@@ -121,6 +109,8 @@ namespace World.Systems.Regions
 
             //Debug.Log($"Chunk {chunkPos}");
             PosToChunk.Add(chunkPos, chunk);
+            if (!PosToChunkEntity.TryAdd(chunkPos, ent))
+                Debug.LogError("Could not add to PosToEntity hashmap");
         }
 
         private void DestroyChunk(int3 pos, Entity entity)

@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ContentModelStore">
     <e p="C:\Users\Dima\.Rider2019.2\system\extResources" t="IncludeRecursive" />
@@ -72,8 +72,6 @@
             <e p="Systems" t="Include">
               <e p="ChunkHandling" t="Include">
                 <e p="ApplyVoxelChangesSystem.cs" t="Include" />
-                <e p="ChunkCreationSystem.cs" t="Include" />
-                <e p="ChunkLoadManagerSystem.cs" t="Include" />
                 <e p="ChunkMeshApplySystem.cs" t="Include" />
                 <e p="ChunkMeshSystem.cs" t="Include" />
                 <e p="InitChunkTexturesMaterialsSystem.cs" t="Include" />

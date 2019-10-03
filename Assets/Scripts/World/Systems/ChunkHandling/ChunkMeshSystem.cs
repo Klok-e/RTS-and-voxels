@@ -35,6 +35,10 @@ namespace World.Systems.ChunkHandling
             _chunkCreationSystem = World.GetOrCreateSystem<RegionLoadUnloadSystem>();
         }
 
+        protected override void OnDestroy()
+        {
+        }
+
         protected override JobHandle OnUpdate(JobHandle inputDeps)
         {
             var commandBuffer = _barrier.CreateCommandBuffer();
@@ -43,16 +47,26 @@ namespace World.Systems.ChunkHandling
             JobHandle handle;
             using (var entities = _chunksDirty.ToEntityArray(Allocator.TempJob))
             using (var neig = _chunksDirty.ToComponentDataArray<ChunkPosComponent>(Allocator.TempJob))
-            using (var handles = new NativeList<JobHandle>(entities.Length, Allocator.Temp))
+            using (var handles = new NativeList<JobHandle>(Allocator.Temp))
             {
-                for (int i = 0; i < entities.Length; i++)
+                var entsToChangeTags = new NativeList<Entity>(Allocator.Temp);
+                for (int i = 0; i < Mathf.Min(entities.Length, 20); i++)
                 {
                     handles.Add(CleanChunk(dict[neig[i].Pos], entities[i], neig[i], inputDeps));
-                    commandBuffer.RemoveComponent<ChunkDirtyComponent>(entities[i]);
-                    commandBuffer.AddComponent(entities[i], new ChunkNeedMeshApply());
+                    entsToChangeTags.Add(entities[i]);
                 }
 
-                handle = JobHandle.CombineDependencies(handles.AsArray());
+                var entsToChangeTagsArr = new NativeArray<Entity>(entsToChangeTags.Length, Allocator.TempJob);
+                entsToChangeTagsArr.CopyFrom(entsToChangeTags.AsArray());
+                entsToChangeTags.Dispose();
+
+                handle = JobHandle.CombineDependencies(
+                    JobHandle.CombineDependencies(handles.AsArray()),
+                    new ChangeTagsJob
+                    {
+                        entities      = entsToChangeTagsArr,
+                        commandBuffer = commandBuffer
+                    }.Schedule());
             }
 
             _barrier.AddJobHandleForProducer(handle);
@@ -62,9 +76,11 @@ namespace World.Systems.ChunkHandling
 
         #region Chunk processing
 
-        private JobHandle CleanChunk(RegularChunk chunk, Entity entity, ChunkPosComponent pos, JobHandle inputDeps)
+        private JobHandle CleanChunk(RegularChunk      chunk,
+                                     Entity            entity,
+                                     ChunkPosComponent pos,
+                                     JobHandle         inpDeps)
         {
-            //Debug.Log(chunk.name);
             var j1 = new RebuildChunkBlockVisibleFacesJob
             {
                 facesVisibleArr = new NativeArray3D<Direction>(
@@ -79,8 +95,10 @@ namespace World.Systems.ChunkHandling
             {
                 chunk       = entity,
                 chunksLight = GetBufferFromEntity<VoxelLightingLevel>(true),
-                lightingData = new NativeArray3D<VoxelLightingLevel>(VoxConsts.ChunkSize + 2, VoxConsts.ChunkSize + 2,
-                    VoxConsts.ChunkSize                                                  + 2, Allocator.TempJob),
+                lightingData = new NativeArray3D<VoxelLightingLevel>(
+                    VoxConsts.ChunkSize + 2,
+                    VoxConsts.ChunkSize + 2,
+                    VoxConsts.ChunkSize + 2, Allocator.TempJob),
                 chunkPos    = pos,
                 posToEntity = _chunkCreationSystem.PosToChunkEntity
             };
@@ -94,8 +112,8 @@ namespace World.Systems.ChunkHandling
             };
 
             return j3.Schedule(JobHandle.CombineDependencies(
-                j2.Schedule(inputDeps),
-                j1.Schedule(VoxConsts.ChunkSize * VoxConsts.ChunkSize * VoxConsts.ChunkSize, 1024, inputDeps)));
+                j2.Schedule(inpDeps),
+                j1.Schedule(VoxConsts.ChunkSize * VoxConsts.ChunkSize * VoxConsts.ChunkSize, 1024, inpDeps)));
         }
 
         #endregion Chunk processing
@@ -603,6 +621,23 @@ namespace World.Systems.ChunkHandling
                 facesVisibleArr[x, y, z] = facesVisible;
             }
         }
+        
+        private struct ChangeTagsJob : IJob
+        {
+            public EntityCommandBuffer commandBuffer;
+
+            [DeallocateOnJobCompletion]
+            public NativeArray<Entity> entities;
+
+            public void Execute()
+            {
+                for (int i = 0; i < entities.Length; i++)
+                {
+                    commandBuffer.RemoveComponent<ChunkDirtyComponent>(entities[i]);
+                    commandBuffer.AddComponent(entities[i], new ChunkNeedMeshApply());
+                }
+            }
+        }
 
         #region Helper methods
 
@@ -610,8 +645,8 @@ namespace World.Systems.ChunkHandling
         {
             worldPos /= VoxConsts.ChunkSize;
             // ReSharper disable once PossibleLossOfFraction
-            chunkPos =  ((worldPos - Vector3.one * (VoxConsts.ChunkSize / 2)) / VoxConsts.ChunkSize).ToVecInt();
-            voxelPos =  (worldPos - chunkPos * VoxConsts.ChunkSize).ToVecInt();
+            chunkPos = ((worldPos - Vector3.one * (VoxConsts.ChunkSize / 2)) / VoxConsts.ChunkSize).ToVecInt();
+            voxelPos = (worldPos - chunkPos * VoxConsts.ChunkSize).ToVecInt();
         }
 
         public static void ChunkVoxelCoordinates(Vector3Int     voxelWorldPos, out Vector3Int chunkPos,

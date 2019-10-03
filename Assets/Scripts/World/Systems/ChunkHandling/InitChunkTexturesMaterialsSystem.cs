@@ -20,7 +20,7 @@ namespace World.Systems.ChunkHandling
             Entities.ForEach((Entity ent, MapParameters parameters) =>
             {
                 if (once)
-                    throw new Exception("Only one MapParameters instance allowed at a time.");
+                    Debug.LogError("Only one MapParameters instance allowed at a time.");
                 once = true;
 
                 PostUpdateCommands.DestroyEntity(ent);

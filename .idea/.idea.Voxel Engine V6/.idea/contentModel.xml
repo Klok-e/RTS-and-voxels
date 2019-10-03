@@ -58,6 +58,7 @@
               <e p="MapLoaderProxy.cs" t="Include" />
               <e p="MapParametersProxy.cs" t="Include" />
               <e p="RegionComponent.cs" t="Include" />
+              <e p="SingletonComponents.cs" t="Include" />
             </e>
             <e p="DynamicBuffers" t="Include">
               <e p="LightSetQuery.cs" t="Include" />

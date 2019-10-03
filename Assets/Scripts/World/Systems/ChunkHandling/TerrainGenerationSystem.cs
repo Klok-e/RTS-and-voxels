@@ -14,7 +14,7 @@ namespace World.Systems.ChunkHandling
     {
         private EntityCommandBufferSystem _barrier;
 
-        protected override void OnCreateManager()
+        protected override void OnCreate()
         {
             _barrier = World.GetOrCreateSystem<EndSimulationEntityCommandBufferSystem>();
         }

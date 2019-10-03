@@ -15,7 +15,7 @@ namespace World.Systems.ChunkHandling
 
         //private InitChunkTexturesMaterialsSystem _materials;
 
-        protected override void OnCreateManager()
+        protected override void OnCreate()
         {
             //PosToEntity = new NativeHashMap<int3, Entity>(10000, Allocator.Persistent);
             //PosToChunk = new Dictionary<int3, RegularChunk>();
@@ -23,7 +23,7 @@ namespace World.Systems.ChunkHandling
             //_materials = World.GetOrCreateSystem<InitChunkTexturesMaterialsSystem>();
         }
 
-        protected override void OnDestroyManager()
+        protected override void OnDestroy()
         {
             //PosToEntity.Dispose();
         }

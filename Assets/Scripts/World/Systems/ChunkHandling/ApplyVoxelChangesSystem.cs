@@ -28,7 +28,7 @@ namespace World.Systems.ChunkHandling
         private NativeQueue<int3> _toPropRegLightCached;
         private NativeQueue<int3> _toPropSunLightCached;
 
-        protected override void OnCreateManager()
+        protected override void OnCreate()
         {
             _chunksNeedApplyVoxelChanges = GetEntityQuery(
                 ComponentType.ReadWrite<ChunkNeedApplyVoxelChanges>(),
@@ -48,7 +48,7 @@ namespace World.Systems.ChunkHandling
             _chunkCreationSystem = World.GetOrCreateSystem<RegionLoadUnloadSystem>();
         }
 
-        protected override void OnDestroyManager()
+        protected override void OnDestroy()
         {
             _toBeRemeshedCached.Dispose();
             _toPropRegLightCached.Dispose();

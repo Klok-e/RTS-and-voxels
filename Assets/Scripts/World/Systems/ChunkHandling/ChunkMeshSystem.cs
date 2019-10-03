@@ -23,7 +23,7 @@ namespace World.Systems.ChunkHandling
 
         private EntityQuery _chunksDirty;
 
-        protected override void OnCreateManager()
+        protected override void OnCreate()
         {
             _chunksDirty = GetEntityQuery(
                 ComponentType.ReadOnly<ChunkDirtyComponent>(),

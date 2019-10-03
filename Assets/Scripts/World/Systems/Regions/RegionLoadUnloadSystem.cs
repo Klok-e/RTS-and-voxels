@@ -93,23 +93,23 @@ namespace World.Systems.Regions
 
         private void CreateChunk(int3 chunkPos, Entity region)
         {
-            var ent = PostUpdateCommands.CreateEntity();
+            var ent = EntityManager.CreateEntity();
 
             // archetypes are for weak
-            PostUpdateCommands.AddComponent(ent, new ChunkNeedAddToRegion {parentRegion = region});
-            PostUpdateCommands.AddComponent(ent, new ChunkPosComponent
+            EntityManager.AddComponentData(ent, new ChunkNeedAddToRegion {parentRegion = region});
+            EntityManager.AddComponentData(ent, new ChunkPosComponent
             {
                 Pos = chunkPos
             });
 
-            var buf1 = PostUpdateCommands.AddBuffer<Voxel>(ent);
+            var buf1 = EntityManager.AddBuffer<Voxel>(ent);
             buf1.ResizeUninitialized(VoxConsts.ChunkSize * VoxConsts.ChunkSize * VoxConsts.ChunkSize);
 
-            var buf2 = PostUpdateCommands.AddBuffer<VoxelLightingLevel>(ent);
+            var buf2 = EntityManager.AddBuffer<VoxelLightingLevel>(ent);
             buf2.ResizeUninitialized(VoxConsts.ChunkSize * VoxConsts.ChunkSize * VoxConsts.ChunkSize);
 
-            PostUpdateCommands.AddBuffer<VoxelSetQueryData>(ent);
-            PostUpdateCommands.AddBuffer<LightSetQueryData>(ent);
+            EntityManager.AddBuffer<VoxelSetQueryData>(ent);
+            EntityManager.AddBuffer<LightSetQueryData>(ent);
             
             Debug.Log(ent);
             

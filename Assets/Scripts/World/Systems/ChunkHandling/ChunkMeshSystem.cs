@@ -50,12 +50,13 @@ namespace World.Systems.ChunkHandling
             using (var handles = new NativeList<JobHandle>(Allocator.Temp))
             {
                 var entsToChangeTags = new NativeList<Entity>(Allocator.Temp);
-                for (int i = 0; i < Mathf.Min(entities.Length, 20); i++)
+                for (int i = 0; i < Mathf.Min(entities.Length, 10); i++)
                 {
                     handles.Add(CleanChunk(dict[neig[i].Pos], entities[i], neig[i], inputDeps));
                     entsToChangeTags.Add(entities[i]);
                 }
 
+                // TODO: native list should be DeallocateOnJobCompletion but it doesn't, leave as is until unity fix it
                 var entsToChangeTagsArr = new NativeArray<Entity>(entsToChangeTags.Length, Allocator.TempJob);
                 entsToChangeTagsArr.CopyFrom(entsToChangeTags.AsArray());
                 entsToChangeTags.Dispose();
@@ -621,7 +622,7 @@ namespace World.Systems.ChunkHandling
                 facesVisibleArr[x, y, z] = facesVisible;
             }
         }
-        
+
         private struct ChangeTagsJob : IJob
         {
             public EntityCommandBuffer commandBuffer;

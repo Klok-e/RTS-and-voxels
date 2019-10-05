@@ -8,6 +8,8 @@ namespace World.Systems.ChunkHandling
 {
     public class ChunkMeshApplySystem : ComponentSystem
     {
+        private EntityCommandBufferSystem _barrier;
+
         private RegionLoadUnloadSystem _chunkCreationSystem;
         private Stopwatch              _watch;
 
@@ -15,10 +17,14 @@ namespace World.Systems.ChunkHandling
         {
             _chunkCreationSystem = World.GetOrCreateSystem<RegionLoadUnloadSystem>();
             _watch               = new Stopwatch();
+
+            _barrier = World.GetOrCreateSystem<EndSimulationEntityCommandBufferSystem>();
         }
 
         protected override void OnUpdate()
         {
+            var buff = _barrier.CreateCommandBuffer();
+
             long milisBudget = (long) (Time.fixedDeltaTime * 1000f);
             _watch.Restart();
             var dict = _chunkCreationSystem.PosToChunk;
@@ -26,7 +32,7 @@ namespace World.Systems.ChunkHandling
             {
                 if (_watch.ElapsedMilliseconds >= milisBudget) return;
                 dict[pos.Pos].ApplyMeshData();
-                PostUpdateCommands.RemoveComponent<ChunkNeedMeshApply>(ent);
+                buff.RemoveComponent<ChunkNeedMeshApply>(ent);
             });
             _watch.Stop();
         }

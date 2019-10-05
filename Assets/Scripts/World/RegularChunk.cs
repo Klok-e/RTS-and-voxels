@@ -9,7 +9,7 @@ namespace World
     [RequireComponent(typeof(MeshRenderer))]
     public class RegularChunk : MonoBehaviour
     {
-        private MeshCollider _coll;
+        //private MeshCollider _coll;
         private MeshFilter   _filter;
 
         private Mesh           _mesh;
@@ -18,7 +18,7 @@ namespace World
 
         public bool IsInitialized { get; private set; }
 
-        public void Initialize(int3 pos, Material material)
+        public RegularChunk Initialize(int3 pos, Material material)
         {
             var newpos = math.float3(pos) * VoxConsts.ChunkSize * VoxConsts.BlockSize;
 
@@ -31,16 +31,19 @@ namespace World
             IsInitialized      = true;
             _renderer.material = material;
 
-            MeshData = new NativeMeshData(0, Allocator.Persistent);
+            return this;
         }
 
-        public void Deinitialize()
+        public RegularChunk Deinitialize()
         {
             name          = "Chunk Inactive";
             IsInitialized = false;
             gameObject.SetActive(false);
 
-            MeshData.Dispose();
+            MeshData.Clear();
+            ApplyMeshData();
+
+            return this;
         }
 
         public void ApplyMeshData()
@@ -56,34 +59,35 @@ namespace World
             MeshData.Clear();
 
             _filter.sharedMesh = _mesh;
-            _coll.sharedMesh   = _mesh;
+            //_coll.sharedMesh   = _mesh;
         }
 
         private void Awake()
         {
             _filter   = GetComponent<MeshFilter>();
             _renderer = GetComponent<MeshRenderer>();
-            _coll     = GetComponent<MeshCollider>();
+            //_coll     = GetComponent<MeshCollider>();
             _mesh     = new Mesh();
             _mesh.MarkDynamic();
+            MeshData = new NativeMeshData(0, Allocator.Persistent);
         }
 
         private void OnDestroy()
         {
             Deinitialize();
+            MeshData.Dispose();
             Destroy(_mesh);
         }
 
         public static RegularChunk CreateNew()
         {
-            RegularChunk chunkObj;
-            var          go = new GameObject("Chunk");
+            var go = new GameObject("Chunk");
 
             go.AddComponent<MeshFilter>();
             go.AddComponent<MeshRenderer>();
-            go.AddComponent<MeshCollider>();
+            //go.AddComponent<MeshCollider>();
 
-            chunkObj = go.AddComponent<RegularChunk>();
+            var chunkObj = go.AddComponent<RegularChunk>();
 
             return chunkObj;
         }

@@ -15,6 +15,10 @@ namespace World.Systems.Regions
     {
         private InitChunkTexturesMaterialsSystem _materials;
 
+        private EntityCommandBufferSystem _barrier;
+
+        private Queue<RegularChunk> _chunkPool;
+
         public NativeHashMap<int3, Entity> PosToChunkEntity { get; private set; }
 
         public Dictionary<int3, RegularChunk> PosToChunk { get; private set; }
@@ -24,7 +28,10 @@ namespace World.Systems.Regions
             PosToChunkEntity = new NativeHashMap<int3, Entity>(1000, Allocator.Persistent);
             PosToChunk       = new Dictionary<int3, RegularChunk>();
 
+            _barrier = World.GetOrCreateSystem<EntityCommandBufferSystem>();
+
             _materials = World.GetOrCreateSystem<InitChunkTexturesMaterialsSystem>();
+            _chunkPool = new Queue<RegularChunk>();
         }
 
         protected override void OnDestroy()
@@ -34,6 +41,8 @@ namespace World.Systems.Regions
 
         protected override void OnUpdate()
         {
+            var commands = _barrier.CreateCommandBuffer();
+
             // load
             var needLoad = ComponentType.ReadOnly<RegionNeedLoadComponentTag>();
             Entities.WithAll(needLoad).ForEach((Entity ent, ref RegionPosComponent regionPos) =>
@@ -43,7 +52,7 @@ namespace World.Systems.Regions
                     //Debug.Log($"Region {regionPos.Pos}");
                     PopulateRegion(regionPos.Pos, ent);
 
-                    PostUpdateCommands.RemoveComponent<RegionNeedLoadComponentTag>(ent);
+                    commands.RemoveComponent<RegionNeedLoadComponentTag>(ent);
                 }
             });
 
@@ -62,14 +71,14 @@ namespace World.Systems.Regions
                         DestroyChunk(chunkPositions[chunks[i].chunk].Pos, chunks[i].chunk);
 
                     // delete region
-                    PostUpdateCommands.DestroyEntity(regionEntity);
+                    commands.DestroyEntity(regionEntity);
                 });
 
             Entities.WithAll(typeof(ChunkQueuedForDeletionTag)).ForEach((Entity ent, ref ChunkPosComponent pos) =>
             {
-                PostUpdateCommands.DestroyEntity(ent);
+                commands.DestroyEntity(ent);
 
-                Object.Destroy(PosToChunk[pos.Pos].gameObject);
+                _chunkPool.Enqueue(PosToChunk[pos.Pos].Deinitialize());
                 PosToChunk.Remove(pos.Pos);
                 PosToChunkEntity.Remove(pos.Pos);
             });
@@ -104,7 +113,8 @@ namespace World.Systems.Regions
             EntityManager.AddBuffer<LightSetQueryData>(ent);
 
             // create chunk object
-            var chunk = RegularChunk.CreateNew();
+            var chunk = _chunkPool.Count == 0 ? RegularChunk.CreateNew() : _chunkPool.Dequeue();
+
             chunk.Initialize(chunkPos, _materials.ChunkMaterial);
 
             //Debug.Log($"Chunk {chunkPos}");

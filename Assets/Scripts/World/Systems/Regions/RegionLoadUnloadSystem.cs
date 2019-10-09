@@ -41,6 +41,7 @@ namespace World.Systems.Regions
 
         protected override void OnUpdate()
         {
+            // TODO: split into 3 systems that are strongly run one after another: one loads, another unloads and yet another adds/removes to hashmap
             var commands = _barrier.CreateCommandBuffer();
 
             // load
